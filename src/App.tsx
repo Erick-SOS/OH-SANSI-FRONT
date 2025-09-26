@@ -19,6 +19,7 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import AreasYNiveles from "./pages/AreasYNiveles"
+import HistorialDeCambios from './pages/HistorialDeCambios';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
             <Route path="/areas-y-niveles" element={<AreasYNiveles />} />
+            <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
 
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />

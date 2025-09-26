@@ -1,10 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import TablaAreasNiveles from '../components/tables/TablaAreasNiveles';
+import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
-import BarraBusquedaAreas from '../components/tables/BarraBusquedaAreas';
+import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
 import AgregarAreaYNivelModal from '../components/ui/modal/AgregarAreaYNivelModal';
-
 
 interface AreaNivel {
   id: number;
@@ -93,7 +92,7 @@ const AreasYNiveles: React.FC = () => {
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
-  const registrosPorPagina = 7;
+  const registrosPorPagina = 9;
   const [ordenamiento, setOrdenamiento] = useState<{
     columna: string;
     direccion: 'asc' | 'desc';
@@ -145,11 +144,46 @@ const AreasYNiveles: React.FC = () => {
 
   const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
 
-  const handleSeleccionChange = (id: number, seleccionado: boolean) => {
-    setDatosCompletos(datosCompletos.map(item => 
-      item.id === id ? { ...item, seleccionado } : item
-    ));
+  const getEstiloModalidad = (modalidad: string) => {
+    const baseStyles = "px-2 py-1 rounded-full text-xs font-medium border";
+    
+    if (modalidad.toLowerCase() === "grupal") {
+      return `${baseStyles} bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800`;
+    } else if (modalidad.toLowerCase() === "individual") {
+      return `${baseStyles} bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800`;
+    }
+    
+    return `${baseStyles} bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800`;
   };
+
+  // Configuración de columnas para TablaBase
+  const columnas = [
+    {
+      clave: 'area',
+      titulo: 'Area',
+      ordenable: true
+    },
+    {
+      clave: 'nivel',
+      titulo: 'Nivel',
+      ordenable: true
+    },
+    {
+      clave: 'responsable',
+      titulo: 'Responsable de area',
+      ordenable: true
+    },
+    {
+      clave: 'modalidad',
+      titulo: 'Modalidad',
+      ordenable: true,
+      formatearCelda: (valor: string) => (
+        <span className={getEstiloModalidad(valor)}>
+          {valor}
+        </span>
+      )
+    }
+  ];
 
   const handleEliminarFila = (id: number) => {
     const fila = datosCompletos.find(item => item.id === id);
@@ -225,7 +259,7 @@ const AreasYNiveles: React.FC = () => {
           Lista de Areas y Niveles
         </h1>
         <nav className="text-sm text-gray-600 dark:text-gray-400">
-          <span>Home</span>
+          <span>Inicio</span>
           <span className="mx-2">›</span>
           <span className="text-gray-800 dark:text-white">Areas y niveles</span>
         </nav>
@@ -262,13 +296,15 @@ const AreasYNiveles: React.FC = () => {
         </div>
       )}
 
-      {/* Tabla */}
+      {/* Tabla usando TablaBase */}
       <div className="mb-1">
-        <TablaAreasNiveles 
+        <TablaBase 
           datos={datosPaginados}
-          onSeleccionChange={handleSeleccionChange}
-          onEliminarFila={handleEliminarFila}
+          columnas={columnas}
+          conOrdenamiento={true}
           onOrdenar={handleOrdenar}
+          onEliminarFila={handleEliminarFila}
+          conAcciones={true}
         />
       </div>
 

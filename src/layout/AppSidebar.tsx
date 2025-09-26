@@ -42,6 +42,11 @@ const navItems: NavItem[] = [
     path: "/areas-y-niveles",
   },
   {
+    icon: <CalenderIcon />,
+    name: "Historial de Cambios",
+    path: "/historial-de-cambios",
+  },
+  {
     icon: <UserCircleIcon />,
     name: "User Profile",
     path: "/profile",
