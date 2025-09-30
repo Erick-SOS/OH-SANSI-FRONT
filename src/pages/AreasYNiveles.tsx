@@ -187,7 +187,7 @@ const AreasYNiveles: React.FC = () => {
           </nav>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1 max-w-md">
               <BarraBusquedaAreas 
@@ -206,7 +206,7 @@ const AreasYNiveles: React.FC = () => {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Nuevo
+              Agregar Area
             </button>
           </div>
         </div>
@@ -217,7 +217,7 @@ const AreasYNiveles: React.FC = () => {
           </div>
         )}
 
-        <div className="mb-4">
+        <div className="mb-1">
           <TablaAreas 
             datos={areasPaginadas}
             onEliminarFila={handleEliminarArea}
@@ -241,14 +241,9 @@ const AreasYNiveles: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
             Lista de Niveles
           </h1>
-          <nav className="text-sm text-gray-600 dark:text-gray-400">
-            <span>Home</span>
-            <span className="mx-2">›</span>
-            <span className="text-gray-800 dark:text-white">Areas y niveles</span>
-          </nav>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-4">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1 max-w-md">
               <BarraBusquedaAreas 
@@ -267,7 +262,7 @@ const AreasYNiveles: React.FC = () => {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Nuevo
+              Agregar Nivel
             </button>
           </div>
         </div>
@@ -278,7 +273,7 @@ const AreasYNiveles: React.FC = () => {
           </div>
         )}
 
-        <div className="mb-4">
+        <div className="mb-1">
           <TablaNiveles 
             datos={nivelesPaginados}
             onEliminarFila={handleEliminarNivel}
