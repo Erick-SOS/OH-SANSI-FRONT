@@ -20,7 +20,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import AreasYNiveles from "./pages/AreasYNiveles"
 import HistorialDeCambios from './pages/HistorialDeCambios';
-
+import CantidadDeMedallas from "./pages/CantidadDeMedallas";
 export default function App() {
   return (
     <>
@@ -37,7 +37,7 @@ export default function App() {
             <Route path="/blank" element={<Blank />} />
             <Route path="/areas-y-niveles" element={<AreasYNiveles />} />
             <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
-
+            <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
 
