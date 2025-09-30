@@ -15,6 +15,12 @@ import {
   TableIcon,
   UserCircleIcon,
 } from "../icons";
+import { 
+  MdOutlineCategory,
+  MdHistory,
+  MdEmojiEvents 
+} from "react-icons/md";
+
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 
@@ -37,14 +43,19 @@ const navItems: NavItem[] = [
     path: "/calendar",
   },
   {
-    icon: <CalenderIcon />,
+    icon: <MdOutlineCategory size={20} />,
     name: "Gestionar areas y niveles",
     path: "/areas-y-niveles",
   },
   {
-    icon: <CalenderIcon />,
+    icon: <MdHistory size={20} />,
     name: "Historial de Cambios",
     path: "/historial-de-cambios",
+  },
+  {
+    icon: <MdEmojiEvents size={20} />,
+    name: "Cantidad de Medallas",
+    path: "/cantidad-de-medallas",
   },
   {
     icon: <UserCircleIcon />,
