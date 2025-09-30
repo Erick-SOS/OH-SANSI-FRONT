@@ -1,338 +1,309 @@
 import React, { useState, useMemo } from 'react';
-import TablaBase from '../components/tables/TablaBase';
+import TablaAreas from '../components/tables/TablaAreas';
+import TablaNiveles from '../components/tables/TablaNiveles';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
-import AgregarAreaYNivelModal from '../components/ui/modal/AgregarAreaYNivelModal';
+import AgregarModal from '../components/ui/modal/AgregarModal';
 
-interface AreaNivel {
+interface Area {
   id: number;
   area: string;
+  responsable: string;
+  modalidad: string;
+}
+
+interface Nivel {
+  id: number;
   nivel: string;
   responsable: string;
   modalidad: string;
-  seleccionado: boolean;
 }
 
 const AreasYNiveles: React.FC = () => {
-  const [datosCompletos, setDatosCompletos] = useState<AreaNivel[]>([
-    {
-      id: 1,
-      area: "Matematicas",
-      nivel: "Secundaria",
-      responsable: "Ivan Espinoza Vargas",
-      modalidad: "Grupal",
-      seleccionado: false
-    },
-    {
-      id: 2,
-      area: "Matematicas",
-      nivel: "Secundaria", 
-      responsable: "Lucas Gamboas",
-      modalidad: "Individual",
-      seleccionado: false
-    },
-    {
-      id: 3,
-      area: "Matematicas",
-      nivel: "Secundaria",
-      responsable: "Ivan Espinoza Vargas",
-      modalidad: "Grupal",
-      seleccionado: false
-    },
-    {
-      id: 4,
-      area: "Ciencias",
-      nivel: "Secundaria",
-      responsable: "Maria Rodriguez",
-      modalidad: "Grupal",
-      seleccionado: false
-    },
-    {
-      id: 5,
-      area: "Lenguaje",
-      nivel: "Primaria",
-      responsable: "Carlos Mendoza",
-      modalidad: "Individual",
-      seleccionado: false
-    },
-    {
-      id: 6,
-      area: "Historia",
-      nivel: "Secundaria",
-      responsable: "Ana Gutierrez",
-      modalidad: "Grupal",
-      seleccionado: false
-    },
-    {
-      id: 7,
-      area: "Geografia",
-      nivel: "Secundaria",
-      responsable: "Pedro Lopez",
-      modalidad: "Individual",
-      seleccionado: false
-    },
-    {
-      id: 8,
-      area: "Educación Física",
-      nivel: "Primaria",
-      responsable: "Laura Martinez",
-      modalidad: "Grupal",
-      seleccionado: false
-    },
-    {
-      id: 9,
-      area: "Física",
-      nivel: "Primaria",
-      responsable: "Martinez",
-      modalidad: "Individual",
-      seleccionado: false
-    }
+  const [datosAreas, setDatosAreas] = useState<Area[]>([
+    { id: 1, area: "Matematicas", responsable: "Ivan Espinoza Vargas", modalidad: "Grupal" },
+    { id: 2, area: "Matematicas", responsable: "Lucas Gamboas", modalidad: "Individual" },
+    { id: 3, area: "Matematicas", responsable: "Ivan Espinoza Vargas", modalidad: "Grupal" },
+    { id: 4, area: "Ciencias", responsable: "Maria Rodriguez", modalidad: "Grupal" },
+    { id: 5, area: "Lenguaje", responsable: "Carlos Mendoza", modalidad: "Individual" },
+    { id: 6, area: "Historia", responsable: "Ana Gutierrez", modalidad: "Grupal" },
+    { id: 7, area: "Geografia", responsable: "Pedro Lopez", modalidad: "Individual" },
+    { id: 8, area: "Educación Física", responsable: "Laura Martinez", modalidad: "Grupal" },
+    { id: 9, area: "Física", responsable: "Martinez", modalidad: "Individual" }
   ]);
 
-  const [paginaActual, setPaginaActual] = useState(1);
-  const [terminoBusqueda, setTerminoBusqueda] = useState('');
-  const registrosPorPagina = 9;
-  const [ordenamiento, setOrdenamiento] = useState<{
-    columna: string;
-    direccion: 'asc' | 'desc';
-  }>({ columna: 'id', direccion: 'asc' });
+  const [datosNiveles, setDatosNiveles] = useState<Nivel[]>([
+    { id: 1, nivel: "Secundaria", responsable: "Ivan Espinoza Vargas", modalidad: "Grupal" },
+    { id: 2, nivel: "Secundaria", responsable: "Lucas Gamboas", modalidad: "Individual" },
+    { id: 3, nivel: "Secundaria", responsable: "Ivan Espinoza Vargas", modalidad: "Grupal" },
+    { id: 4, nivel: "Secundaria", responsable: "Maria Rodriguez", modalidad: "Grupal" },
+    { id: 5, nivel: "Primaria", responsable: "Carlos Mendoza", modalidad: "Individual" },
+    { id: 6, nivel: "Secundaria", responsable: "Ana Gutierrez", modalidad: "Grupal" },
+    { id: 7, nivel: "Secundaria", responsable: "Pedro Lopez", modalidad: "Individual" }
+  ]);
 
-  // Estados para los modales
-  const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
-  const [modalAgregarAbierto, setModalAgregarAbierto] = useState(false);
-  const [filaAEliminar, setFilaAEliminar] = useState<AreaNivel | null>(null);
+  const [busquedaAreas, setBusquedaAreas] = useState('');
+  const [busquedaNiveles, setBusquedaNiveles] = useState('');
+  const [paginaAreas, setPaginaAreas] = useState(1);
+  const [paginaNiveles, setPaginaNiveles] = useState(1);
 
-  // Filtrar datos basados en la búsqueda
-  const datosFiltrados = useMemo(() => {
-    if (!terminoBusqueda.trim()) {
-      return datosCompletos;
-    }
+  const registrosPorPagina = 7;
 
-    const termino = terminoBusqueda.toLowerCase();
-    return datosCompletos.filter(item =>
+  const [modalEliminar, setModalEliminar] = useState<{
+    isOpen: boolean;
+    tipo: 'Area' | 'Nivel' | '';
+    id: number | null;
+    nombre: string;
+  }>({ isOpen: false, tipo: '', id: null, nombre: '' });
+
+  const [modalAgregar, setModalAgregar] = useState<{
+    isOpen: boolean;
+    tipo: 'Area' | 'Nivel' | '';
+  }>({ isOpen: false, tipo: '' });
+
+  const areasFiltradas = useMemo(() => {
+    if (!busquedaAreas.trim()) return datosAreas;
+    const termino = busquedaAreas.toLowerCase();
+    return datosAreas.filter(item =>
       item.area.toLowerCase().includes(termino) ||
+      item.responsable.toLowerCase().includes(termino) ||
+      item.modalidad.toLowerCase().includes(termino)
+    );
+  }, [datosAreas, busquedaAreas]);
+
+  const nivelesFiltrados = useMemo(() => {
+    if (!busquedaNiveles.trim()) return datosNiveles;
+    const termino = busquedaNiveles.toLowerCase();
+    return datosNiveles.filter(item =>
       item.nivel.toLowerCase().includes(termino) ||
       item.responsable.toLowerCase().includes(termino) ||
       item.modalidad.toLowerCase().includes(termino)
     );
-  }, [datosCompletos, terminoBusqueda]);
+  }, [datosNiveles, busquedaNiveles]);
 
-  // Calcular datos paginados
-  const datosPaginados = useMemo(() => {
-    const inicio = (paginaActual - 1) * registrosPorPagina;
-    const fin = inicio + registrosPorPagina;
-    
-    const datosOrdenados = [...datosFiltrados].sort((a, b) => {
-      let aValor = a[ordenamiento.columna as keyof AreaNivel];
-      let bValor = b[ordenamiento.columna as keyof AreaNivel];
-      
-      if (typeof aValor === 'string' && typeof bValor === 'string') {
-        aValor = aValor.toLowerCase();
-        bValor = bValor.toLowerCase();
-      }
-      
-      if (ordenamiento.direccion === 'asc') {
-        return aValor < bValor ? -1 : aValor > bValor ? 1 : 0;
-      } else {
-        return aValor > bValor ? -1 : aValor < bValor ? 1 : 0;
-      }
-    });
-    
-    return datosOrdenados.slice(inicio, fin);
-  }, [datosFiltrados, paginaActual, ordenamiento, registrosPorPagina]);
+  const areasPaginadas = useMemo(() => {
+    const inicio = (paginaAreas - 1) * registrosPorPagina;
+    return areasFiltradas.slice(inicio, inicio + registrosPorPagina);
+  }, [areasFiltradas, paginaAreas]);
 
-  const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
+  const nivelesPaginados = useMemo(() => {
+    const inicio = (paginaNiveles - 1) * registrosPorPagina;
+    return nivelesFiltrados.slice(inicio, inicio + registrosPorPagina);
+  }, [nivelesFiltrados, paginaNiveles]);
 
-  const getEstiloModalidad = (modalidad: string) => {
-    const baseStyles = "px-2 py-1 rounded-full text-xs font-medium border";
-    
-    if (modalidad.toLowerCase() === "grupal") {
-      return `${baseStyles} bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800`;
-    } else if (modalidad.toLowerCase() === "individual") {
-      return `${baseStyles} bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800`;
+  const handleEliminarArea = (id: number) => {
+    const area = datosAreas.find(item => item.id === id);
+    if (area) {
+      setModalEliminar({ isOpen: true, tipo: 'Area', id, nombre: area.area });
     }
-    
-    return `${baseStyles} bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800`;
   };
 
-  // Configuración de columnas para TablaBase
-  const columnas = [
-    {
-      clave: 'area',
-      titulo: 'Area',
-      ordenable: true
-    },
-    {
-      clave: 'nivel',
-      titulo: 'Nivel',
-      ordenable: true
-    },
-    {
-      clave: 'responsable',
-      titulo: 'Responsable de area',
-      ordenable: true
-    },
-    {
-      clave: 'modalidad',
-      titulo: 'Modalidad',
-      ordenable: true,
-      formatearCelda: (valor: string) => (
-        <span className={getEstiloModalidad(valor)}>
-          {valor}
-        </span>
-      )
-    }
-  ];
-
-  const handleEliminarFila = (id: number) => {
-    const fila = datosCompletos.find(item => item.id === id);
-    if (fila) {
-      setFilaAEliminar(fila);
-      setModalEliminarAbierto(true);
+  const handleEliminarNivel = (id: number) => {
+    const nivel = datosNiveles.find(item => item.id === id);
+    if (nivel) {
+      setModalEliminar({ isOpen: true, tipo: 'Nivel', id, nombre: nivel.nivel });
     }
   };
 
   const confirmarEliminacion = () => {
-    if (filaAEliminar) {
-      const nuevosDatos = datosCompletos.filter(item => item.id !== filaAEliminar.id);
-      setDatosCompletos(nuevosDatos);
+    if (modalEliminar.tipo === 'Area' && modalEliminar.id) {
+      const nuevosDatos = datosAreas.filter(item => item.id !== modalEliminar.id);
+      setDatosAreas(nuevosDatos);
       
-      // Ajustar la página actual si es necesario
-      if (paginaActual > Math.ceil(nuevosDatos.length / registrosPorPagina)) {
-        setPaginaActual(Math.ceil(nuevosDatos.length / registrosPorPagina) || 1);
+      if (paginaAreas > Math.ceil(nuevosDatos.length / registrosPorPagina)) {
+        setPaginaAreas(Math.ceil(nuevosDatos.length / registrosPorPagina) || 1);
       }
+    } else if (modalEliminar.tipo === 'Nivel' && modalEliminar.id) {
+      const nuevosDatos = datosNiveles.filter(item => item.id !== modalEliminar.id);
+      setDatosNiveles(nuevosDatos);
       
-      setModalEliminarAbierto(false);
-      setFilaAEliminar(null);
+      if (paginaNiveles > Math.ceil(nuevosDatos.length / registrosPorPagina)) {
+        setPaginaNiveles(Math.ceil(nuevosDatos.length / registrosPorPagina) || 1);
+      }
     }
+    
+    setModalEliminar({ isOpen: false, tipo: '', id: null, nombre: '' });
   };
 
   const cancelarEliminacion = () => {
-    setModalEliminarAbierto(false);
-    setFilaAEliminar(null);
+    setModalEliminar({ isOpen: false, tipo: '', id: null, nombre: '' });
   };
 
-  const handleAgregarRegistro = (nuevoRegistro: Omit<AreaNivel, 'id' | 'seleccionado'>) => {
-    const nuevoId = Math.max(...datosCompletos.map(item => item.id)) + 1;
-    const nuevoAreaNivel: AreaNivel = {
-      id: nuevoId,
-      ...nuevoRegistro,
-      seleccionado: false
-    };
+  const handleAgregarArea = () => {
+    setModalAgregar({ isOpen: true, tipo: 'Area' });
+  };
+
+  const handleAgregarNivel = () => {
+    setModalAgregar({ isOpen: true, tipo: 'Nivel' });
+  };
+
+  const confirmarAgregar = (formData: { nombre: string; responsable: string; modalidad: string }) => {
+    if (modalAgregar.tipo === 'Area') {
+      const nuevoId = Math.max(...datosAreas.map(item => item.id)) + 1;
+      const nuevaArea: Area = {
+        id: nuevoId,
+        area: formData.nombre,
+        responsable: formData.responsable,
+        modalidad: formData.modalidad
+      };
+      setDatosAreas([...datosAreas, nuevaArea]);
+      
+      const nuevaPagina = Math.ceil((datosAreas.length + 1) / registrosPorPagina);
+      setPaginaAreas(nuevaPagina);
+    } else if (modalAgregar.tipo === 'Nivel') {
+      const nuevoId = Math.max(...datosNiveles.map(item => item.id)) + 1;
+      const nuevoNivel: Nivel = {
+        id: nuevoId,
+        nivel: formData.nombre,
+        responsable: formData.responsable,
+        modalidad: formData.modalidad
+      };
+      setDatosNiveles([...datosNiveles, nuevoNivel]);
+      
+      const nuevaPagina = Math.ceil((datosNiveles.length + 1) / registrosPorPagina);
+      setPaginaNiveles(nuevaPagina);
+    }
     
-    setDatosCompletos([...datosCompletos, nuevoAreaNivel]);
-    setModalAgregarAbierto(false);
-    
-    // Redirigir a la última página donde estará el nuevo registro
-    const nuevaPagina = Math.ceil((datosCompletos.length + 1) / registrosPorPagina);
-    setPaginaActual(nuevaPagina);
-  };
-
-  const handleOrdenar = (columna: string, direccion: 'asc' | 'desc') => {
-    setOrdenamiento({ columna, direccion });
-    setPaginaActual(1);
-  };
-
-  const handleCambioPagina = (pagina: number) => {
-    setPaginaActual(pagina);
-  };
-
-  const handleBuscarChange = (termino: string) => {
-    setTerminoBusqueda(termino);
-    setPaginaActual(1);
-  };
-
-  const handleNuevoRegistro = () => {
-    setModalAgregarAbierto(true);
+    setModalAgregar({ isOpen: false, tipo: '' });
   };
 
   const cerrarModalAgregar = () => {
-    setModalAgregarAbierto(false);
+    setModalAgregar({ isOpen: false, tipo: '' });
   };
 
   return (
-    <div className="p-1">
-      {/* Primera fila: Título a la izquierda, Breadcrumb a la derecha */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
-          Lista de Areas y Niveles
-        </h1>
-        <nav className="text-sm text-gray-600 dark:text-gray-400">
-          <span>Inicio</span>
-          <span className="mx-2">›</span>
-          <span className="text-gray-800 dark:text-white">Areas y niveles</span>
-        </nav>
-      </div>
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {/* SECCIÓN DE AREAS */}
+      <div className="mb-12">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
+            Lista de Areas
+          </h1>
+          <nav className="text-sm text-gray-600 dark:text-gray-400">
+            <span>Home</span>
+            <span className="mx-2">›</span>
+            <span className="text-gray-800 dark:text-white">Areas y niveles</span>
+          </nav>
+        </div>
 
-      {/* Segunda fila: Barra de búsqueda a la izquierda, Botón +Nuevo a la derecha EN RECUADRO */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Barra de búsqueda */}
-          <div className="flex-1 max-w-md">
-            <BarraBusquedaAreas 
-              terminoBusqueda={terminoBusqueda}
-              onBuscarChange={handleBuscarChange}
-            />
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1 max-w-md">
+              <BarraBusquedaAreas 
+                terminoBusqueda={busquedaAreas}
+                onBuscarChange={(termino) => {
+                  setBusquedaAreas(termino);
+                  setPaginaAreas(1);
+                }}
+              />
+            </div>
+            
+            <button
+              onClick={handleAgregarArea}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Agregar Area
+            </button>
           </div>
-          
-          {/* Botón +Nuevo */}
-          <button
-            onClick={handleNuevoRegistro}
-            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Nuevo
-          </button>
         </div>
-      </div>
 
-      {/* Indicador de resultados de búsqueda */}
-      {terminoBusqueda && (
-        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          {datosFiltrados.length} resultados encontrados para "{terminoBusqueda}"
+        {busquedaAreas && (
+          <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            {areasFiltradas.length} resultados encontrados para "{busquedaAreas}"
+          </div>
+        )}
+
+        <div className="mb-1">
+          <TablaAreas 
+            datos={areasPaginadas}
+            onEliminarFila={handleEliminarArea}
+            paginaActual={paginaAreas}
+            registrosPorPagina={registrosPorPagina}
+          />
         </div>
-      )}
 
-      {/* Tabla usando TablaBase */}
-      <div className="mb-1">
-        <TablaBase 
-          datos={datosPaginados}
-          columnas={columnas}
-          conOrdenamiento={true}
-          onOrdenar={handleOrdenar}
-          onEliminarFila={handleEliminarFila}
-          conAcciones={true}
-        />
-      </div>
-
-      {/* Paginación */}
-      <div>
         <Paginacion
-          paginaActual={paginaActual}
-          totalPaginas={totalPaginas}
-          totalRegistros={datosFiltrados.length}
+          paginaActual={paginaAreas}
+          totalPaginas={Math.ceil(areasFiltradas.length / registrosPorPagina)}
+          totalRegistros={areasFiltradas.length}
           registrosPorPagina={registrosPorPagina}
-          onPaginaChange={handleCambioPagina}
+          onPaginaChange={setPaginaAreas}
         />
       </div>
 
-      {/* Modal de Eliminar Fila */}
+      {/* SECCIÓN DE NIVELES */}
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
+            Lista de Niveles
+          </h1>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1 max-w-md">
+              <BarraBusquedaAreas 
+                terminoBusqueda={busquedaNiveles}
+                onBuscarChange={(termino) => {
+                  setBusquedaNiveles(termino);
+                  setPaginaNiveles(1);
+                }}
+              />
+            </div>
+            
+            <button
+              onClick={handleAgregarNivel}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Agregar Nivel
+            </button>
+          </div>
+        </div>
+
+        {busquedaNiveles && (
+          <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            {nivelesFiltrados.length} resultados encontrados para "{busquedaNiveles}"
+          </div>
+        )}
+
+        <div className="mb-1">
+          <TablaNiveles 
+            datos={nivelesPaginados}
+            onEliminarFila={handleEliminarNivel}
+            paginaActual={paginaNiveles}
+            registrosPorPagina={registrosPorPagina}
+          />
+        </div>
+
+        <Paginacion
+          paginaActual={paginaNiveles}
+          totalPaginas={Math.ceil(nivelesFiltrados.length / registrosPorPagina)}
+          totalRegistros={nivelesFiltrados.length}
+          registrosPorPagina={registrosPorPagina}
+          onPaginaChange={setPaginaNiveles}
+        />
+      </div>
+
       <EliminarFilaModal
-        isOpen={modalEliminarAbierto}
+        isOpen={modalEliminar.isOpen}
         onClose={cancelarEliminacion}
         onConfirm={confirmarEliminacion}
-        area={filaAEliminar?.area || ''}
-        nivel={filaAEliminar?.nivel || ''}
+        tipo={modalEliminar.tipo}
+        nombre={modalEliminar.nombre}
       />
 
-      {/* Modal de Agregar Área y Nivel */}
-      <AgregarAreaYNivelModal
-        isOpen={modalAgregarAbierto}
+      <AgregarModal
+        isOpen={modalAgregar.isOpen}
         onClose={cerrarModalAgregar}
-        onConfirm={handleAgregarRegistro}
+        onConfirm={confirmarAgregar}
+        tipo={modalAgregar.tipo}
       />
     </div>
   );
