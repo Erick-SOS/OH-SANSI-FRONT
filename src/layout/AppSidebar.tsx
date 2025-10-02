@@ -59,6 +59,21 @@ const navItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
+    name: "Lista de Inscritos",
+    path: "/lista-de-inscritos",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Fases de Evaluacion",
+    path: "/fases-de-evaluacion",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Lista de Premiados",
+    path: "/lista-de-premiados",
+  },
+  {
+    icon: <UserCircleIcon />,
     name: "User Profile",
     path: "/profile",
   },

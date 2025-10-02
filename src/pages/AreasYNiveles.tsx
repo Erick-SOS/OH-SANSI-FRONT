@@ -173,7 +173,7 @@ const AreasYNiveles: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* SECCIÓN DE AREAS */}
       <div className="mb-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
