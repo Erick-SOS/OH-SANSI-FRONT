@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { FiSave } from "react-icons/fi";
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
-import TablaBase from '../components/tables/TablaBase';
 
 interface InscritosItem {
   id: number;
@@ -11,9 +9,10 @@ interface InscritosItem {
 }
 
 const ListaDePremiados: React.FC = () => {
-  const [datosCompletos, setDatosCompletos] = useState<InscritosItem[]>([
+  const [datosCompletos] = useState<InscritosItem[]>([
     //agrega datos ficticios 
   ]);
+
 
   // 🔎 Busqueda + Paginación
   const [paginaActual, setPaginaActual] = useState(1);
@@ -28,11 +27,6 @@ const ListaDePremiados: React.FC = () => {
       item.unidadEducativa.toLowerCase().includes(termino)
     );
   }, [datosCompletos, terminoBusqueda]);
-
-  const datosPaginados = useMemo(() => {
-    const inicio = (paginaActual - 1) * registrosPorPagina;
-    return datosFiltrados.slice(inicio, inicio + registrosPorPagina);
-  }, [datosFiltrados, paginaActual]);
 
   return (
     <div className="p-1">
