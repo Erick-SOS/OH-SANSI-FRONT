@@ -21,6 +21,10 @@ import Home from "./pages/Dashboard/Home";
 import AreasYNiveles from "./pages/AreasYNiveles"
 import HistorialDeCambios from './pages/HistorialDeCambios';
 import CantidadDeMedallas from "./pages/CantidadDeMedallas";
+import ListaDeInscritos from "./pages/ListaDeInscritos";
+import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
+import ListaDePremiados from "./pages/ListaDePremiados";
+
 export default function App() {
   return (
     <>
@@ -38,6 +42,9 @@ export default function App() {
             <Route path="/areas-y-niveles" element={<AreasYNiveles />} />
             <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
             <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
+            <Route path="/lista-de-inscritos" element={<ListaDeInscritos />} />
+            <Route path="/fases-de-evaluacion" element={<FasesDeEvaluacion />} />
+            <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
 
