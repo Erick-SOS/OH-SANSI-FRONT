@@ -24,6 +24,7 @@ import CantidadDeMedallas from "./pages/CantidadDeMedallas";
 import ListaDeInscritos from "./pages/ListaDeInscritos";
 import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
 import ListaDePremiados from "./pages/ListaDePremiados";
+import ResultadosDeCalificaiones from "./pages/ResultadosDeCalificaciones";
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/lista-de-inscritos" element={<ListaDeInscritos />} />
             <Route path="/fases-de-evaluacion" element={<FasesDeEvaluacion />} />
             <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
+            <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaiones />} />
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
 
