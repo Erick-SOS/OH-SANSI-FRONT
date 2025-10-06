@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
-import { exportarComoPDF, exportarComoXLSX } from "../../src/utils/exportUtils";
+import { exportarComoPDF, exportarComoXLSX } from '../utils/exportUtils'; // Ajustada la ruta
 
 interface HistorialItem {
   id: number;
@@ -17,51 +17,51 @@ const HistorialDeCambios: React.FC = () => {
   const [datosCompletos] = useState<HistorialItem[]>([
     {
       id: 1,
-      nombre: "Unad Wilson",
-      fecha: "20/03/2025 - 18:00 hrs",
-      olimpistaOGrupo: "Abraham Espinosa",
-      notaAnterior: "20",
-      notaNueva: "20",
+      nombre: 'Unad Wilson',
+      fecha: '20/03/2025 - 18:00 hrs',
+      olimpistaOGrupo: 'Abraham Espinosa',
+      notaAnterior: '20',
+      notaNueva: '20',
     },
     {
       id: 2,
-      nombre: "Unad Wilson",
-      fecha: "20/03/2025 - 18:00 hrs",
-      olimpistaOGrupo: "Abraham Espinosa",
-      notaAnterior: "20",
-      notaNueva: "20",
+      nombre: 'Unad Wilson',
+      fecha: '20/03/2025 - 18:00 hrs',
+      olimpistaOGrupo: 'Abraham Espinosa',
+      notaAnterior: '20',
+      notaNueva: '20',
     },
     {
       id: 3,
-      nombre: "Unad Wilson",
-      fecha: "20/03/2025 - 18:00 hrs",
-      olimpistaOGrupo: "Abraham Espinosa",
-      notaAnterior: "20",
-      notaNueva: "20",
+      nombre: 'Unad Wilson',
+      fecha: '20/03/2025 - 18:00 hrs',
+      olimpistaOGrupo: 'Abraham Espinosa',
+      notaAnterior: '20',
+      notaNueva: '20',
     },
     {
       id: 4,
-      nombre: "Unad Wilson",
-      fecha: "20/03/2025 - 18:00 hrs",
-      olimpistaOGrupo: "Abraham Espinosa",
-      notaAnterior: "20",
-      notaNueva: "20",
+      nombre: 'Unad Wilson',
+      fecha: '20/03/2025 - 18:00 hrs',
+      olimpistaOGrupo: 'Abraham Espinosa',
+      notaAnterior: '20',
+      notaNueva: '20',
     },
     {
       id: 5,
-      nombre: "Maria Rodriguez",
-      fecha: "21/03/2025 - 14:30 hrs",
-      olimpistaOGrupo: "Carlos Mendoza",
-      notaAnterior: "18",
-      notaNueva: "22",
+      nombre: 'Maria Rodriguez',
+      fecha: '21/03/2025 - 14:30 hrs',
+      olimpistaOGrupo: 'Carlos Mendoza',
+      notaAnterior: '18',
+      notaNueva: '22',
     },
     {
       id: 6,
-      nombre: "Juan Perez",
-      fecha: "22/03/2025 - 10:15 hrs",
-      olimpistaOGrupo: "Ana Gutierrez",
-      notaAnterior: "15",
-      notaNueva: "19",
+      nombre: 'Juan Perez',
+      fecha: '22/03/2025 - 10:15 hrs',
+      olimpistaOGrupo: 'Ana Gutierrez',
+      notaAnterior: '15',
+      notaNueva: '19',
     },
   ]);
 
@@ -70,28 +70,28 @@ const HistorialDeCambios: React.FC = () => {
     {
       clave: 'nombre',
       titulo: 'Nombre',
-      alineacion: 'izquierda' as const
+      alineacion: 'izquierda' as const,
     },
     {
       clave: 'fecha',
       titulo: 'Fecha y Hora',
-      alineacion: 'izquierda' as const
+      alineacion: 'izquierda' as const,
     },
     {
       clave: 'olimpistaOGrupo',
       titulo: 'Olimpista/Grupo Asignado',
-      alineacion: 'izquierda' as const
+      alineacion: 'izquierda' as const,
     },
     {
       clave: 'notaAnterior',
       titulo: 'Nota Anterior',
-      alineacion: 'centro' as const
+      alineacion: 'centro' as const,
     },
     {
       clave: 'notaNueva',
       titulo: 'Nueva Nota',
-      alineacion: 'centro' as const
-    }
+      alineacion: 'centro' as const,
+    },
   ];
 
   const [paginaActual, setPaginaActual] = useState(1);
@@ -106,12 +106,13 @@ const HistorialDeCambios: React.FC = () => {
     }
 
     const termino = terminoBusqueda.toLowerCase();
-    return datosCompletos.filter(item =>
-      item.nombre.toLowerCase().includes(termino) ||
-      item.fecha.toLowerCase().includes(termino) ||
-      item.olimpistaOGrupo.toLowerCase().includes(termino) ||
-      item.notaAnterior.toLowerCase().includes(termino) ||
-      item.notaNueva.toLowerCase().includes(termino)
+    return datosCompletos.filter(
+      (item) =>
+        item.nombre.toLowerCase().includes(termino) ||
+        item.fecha.toLowerCase().includes(termino) ||
+        item.olimpistaOGrupo.toLowerCase().includes(termino) ||
+        item.notaAnterior.toLowerCase().includes(termino) ||
+        item.notaNueva.toLowerCase().includes(termino)
     );
   }, [datosCompletos, terminoBusqueda]);
 
@@ -138,18 +139,18 @@ const HistorialDeCambios: React.FC = () => {
     try {
       await exportarComoPDF(datosFiltrados, terminoBusqueda, 'historial-cambios');
     } catch (error) {
-      alert((error as Error).message); // Aserción de tipo
+      alert((error as Error).message);
     } finally {
       setExportando(false);
     }
   };
 
-  const handleExportarComoXLSX = () => {
+  const handleExportarComoXLSX = async () => {
     setExportando(true);
     try {
-      exportarComoXLSX(datosFiltrados, 'historial-cambios');
+      await exportarComoXLSX(datosFiltrados, 'historial-cambios');
     } catch (error) {
-      alert((error as Error).message); // Aserción de tipo
+      alert((error as Error).message);
     } finally {
       setExportando(false);
     }
@@ -174,12 +175,12 @@ const HistorialDeCambios: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Barra de búsqueda */}
           <div className="flex-1 max-w-md">
-            <BarraBusquedaAreas 
+            <BarraBusquedaAreas
               terminoBusqueda={terminoBusqueda}
               onBuscarChange={handleBuscarChange}
             />
           </div>
-          
+
           {/* Botones de exportación */}
           <div className="flex flex-col sm:flex-row gap-2">
             <button
@@ -189,16 +190,41 @@ const HistorialDeCambios: React.FC = () => {
             >
               {exportando ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Exportando...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                   Exportar historial como PDF
                 </>
@@ -211,16 +237,41 @@ const HistorialDeCambios: React.FC = () => {
             >
               {exportando ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Exportando...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                   Exportar historial como XLSX
                 </>
@@ -239,7 +290,7 @@ const HistorialDeCambios: React.FC = () => {
 
       {/* Tabla usando TablaBase */}
       <div className="mb-1">
-        <TablaBase 
+        <TablaBase
           datos={datosPaginados}
           columnas={columnas}
           conOrdenamiento={false}
