@@ -1,7 +1,7 @@
 // utils/exportUtils.ts
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface ExportData {
   nombre: string;
@@ -47,30 +47,51 @@ export const exportarComoPDF = (datos: ExportData[], terminoBusqueda: string, no
   }
 };
 
-export const exportarComoXLSX = (datos: ExportData[], nombreArchivo: string) => {
+export const exportarComoXLSX = async (datos: ExportData[], nombreArchivo: string) => {
   try {
-    const datosExportar = datos.map(item => ({
-      'Nombre': item.nombre,
-      'Fecha y Hora': item.fecha,
-      'Olimpista/Grupo Asignado': item.olimpistaOGrupo,
-      'Nota Anterior': item.notaAnterior,
-      'Nueva Nota': item.notaNueva
-    }));
+    // Crear un nuevo libro de trabajo
+    const workbook = new ExcelJS.Workbook();
+    // Crear una nueva hoja
+    const worksheet = workbook.addWorksheet('Historial de Cambios');
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(datosExportar);
-    
-    const columnWidths = [
-      { wch: 20 },
-      { wch: 25 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 }
+    // Definir las columnas con encabezados y anchos
+    worksheet.columns = [
+      { header: 'Nombre', key: 'nombre', width: 20 },
+      { header: 'Fecha y Hora', key: 'fecha', width: 25 },
+      { header: 'Olimpista/Grupo Asignado', key: 'olimpistaOGrupo', width: 25 },
+      { header: 'Nota Anterior', key: 'notaAnterior', width: 15 },
+      { header: 'Nueva Nota', key: 'notaNueva', width: 15 },
     ];
-    ws['!cols'] = columnWidths;
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Historial de Cambios');
-    XLSX.writeFile(wb, `${nombreArchivo}-${new Date().toISOString().split('T')[0]}.xlsx`);
+    // Agregar los datos
+    datos.forEach(item => {
+      worksheet.addRow({
+        nombre: item.nombre,
+        fecha: item.fecha,
+        olimpistaOGrupo: item.olimpistaOGrupo,
+        notaAnterior: item.notaAnterior,
+        notaNueva: item.notaNueva,
+      });
+    });
+
+    // Estilizar el encabezado
+    worksheet.getRow(1).eachCell(cell => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF465FFF' }, // Color similar al [70, 95, 255] del PDF
+      };
+      cell.font = { bold: true };
+    });
+
+    // Generar un buffer en lugar de escribir en el sistema de archivos
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${nombreArchivo}-${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   } catch (error) {
     console.error('Error al exportar XLSX:', error);
     throw new Error('Error al exportar el Excel');
