@@ -18,6 +18,9 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import Listainscritos from "./pages/Listainscritos";
+import OlympiansListLocalprueba from "./pages/OlympiansListlocalprueba";
+import Gestiondeevaluacion from "./pages/OlympiansListlocalprueba";
 
 export default function App() {
   return (
@@ -56,7 +59,9 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-
+          <Route path="/lista" element={<Listainscritos/>} />
+          <Route path="/lista2" element={<OlympiansListLocalprueba/>} />
+          <Route path="/evaluacion" element={<Gestiondeevaluacion/>} />
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
