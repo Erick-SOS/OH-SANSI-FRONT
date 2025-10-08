@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
+import { ChevronLeftIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { registroEvaluador, RegistroEvaluadorPayload } from "../../api/evaluadores";
+import DocumentField from "../form/DocumentField";
+import PasswordField from "../form/PasswordField";
+import ErrorAlert from "../form/alerts/ErrorAlert";
+import SubmitButton from "../ui/SubmitButton";
+import usePasswordValidation from "../../hooks/usePasswordValidation";
+import { CheckCircle } from "lucide-react";
 
 export default function SignUpForm() {
-  const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -28,6 +33,11 @@ export default function SignUpForm() {
     cargo: "",
   });
 
+  const { valid, match, passwordMessage } = usePasswordValidation(
+    formData.password,
+    formData.confirmPassword
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let newValue = value;
@@ -35,18 +45,16 @@ export default function SignUpForm() {
     if (["nombre", "ap_paterno", "ap_materno", "profesion", "cargo"].includes(name)) {
       newValue = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ\s]/g, "");
     }
-
     if (["telefono"].includes(name)) {
       newValue = value.replace(/[^0-9]/g, "");
     }
-
     if (["numero_documento"].includes(name)) {
       newValue = value.replace(/[^0-9-]/g, "");
     }
+
     setFormData({ ...formData, [name]: newValue });
   };
 
-  // Función auxiliar para manejar errores
   const getErrorMessage = (err: unknown) => {
     if (err instanceof Error) return err.message;
     return String(err);
@@ -72,18 +80,27 @@ export default function SignUpForm() {
       cargo,
     } = formData;
 
-    // Validaciones
-    if (!nombre || !ap_paterno || !ap_materno || !correo || !password || !confirmPassword || !telefono || !tipo_documento || !numero_documento) {
+    if (
+      !nombre ||
+      !ap_paterno ||
+      !ap_materno ||
+      !correo ||
+      !password ||
+      !confirmPassword ||
+      !telefono ||
+      !tipo_documento ||
+      !numero_documento
+    ) {
       setError("Por favor, complete todos los campos obligatorios.");
       return;
     }
 
-    if (!/^(?=.*[a-z])(?=.*[A-Z]).{8,}$/.test(password)) {
+    if (!valid) {
       setError("La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas y minúsculas.");
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (!match) {
       setError("Las contraseñas no coinciden.");
       return;
     }
@@ -93,34 +110,27 @@ export default function SignUpForm() {
       return;
     }
 
-    // Envío al backend
     setLoading(true);
     try {
-      const response = await fetch("https://back-oh-sansi.vercel.app/api/evaluadores/registro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre,
-          ap_paterno,
-          ap_materno,
-          correo,
-          password,
-          confirmPassword,
-          telefono,
-          tipo_documento,
-          numero_documento,
-          profesion,
-          institucion,
-          cargo,
-          aceptaTerminos: true,
-        }),
-      });
+      const payload: RegistroEvaluadorPayload = {
+        nombre,
+        ap_paterno,
+        ap_materno,
+        correo,
+        password,
+        confirmPassword,
+        telefono,
+        tipo_documento,
+        numero_documento,
+        profesion,
+        institucion,
+        cargo,
+        aceptaTerminos: true,
+      };
 
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || "Error al registrar el evaluador.");
-
+      await registroEvaluador(payload);
       setSuccess("Registro exitoso. Tu cuenta será revisada por un administrador.");
+
       setFormData({
         nombre: "",
         ap_paterno: "",
@@ -162,15 +172,20 @@ export default function SignUpForm() {
           </p>
         </div>
 
-        {error && <p className="mb-3 text-sm text-red-500 bg-red-100 p-2 rounded flex items-center gap-2"><AlertCircle className="w-5 h-5 text-red-600"/>{error}</p>}
-        {success && <p className="mb-3 text-sm text-green-600 bg-green-100 p-2 rounded flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-600"/>{success}</p>}
+        {error && <ErrorAlert message={error} />}
+        {success && (
+          <div className="mb-3 text-sm text-green-600 bg-green-100 p-2 rounded flex items-center gap-2" role="status">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            {success}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Nombre y Apellidos */}
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <Label>Nombre <span className="text-red-500">*</span></Label>
             <Input type="text" name="nombre" placeholder="Ingrese su nombre" value={formData.nombre} onChange={handleChange} />
           </div>
+
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
               <Label>Apellido Paterno <span className="text-red-500">*</span></Label>
@@ -182,39 +197,21 @@ export default function SignUpForm() {
             </div>
           </div>
 
-          {/* Correo */}
           <div>
             <Label>Correo electrónico <span className="text-red-500">*</span></Label>
             <Input type="email" name="correo" placeholder="ejemplo@gmail.com" value={formData.correo} onChange={handleChange} />
           </div>
-
-          {/* Teléfono y Tipo de Documento */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <Label>Teléfono <span className="text-red-500">*</span></Label>
-              <Input type="text" name="telefono" placeholder="Ej: 76543210" value={formData.telefono} onChange={handleChange} />
-            </div>
-            <div>
-              <Label>Tipo de Documento <span className="text-red-500">*</span></Label>
-              <select
-                name="tipo_documento"
-                value={formData.tipo_documento}
-                onChange={handleChange}
-                className="w-full border rounded-lg px-3 py-2 text-gray-700"
-              >
-                <option value="CI">CI - Cédula de Identidad</option>
-                <option value="Pasaporte">Pasaporte</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Número de Documento */}
           <div>
-            <Label>Número de Documento <span className="text-red-500">*</span></Label>
-            <Input type="text" name="numero_documento" placeholder="1234567" value={formData.numero_documento} onChange={handleChange} />
+            <Label>Teléfono <span className="text-red-500">*</span></Label>
+            <Input type="text" name="telefono" placeholder="Ej: 76543210" value={formData.telefono} onChange={handleChange} />
           </div>
 
-          {/* Profesión, Institución/Unidad y Cargo */}
+          <DocumentField
+            tipo_documento={formData.tipo_documento}
+            numero_documento={formData.numero_documento}
+            onChange={handleChange}
+          />
+
           <div>
             <Label>Profesión</Label>
             <Input type="text" name="profesion" placeholder="Ej: Ingeniero Civil" value={formData.profesion} onChange={handleChange} />
@@ -228,42 +225,28 @@ export default function SignUpForm() {
             <Input type="text" name="cargo" placeholder="Ej: Docente" value={formData.cargo} onChange={handleChange} />
           </div>
 
-          {/* Contraseña */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <Label>Contraseña <span className="text-red-500">*</span></Label>
-              <div className="relative">
-                <Input type={showPassword ? "text" : "password"} name="password" placeholder="Ingresa tu contraseña" value={formData.password} onChange={handleChange} />
-                <span onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer">
-                  {showPassword ? <EyeIcon className="size-5"/> : <EyeCloseIcon className="size-5"/>}
-                </span>
-              </div>
-            </div>
-            <div>
-              <Label>Confirmar Contraseña <span className="text-red-500">*</span></Label>
-              <Input type="password" name="confirmPassword" placeholder="Repite tu contraseña" value={formData.confirmPassword} onChange={handleChange} />
-            </div>
-          </div>
+          <PasswordField password={formData.password} confirmPassword={formData.confirmPassword} onChange={handleChange} />
+          {passwordMessage && (
+            <p className={`text-sm ${valid ? "text-green-600" : "text-red-500"}`}>{passwordMessage}</p>
+          )}
 
-          {/* Checkbox */}
           <div className="flex items-start gap-3">
             <Checkbox className="w-4 h-4 mt-1" checked={isChecked} onChange={(checked: boolean) => setIsChecked(checked)} />
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Acepto los <span className="underline cursor-pointer text-gray-800 dark:text-white/90">Términos y Condiciones</span> y la <span className="underline cursor-pointer text-gray-800 dark:text-white/90">Política de Privacidad.</span>
+              Acepto los <span className="underline cursor-pointer text-gray-800 dark:text-white/90">Términos y Condiciones</span> y la{" "}
+              <span className="underline cursor-pointer text-gray-800 dark:text-white/90">Política de Privacidad.</span>
             </p>
           </div>
 
-          {/* Botón */}
-          <div>
-            <button type="submit" disabled={loading} className={`flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white rounded-lg transition ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
-              {loading ? "Registrando..." : "Registrarte"}
-            </button>
-          </div>
+          <SubmitButton loading={loading} text="Registrarte" loadingText="Registrando..." />
         </form>
 
         <div className="mt-5 text-center">
           <p className="text-sm text-gray-700 dark:text-gray-400">
-            ¿Ya tienes una cuenta? <Link to="/signin" className="text-blue-600 hover:text-blue-700">Inicia Sesión</Link>
+            ¿Ya tienes una cuenta?{" "}
+            <Link to="/signin" className="text-blue-600 hover:text-blue-700">
+              Inicia Sesión
+            </Link>
           </p>
         </div>
       </div>
