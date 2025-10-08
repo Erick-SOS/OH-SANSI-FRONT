@@ -1,32 +1,107 @@
 import { useState } from "react";
-import { Link } from "react-router";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
+import { Link } from "react-router-dom";
+import { ChevronLeftIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { registroEvaluador, RegistroEvaluadorPayload } from "../../api/evaluadores";
+import DocumentField from "../form/DocumentField";
+import PasswordField from "../form/PasswordField";
+import ErrorAlert from "../form/alerts/ErrorAlert";
+import SubmitButton from "../ui/SubmitButton";
+import usePasswordValidation from "../../hooks/usePasswordValidation";
+import { CheckCircle } from "lucide-react";
 
 export default function SignUpForm() {
-  const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    nombre: "",
+    ap_paterno: "",
+    ap_materno: "",
+    correo: "",
+    password: "",
+    confirmPassword: "",
+    telefono: "",
+    tipo_documento: "CI",
+    numero_documento: "",
+    profesion: "",
+    institucion: "",
+    cargo: "",
+  });
+
+  const { valid, match, passwordMessage } = usePasswordValidation(
+    formData.password,
+    formData.confirmPassword
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    if (["nombre", "ap_paterno", "ap_materno", "profesion", "cargo"].includes(name)) {
+      newValue = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ\s]/g, "");
+    }
+    if (["telefono"].includes(name)) {
+      newValue = value.replace(/[^0-9]/g, "");
+    }
+    if (["numero_documento"].includes(name)) {
+      newValue = value.replace(/[^0-9-]/g, "");
+    }
+
+    setFormData({ ...formData, [name]: newValue });
+  };
+
+  const getErrorMessage = (err: unknown) => {
+    if (err instanceof Error) return err.message;
+    return String(err);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    const {
+      nombre,
+      ap_paterno,
+      ap_materno,
+      correo,
+      password,
+      confirmPassword,
+      telefono,
+      tipo_documento,
+      numero_documento,
+      profesion,
+      institucion,
+      cargo,
+    } = formData;
 
-    const fname = formData.get("fname") as string;
-    const lname = formData.get("lname") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    if (!fname || !lname || !email || !password) {
+    if (
+      !nombre ||
+      !ap_paterno ||
+      !ap_materno ||
+      !correo ||
+      !password ||
+      !confirmPassword ||
+      !telefono ||
+      !tipo_documento ||
+      !numero_documento
+    ) {
       setError("Por favor, complete todos los campos obligatorios.");
+      return;
+    }
+
+    if (!valid) {
+      setError("La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas y minúsculas.");
+      return;
+    }
+
+    if (!match) {
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
@@ -35,159 +110,144 @@ export default function SignUpForm() {
       return;
     }
 
-    // Simulación de éxito
-    setTimeout(() => {
-      setSuccess("Registro exitoso. Revisa tu correo de confirmación.");
-      form.reset();
+    setLoading(true);
+    try {
+      const payload: RegistroEvaluadorPayload = {
+        nombre,
+        ap_paterno,
+        ap_materno,
+        correo,
+        password,
+        confirmPassword,
+        telefono,
+        tipo_documento,
+        numero_documento,
+        profesion,
+        institucion,
+        cargo,
+        aceptaTerminos: true,
+      };
+
+      await registroEvaluador(payload);
+      setSuccess("Registro exitoso. Tu cuenta será revisada por un administrador.");
+
+      setFormData({
+        nombre: "",
+        ap_paterno: "",
+        ap_materno: "",
+        correo: "",
+        password: "",
+        confirmPassword: "",
+        telefono: "",
+        tipo_documento: "CI",
+        numero_documento: "",
+        profesion: "",
+        institucion: "",
+        cargo: "",
+      });
       setIsChecked(false);
-    }, 500);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
-        <Link
-          to="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        >
+        <Link to="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
           <ChevronLeftIcon className="size-5" />
           Volver
         </Link>
       </div>
 
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-        <div>
-          <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Regístrate como Evaluador
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Ingresa tus datos para registrarte y espera a que un administrador te
-              designe un área.
-            </p>
+        <div className="mb-5 sm:mb-8">
+          <h1 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+            Regístrate como Evaluador
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Ingresa tus datos para registrarte y espera a que un administrador te designe un área.
+          </p>
+        </div>
+
+        {error && <ErrorAlert message={error} />}
+        {success && (
+          <div className="mb-3 text-sm text-green-600 bg-green-100 p-2 rounded flex items-center gap-2" role="status">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <div>
+            <Label>Nombre <span className="text-red-500">*</span></Label>
+            <Input type="text" name="nombre" placeholder="Ingrese su nombre" value={formData.nombre} onChange={handleChange} />
           </div>
 
-          {/* Mensajes arriba */}
-          {error && (
-            <p className="mb-3 text-sm text-red-500 bg-red-100 p-2 rounded flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="mb-3 text-sm text-green-600 bg-green-100 p-2 rounded flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              {success}
-            </p>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                {/* Nombre */}
-                <div className="sm:col-span-1">
-                  <Label>
-                    Nombre <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    id="fname"
-                    name="fname"
-                    placeholder="Ingrese sus nombres"
-                  />
-                </div>
-
-                {/* Apellidos */}
-                <div className="sm:col-span-1">
-                  <Label>
-                    Apellidos <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    id="lname"
-                    name="lname"
-                    placeholder="Ingrese sus apellidos"
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div>
-                <Label>
-                  Email <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="email"
-                  id="email"
-                  name="email"
-                  placeholder="info@gmail.com"
-                />
-              </div>
-
-              {/* Contraseña */}
-              <div>
-                <Label>
-                  Contraseña <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    placeholder="Ingresa tu contraseña"
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    name="password"
-                  />
-                  <span
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                  >
-                    {showPassword ? (
-                      <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                    ) : (
-                      <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Checkbox */}
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  className="w-4 h-4 mt-1"
-                  checked={isChecked}
-                  onChange={(checked: boolean) => setIsChecked(checked)}
-                />
-                <p className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                  Al crear una cuenta, aceptas los{" "}
-                  <span className="text-gray-800 dark:text-white/90 underline cursor-pointer">
-                    Términos, Condiciones
-                  </span>{" "}
-                  y nuestra{" "}
-                  <span className="text-gray-800 dark:text-white underline cursor-pointer">
-                    Política de Privacidad.
-                  </span>
-                </p>
-              </div>
-
-              {/* Botón */}
-              <div>
-                <button
-                  type="submit"
-                  className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-blue-600 hover:bg-blue-700"
-                >
-                  Registrarte
-                </button>
-              </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <Label>Apellido Paterno <span className="text-red-500">*</span></Label>
+              <Input type="text" name="ap_paterno" placeholder="Apellido paterno" value={formData.ap_paterno} onChange={handleChange} />
             </div>
-          </form>
+            <div>
+              <Label>Apellido Materno <span className="text-red-500">*</span></Label>
+              <Input type="text" name="ap_materno" placeholder="Apellido materno" value={formData.ap_materno} onChange={handleChange} />
+            </div>
+          </div>
 
-          <div className="mt-5">
-            <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400">
-              ¿Ya tienes una cuenta?{" "}
-              <Link to="/signin" className="text-blue-600 hover:text-blue-700">
-                Inicia Sesión
-              </Link>
+          <div>
+            <Label>Correo electrónico <span className="text-red-500">*</span></Label>
+            <Input type="email" name="correo" placeholder="ejemplo@gmail.com" value={formData.correo} onChange={handleChange} />
+          </div>
+          <div>
+            <Label>Teléfono <span className="text-red-500">*</span></Label>
+            <Input type="text" name="telefono" placeholder="Ej: 76543210" value={formData.telefono} onChange={handleChange} />
+          </div>
+
+          <DocumentField
+            tipo_documento={formData.tipo_documento}
+            numero_documento={formData.numero_documento}
+            onChange={handleChange}
+          />
+
+          <div>
+            <Label>Profesión</Label>
+            <Input type="text" name="profesion" placeholder="Ej: Ingeniero Civil" value={formData.profesion} onChange={handleChange} />
+          </div>
+          <div>
+            <Label>Institución / Unidad</Label>
+            <Input type="text" name="institucion" placeholder="Ej: UMSS" value={formData.institucion} onChange={handleChange} />
+          </div>
+          <div>
+            <Label>Cargo</Label>
+            <Input type="text" name="cargo" placeholder="Ej: Docente" value={formData.cargo} onChange={handleChange} />
+          </div>
+
+          <PasswordField password={formData.password} confirmPassword={formData.confirmPassword} onChange={handleChange} />
+          {passwordMessage && (
+            <p className={`text-sm ${valid ? "text-green-600" : "text-red-500"}`}>{passwordMessage}</p>
+          )}
+
+          <div className="flex items-start gap-3">
+            <Checkbox className="w-4 h-4 mt-1" checked={isChecked} onChange={(checked: boolean) => setIsChecked(checked)} />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Acepto los <span className="underline cursor-pointer text-gray-800 dark:text-white/90">Términos y Condiciones</span> y la{" "}
+              <span className="underline cursor-pointer text-gray-800 dark:text-white/90">Política de Privacidad.</span>
             </p>
           </div>
+
+          <SubmitButton loading={loading} text="Registrarte" loadingText="Registrando..." />
+        </form>
+
+        <div className="mt-5 text-center">
+          <p className="text-sm text-gray-700 dark:text-gray-400">
+            ¿Ya tienes una cuenta?{" "}
+            <Link to="/signin" className="text-blue-600 hover:text-blue-700">
+              Inicia Sesión
+            </Link>
+          </p>
         </div>
       </div>
     </div>
