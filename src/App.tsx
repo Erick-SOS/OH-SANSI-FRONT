@@ -18,9 +18,13 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
-import Listainscritos from "./pages/Listainscritos";
-import OlympiansListLocalprueba from "./pages/OlympiansListlocalprueba";
-import Gestiondeevaluacion from "./pages/OlympiansListlocalprueba";
+import AreasYNiveles from "./pages/AreasYNiveles"
+import HistorialDeCambios from './pages/HistorialDeCambios';
+import CantidadDeMedallas from "./pages/CantidadDeMedallas";
+import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
+import ListaDePremiados from "./pages/ListaDePremiados";
+import ResultadosDeCalificaiones from "./pages/ResultadosDeCalificaciones";
+import { OlympiansListLocalprueba } from "./pages/OlympiansListlocalprueba";
 
 export default function App() {
   return (
@@ -36,7 +40,13 @@ export default function App() {
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
-
+            <Route path="/areas-y-niveles" element={<AreasYNiveles />} />
+            <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
+            <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
+            <Route path="/lista-de-inscritos" element={<OlympiansListLocalprueba/>} />
+            <Route path="/fases-de-evaluacion" element={<FasesDeEvaluacion />} />
+            <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
+            <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaiones />} />
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
 
@@ -59,9 +69,9 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/lista" element={<Listainscritos/>} />
-          <Route path="/lista2" element={<OlympiansListLocalprueba/>} />
-          <Route path="/evaluacion" element={<Gestiondeevaluacion/>} />
+          {/* <Route path="/lista" element={<Listainscritos/>} /> */}
+        
+         {/*  <Route path="/evaluacion" element={<Gestiondeevaluacion/>} /> */}
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
