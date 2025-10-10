@@ -21,10 +21,10 @@ import Home from "./pages/Dashboard/Home";
 import AreasYNiveles from "./pages/AreasYNiveles"
 import HistorialDeCambios from './pages/HistorialDeCambios';
 import CantidadDeMedallas from "./pages/CantidadDeMedallas";
-import ListaDeInscritos from "./pages/ListaDeInscritos";
 import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
 import ListaDePremiados from "./pages/ListaDePremiados";
 import ResultadosDeCalificaiones from "./pages/ResultadosDeCalificaciones";
+import { OlympiansListLocalprueba } from "./pages/OlympiansListlocalprueba";
 
 export default function App() {
   return (
@@ -43,7 +43,7 @@ export default function App() {
             <Route path="/areas-y-niveles" element={<AreasYNiveles />} />
             <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
             <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
-            <Route path="/lista-de-inscritos" element={<ListaDeInscritos />} />
+            <Route path="/lista-de-inscritos" element={<OlympiansListLocalprueba/>} />
             <Route path="/fases-de-evaluacion" element={<FasesDeEvaluacion />} />
             <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
             <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaiones />} />
@@ -69,7 +69,9 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-
+          {/* <Route path="/lista" element={<Listainscritos/>} /> */}
+        
+         {/*  <Route path="/evaluacion" element={<Gestiondeevaluacion/>} /> */}
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
