@@ -6,16 +6,11 @@ import {
   TableRow,
 } from "../ui/table";
 
-interface Nivel {
-  id: number;
-  nivel: string;
-  responsable: string;
-  modalidad: string;
-}
+import { Nivel } from "../../api/niveles";
 
 interface TablaNivelesProps {
   datos: Nivel[];
-  onEliminarFila: (id: number) => void;
+  onEliminarFila: (id: number, nombre: string) => void;
   paginaActual: number;
   registrosPorPagina: number;
 }
@@ -27,7 +22,7 @@ const TablaNiveles: React.FC<TablaNivelesProps> = ({
   registrosPorPagina
 }) => {
   
-  const getEstiloModalidad = (modalidad: string) => {
+  const getEstiloModalidad = (modalidad: string = '') => {
     const baseStyles = "px-2 py-1 rounded-full text-xs font-medium border";
     
     if (modalidad.toLowerCase() === "grupal") {
@@ -48,47 +43,43 @@ const TablaNiveles: React.FC<TablaNivelesProps> = ({
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
                 N°
               </TableCell>
-
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
                 Nivel
               </TableCell>
-
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
                 Responsable de area
               </TableCell>
-
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
                 Modalidad
               </TableCell>
-
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
                 Acción
               </TableCell>
             </TableRow>
           </TableHeader>
-
           <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
             {datos.map((item, index) => (
-              <TableRow key={item.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+              <TableRow key={item.id || index} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                 <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
                   {(paginaActual - 1) * registrosPorPagina + index + 1}
                 </TableCell>
                 <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
-                  {item.nivel}
+                  {(item as any).nivel || item.nombre}
                 </TableCell>
                 <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
-                  {item.responsable}
+                  {(item as any).responsable || 'Sin asignar'}
                 </TableCell>
                 <TableCell className="px-5 py-4 text-start text-theme-sm">
-                  <span className={getEstiloModalidad(item.modalidad)}>
-                    {item.modalidad}
+                  <span className={getEstiloModalidad((item as any).modalidad)}>
+                    {(item as any).modalidad || 'N/A'}
                   </span>
                 </TableCell>
                 <TableCell className="px-5 py-4 text-start text-theme-sm">
                   <button
-                    onClick={() => onEliminarFila(item.id)}
+                    onClick={() => item.id && onEliminarFila(item.id, (item as any).nivel || item.nombre)}
                     className="p-1 text-black hover:bg-gray-200 rounded transition-colors dark:hover:bg-red-900/20"
                     title="Eliminar fila"
+                    disabled={!item.id}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
