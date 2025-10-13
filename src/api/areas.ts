@@ -8,28 +8,49 @@ export interface Area {
   estado?: boolean;
 }
 
-// 🟢 Obtener todas las áreas
-export async function getAreas(): Promise<Area[]> {
-  return apiFetch("/api/areas", { method: "GET" });
+// Cache simple en memoria
+let areasCache: Area[] | null = null;
+
+export async function getAreas(forceRefresh = false): Promise<Area[]> {
+  if (!forceRefresh && areasCache) {
+    return areasCache;
+  }
+  
+  const areas = await apiFetch("/api/areas", { method: "GET" });
+  areasCache = areas;
+  return areas;
 }
 
-// 🟢 Crear nueva área
 export async function createArea(payload: Omit<Area, "id" | "estado">): Promise<Area> {
-  return apiFetch("/api/areas", {
+  const nuevaArea = await apiFetch("/api/areas", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  
+  // Invalidar cache
+  areasCache = null;
+  return nuevaArea;
 }
 
-// 🟢 Actualizar un área existente
 export async function updateArea(id: number, payload: Omit<Area, "id" | "estado">): Promise<Area> {
-  return apiFetch(`/api/areas/${id}`, {
+  const areaActualizada = await apiFetch(`/api/areas/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+  
+  areasCache = null;
+  return areaActualizada;
 }
 
-// 🟢 Eliminar (desactivar) un área
 export async function deleteArea(id: number): Promise<{ mensaje: string; area: Area }> {
-  return apiFetch(`/api/areas/${id}`, { method: "DELETE" });
+  const resultado = await apiFetch(`/api/areas/${id}`, { method: "DELETE" });
+  
+  areasCache = null;
+  return resultado;
 }
+
+// Función para limpiar cache manualmente
+export function clearAreasCache(): void {
+  areasCache = null;
+}
+

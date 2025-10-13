@@ -8,28 +8,45 @@ export interface Nivel {
   estado?: boolean;
 }
 
-// 🟢 Obtener todos los niveles
-export async function getNiveles(): Promise<Nivel[]> {
-  return apiFetch("/api/niveles", { method: "GET" });
+let nivelesCache: Nivel[] | null = null;
+
+export async function getNiveles(forceRefresh = false): Promise<Nivel[]> {
+  if (!forceRefresh && nivelesCache) {
+    return nivelesCache;
+  }
+  
+  const niveles = await apiFetch("/api/niveles", { method: "GET" });
+  nivelesCache = niveles;
+  return niveles;
 }
 
-// 🟢 Crear un nuevo nivel
 export async function createNivel(payload: Omit<Nivel, "id" | "estado">): Promise<Nivel> {
-  return apiFetch("/api/niveles", {
+  const nuevoNivel = await apiFetch("/api/niveles", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  
+  nivelesCache = null;
+  return nuevoNivel;
 }
 
-// 🟢 Actualizar un nivel existente
 export async function updateNivel(id: number, payload: Omit<Nivel, "id" | "estado">): Promise<Nivel> {
-  return apiFetch(`/api/niveles/${id}`, {
+  const nivelActualizado = await apiFetch(`/api/niveles/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+  
+  nivelesCache = null;
+  return nivelActualizado;
 }
 
-// 🟢 Eliminar (desactivar) un nivel
 export async function deleteNivel(id: number): Promise<{ mensaje: string; nivel: Nivel }> {
-  return apiFetch(`/api/niveles/${id}`, { method: "DELETE" });
+  const resultado = await apiFetch(`/api/niveles/${id}`, { method: "DELETE" });
+  
+  nivelesCache = null;
+  return resultado;
+}
+
+export function clearNivelesCache(): void {
+  nivelesCache = null;
 }
