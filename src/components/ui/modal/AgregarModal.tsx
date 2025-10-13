@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface AgregarModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (formData: { nombre: string; responsable: string; modalidad: string }) => void;
+  onConfirm: (formData: { nombre: string; codigo: string; descripcion: string }) => void;
   tipo: 'Area' | 'Nivel' | '';
 }
 
@@ -15,21 +15,21 @@ const AgregarModal: React.FC<AgregarModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     nombre: '',
-    responsable: '',
-    modalidad: 'Grupal'
+    codigo: '',
+    descripcion: '',
   });
 
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    if (formData.nombre.trim() && formData.responsable.trim()) {
+    if (formData.nombre.trim()) {
       onConfirm(formData);
-      setFormData({ nombre: '', responsable: '', modalidad: 'Grupal' });
+      setFormData({ nombre: '', codigo: '', descripcion: '' });
     }
   };
 
   const handleClose = () => {
-    setFormData({ nombre: '', responsable: '', modalidad: 'Grupal' });
+    setFormData({ nombre: '', codigo: '', descripcion: '' });
     onClose();
   };
 
@@ -58,6 +58,7 @@ const AgregarModal: React.FC<AgregarModalProps> = ({
               type="text"
               value={formData.nombre}
               onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+              maxLength={tipo === 'Area' ? 150 : 100}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
               placeholder={tipo === 'Area' ? 'Nombre del área' : 'Nombre del nivel'}
             />
@@ -65,29 +66,29 @@ const AgregarModal: React.FC<AgregarModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              Responsable <span className="text-red-500">*</span>
+              Código de {tipo === 'Area' ? 'Área' : 'Nivel'}
             </label>
             <input
               type="text"
-              value={formData.responsable}
-              onChange={(e) => setFormData({...formData, responsable: e.target.value})}
+              value={formData.codigo}
+              onChange={(e) => setFormData({...formData, codigo: e.target.value})}
+              maxLength={50}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
-              placeholder=""
+              placeholder={`Código de ${tipo === 'Area' ? 'área' : 'nivel'}`}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              Modalidad <span className="text-red-500">*</span>
+              Descripción
             </label>
-            <select
-              value={formData.modalidad}
-              onChange={(e) => setFormData({...formData, modalidad: e.target.value})}
+            <textarea
+              value={formData.descripcion}
+              onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+              maxLength={500}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
-            >
-              <option value="Grupal">Grupal</option>
-              <option value="Individual">Individual</option>
-            </select>
+              placeholder="Descripción del área o nivel"
+            />
           </div>
         </div>
 
@@ -101,7 +102,7 @@ const AgregarModal: React.FC<AgregarModalProps> = ({
           <button
             onClick={handleSubmit}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!formData.nombre.trim() || !formData.responsable.trim()}
+            disabled={!formData.nombre.trim()}
           >
             Agregar
           </button>
