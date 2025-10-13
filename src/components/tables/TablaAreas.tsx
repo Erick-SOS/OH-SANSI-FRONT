@@ -22,18 +22,6 @@ const TablaAreas: React.FC<TablaAreasProps> = ({
   registrosPorPagina
 }) => {
   
-  const getEstiloModalidad = (modalidad: string = '') => {
-    const baseStyles = "px-2 py-1 rounded-full text-xs font-medium border";
-    
-    if (modalidad.toLowerCase() === "grupal") {
-      return `${baseStyles} bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800`;
-    } else if (modalidad.toLowerCase() === "individual") {
-      return `${baseStyles} bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800`;
-    }
-    
-    return `${baseStyles} bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800`;
-  };
-
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
       <div className="max-w-full overflow-x-auto">
@@ -47,10 +35,10 @@ const TablaAreas: React.FC<TablaAreasProps> = ({
                 Area
               </TableCell>
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
-                Responsable de area
+                Codigo de area
               </TableCell>
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
-                Modalidad
+                Descripcion
               </TableCell>
               <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs">
                 Acción
@@ -67,12 +55,10 @@ const TablaAreas: React.FC<TablaAreasProps> = ({
                   {(item as any).area || item.nombre}
                 </TableCell>
                 <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
-                  {(item as any).responsable || 'Sin asignar'}
+                  {item.codigo || 'Sin asignar'}
                 </TableCell>
                 <TableCell className="px-5 py-4 text-start text-theme-sm">
-                  <span className={getEstiloModalidad((item as any).modalidad)}>
-                    {(item as any).modalidad || 'N/A'}
-                  </span>
+                  {item.descripcion || 'N/A'}
                 </TableCell>
                 <TableCell className="px-5 py-4 text-start text-theme-sm">
                   <button

@@ -15,21 +15,34 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
 
   const headers = {
     "Content-Type": "application/json",
-    ...(options.headers ?? {}),
+    ...options.headers,
   };
 
-  const res = await fetch(url, { ...options, headers, credentials: options.credentials ?? "same-origin" });
+  const res = await fetch(url, { 
+    ...options, 
+    headers, 
+    credentials: options.credentials ?? "same-origin",
+    cache: 'no-store', // Fuerza no-caché para evitar 304/500 falsos
+  });
 
   let data: any = null;
   try {
     data = await res.json();
   } catch {
-    // respuesta no JSON -> ignorar
+    // Respuesta no JSON -> intentar texto plano
+    try {
+      data = await res.text();
+    } catch {
+      // Si falla, usa el statusText
+      data = res.statusText;
+    }
   }
 
+  console.log(`API Response for ${path}: Status ${res.status}, Data:`, data); // Log para depuración
+
   if (!res.ok) {
-    const message = data?.message || data?.error || res.statusText || `Error ${res.status}`;
-    throw new Error(message);
+    const message = data?.mensaje || data?.error || data || res.statusText || `Error ${res.status}`;
+    throw new Error(`${res.status}: ${message}`);
   }
 
   return data;

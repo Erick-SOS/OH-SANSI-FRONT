@@ -11,14 +11,10 @@ import { Nivel, getNiveles, createNivel, deleteNivel } from '../api/niveles';
 // Interfaces extendidas para incluir propiedades de los componentes
 interface AreaEstado extends Area {
   area?: string;
-  responsable?: string;
-  modalidad?: string;
 }
 
 interface NivelEstado extends Nivel {
   nivel?: string;
-  responsable?: string;
-  modalidad?: string;
 }
 
 const AreasYNiveles: React.FC = () => {
@@ -52,9 +48,7 @@ const AreasYNiveles: React.FC = () => {
         setDatosAreas(
           areas.map(area => ({
             ...area,
-            area: area.nombre, // Usar nombre como area
-            responsable: '', // Valor por defecto
-            modalidad: '', // Valor por defecto
+            area: area.nombre,
           }))
         );
 
@@ -62,9 +56,7 @@ const AreasYNiveles: React.FC = () => {
         setDatosNiveles(
           niveles.map(nivel => ({
             ...nivel,
-            nivel: nivel.nombre, // Usar nombre como nivel
-            responsable: '', // Valor por defecto
-            modalidad: '', // Valor por defecto
+            nivel: nivel.nombre,
           }))
         );
       } catch (error) {
@@ -132,36 +124,32 @@ const AreasYNiveles: React.FC = () => {
   const handleAgregarArea = () => setModalAgregar({ isOpen: true, tipo: 'Area' });
   const handleAgregarNivel = () => setModalAgregar({ isOpen: true, tipo: 'Nivel' });
 
-  const confirmarAgregar = async (formData: { nombre: string }) => {
+  const confirmarAgregar = async (formData: { nombre: string; codigo: string; descripcion: string }) => {
     try {
       if (modalAgregar.tipo === 'Area') {
         const nuevaArea = await createArea({
-          codigo: 'AUTOGEN',
+          codigo: formData.codigo || 'AUTOGEN', // Usa 'AUTOGEN' si no se proporciona código
           nombre: formData.nombre,
-          descripcion: formData.nombre,
+          descripcion: formData.descripcion,
         });
         setDatosAreas([
           ...datosAreas,
           {
             ...nuevaArea,
             area: nuevaArea.nombre,
-            responsable: '',
-            modalidad: '',
           },
         ]);
       } else if (modalAgregar.tipo === 'Nivel') {
         const nuevoNivel = await createNivel({
-          codigo: 'AUTOGEN',
+          codigo: formData.codigo || 'AUTOGEN', // Usa 'AUTOGEN' si no se proporciona código
           nombre: formData.nombre,
-          descripcion: formData.nombre,
+          descripcion: formData.descripcion,
         });
         setDatosNiveles([
           ...datosNiveles,
           {
             ...nuevoNivel,
             nivel: nuevoNivel.nombre,
-            responsable: '',
-            modalidad: '',
           },
         ]);
       }
