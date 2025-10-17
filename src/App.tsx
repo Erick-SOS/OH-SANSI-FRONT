@@ -1,6 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
+import ResetPasswordPage from "./pages/AuthPages/ResetPasswordPage";
+import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
+import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
@@ -19,12 +22,6 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import AreasYNiveles from "./pages/AreasYNiveles"
-import HistorialDeCambios from './pages/HistorialDeCambios';
-import CantidadDeMedallas from "./pages/CantidadDeMedallas";
-import ListaDeInscritos from "./pages/ListaDeInscritos";
-import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
-import ListaDePremiados from "./pages/ListaDePremiados";
-import ResultadosDeCalificaiones from "./pages/ResultadosDeCalificaciones";
 
 export default function App() {
   return (
@@ -41,12 +38,7 @@ export default function App() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
             <Route path="/areas-y-niveles" element={<AreasYNiveles />} />
-            <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
-            <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
-            <Route path="/lista-de-inscritos" element={<ListaDeInscritos />} />
-            <Route path="/fases-de-evaluacion" element={<FasesDeEvaluacion />} />
-            <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
-            <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaiones />} />
+
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
 
@@ -69,6 +61,9 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-code" element={<VerifyCodePage />} />
+          <Route path="/new-password" element={<NewPasswordPage />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
