@@ -25,6 +25,11 @@ import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
 import ListaDePremiados from "./pages/ListaDePremiados";
 import ResultadosDeCalificaiones from "./pages/ResultadosDeCalificaciones";
 import { OlympiansListLocalprueba } from "./pages/OlympiansListlocalprueba";
+import ResetPasswordPage from "./pages/AuthPages/ResetPasswordPage";
+import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
+import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
+import Areas from "./pages/Areas";
+import Niveles from "./pages/Niveles";
 
 export default function App() {
   return (
@@ -47,6 +52,8 @@ export default function App() {
             <Route path="/fases-de-evaluacion" element={<FasesDeEvaluacion />} />
             <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
             <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaiones />} />
+            <Route path="/areas" element={<Areas />} />
+            <Route path="/niveles" element={<Niveles />} />
             {/* Forms */}
             <Route path="/form-elements" element={<FormElements />} />
 
@@ -69,9 +76,10 @@ export default function App() {
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          {/* <Route path="/lista" element={<Listainscritos/>} /> */}
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-code" element={<VerifyCodePage />} />
+          <Route path="/new-password" element={<NewPasswordPage />} />
         
-         {/*  <Route path="/evaluacion" element={<Gestiondeevaluacion/>} /> */}
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

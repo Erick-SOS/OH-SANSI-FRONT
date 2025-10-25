@@ -35,17 +35,15 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-  },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
+    path: "/",
   },
   {
     icon: <MdOutlineCategory size={20} />,
     name: "Gestionar areas y niveles",
-    path: "/areas-y-niveles",
+    subItems: [
+      { name: "Areas", path: "/areas", pro: false },
+      { name: "Niveles", path: "/niveles", pro: false },
+    ],
   },
   {
     icon: <MdHistory size={20} />,
