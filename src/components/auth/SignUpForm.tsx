@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon } from "../../icons";
+import { AuthContext, RegistroEvaluadorPayload } from "../../context/AuthContext";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
-import { registroEvaluador, RegistroEvaluadorPayload } from "../../api/evaluadores";
 import DocumentField from "../form/DocumentField";
 import PasswordField from "../form/PasswordField";
 import ErrorAlert from "../form/alerts/ErrorAlert";
@@ -17,6 +17,8 @@ export default function SignUpForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const { register } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -128,8 +130,9 @@ export default function SignUpForm() {
         aceptaTerminos: true,
       };
 
-      await registroEvaluador(payload);
-      setSuccess("Registro exitoso. Tu cuenta será revisada por un administrador.");
+      await register(payload);
+      setSuccess("Registro exitoso. Redirigiendo al dashboard...");
+      setTimeout(() => navigate("/dashboard"), 2000); // Redirige tras 2 segundos
 
       setFormData({
         nombre: "",

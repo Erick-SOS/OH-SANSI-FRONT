@@ -1,20 +1,17 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
+import { AuthContext } from "../../context/AuthContext";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
-
-interface User {
-  name: string;
-  role: string;
-}
 
 export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [user, setUser] = useState<User | null>(null);
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   // Función de validación de contraseña segura
   const isPasswordValid = (pass: string) => {
@@ -22,10 +19,9 @@ export default function SignInForm() {
     return regex.test(pass);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    setUser(null);
 
     if (!email || !password) {
       setError("Por favor, complete todos los campos.");
@@ -40,10 +36,21 @@ export default function SignInForm() {
     }
 
     // Simulación de autenticación
-    if (email === "admin@gmail.com" && password === "Admin@123") {
-      setUser({ name: "Administrador", role: "Admin" });
-    } else {
-      setError("Correo o contraseña incorrectos ");
+    try {
+      if (email === "admin@gmail.com" && password === "12345678La#") {
+        await login(email, password, { name: "Administrador", rol: "administrador" });
+        navigate("/");
+      } else if (email === "evaluador@gmail.com" && password === "12345678La#") {
+        await login(email, password, { name: "Evaluador", rol: "EVALUADOR" });
+        navigate("/");
+      } else if (email === "responsable@gmail.com" && password === "12345678La#") {
+        await login(email, password, { name: "Responsable", rol: "RESPONSABLE" });
+        navigate("/");
+      } else {
+        setError("Correo o contraseña incorrectos");
+      }
+    } catch (err) {
+      setError("Error al iniciar sesión. Por favor, intenta de nuevo.");
     }
   };
 
@@ -107,7 +114,6 @@ export default function SignInForm() {
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
-            {/* Solo link de "Forgot password?" */}
             <div className="flex justify-end">
               <Link
                 to="/reset-password"
@@ -117,7 +123,6 @@ export default function SignInForm() {
               </Link>
             </div>
 
-            {/* Botón de submit nativo */}
             <button
               type="submit"
               className="w-full px-4 py-3 text-sm font-medium text-white rounded-lg bg-brand-500 hover:bg-brand-600"
@@ -125,13 +130,6 @@ export default function SignInForm() {
               Sign in
             </button>
           </form>
-
-          {/* Mostrar usuario y rol al iniciar sesión */}
-          {user && (
-            <div className="mt-4 p-3 bg-green-100 rounded text-green-700">
-              Bienvenido, {user.name}! Rol: {user.role}
-            </div>
-          )}
 
           <div className="mt-5 text-sm text-center text-gray-700 dark:text-gray-400">
             Don’t have an account?{" "}

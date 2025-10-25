@@ -20,7 +20,7 @@ export default function UserDropdown() {
   function handleSignOut() {
     logout(); // Actualiza el estado de autenticación a no autenticado
     closeDropdown();
-    navigate("/dashboard"); // Redirige al dashboard
+    navigate(""); // Redirige al dashboard
   }
 
   if (!user) {

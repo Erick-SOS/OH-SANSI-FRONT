@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -18,12 +20,11 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
-import AreasYNiveles from "./pages/AreasYNiveles"
-import HistorialDeCambios from './pages/HistorialDeCambios';
+import HistorialDeCambios from "./pages/HistorialDeCambios";
 import CantidadDeMedallas from "./pages/CantidadDeMedallas";
 import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
 import ListaDePremiados from "./pages/ListaDePremiados";
-import ResultadosDeCalificaiones from "./pages/ResultadosDeCalificaciones";
+import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
 import { OlympiansListLocalprueba } from "./pages/OlympiansListlocalprueba";
 import ResetPasswordPage from "./pages/AuthPages/ResetPasswordPage";
 import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
@@ -33,44 +34,181 @@ import Niveles from "./pages/Niveles";
 
 export default function App() {
   return (
-    <>
-      <Router>
+    <Router>
+      <AuthProvider>
         <ScrollToTop />
         <Routes>
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
+            {/* Rutas públicas */}
             <Route index path="/" element={<Home />} />
+            <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaciones />} />
 
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
-            <Route path="/areas-y-niveles" element={<AreasYNiveles />} />
-            <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
-            <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
-            <Route path="/lista-de-inscritos" element={<OlympiansListLocalprueba/>} />
-            <Route path="/fases-de-evaluacion" element={<FasesDeEvaluacion />} />
-            <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
-            <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaiones />} />
-            <Route path="/areas" element={<Areas />} />
-            <Route path="/niveles" element={<Niveles />} />
+            {/* Rutas protegidas */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <UserProfiles />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <Calendar />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blank"
+              element={
+                <ProtectedRoute>
+                  <Blank />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/historial-de-cambios"
+              element={
+                <ProtectedRoute>
+                  <HistorialDeCambios />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cantidad-de-medallas"
+              element={
+                <ProtectedRoute>
+                  <CantidadDeMedallas />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lista-de-inscritos"
+              element={
+                <ProtectedRoute>
+                  <OlympiansListLocalprueba />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/fases-de-evaluacion"
+              element={
+                <ProtectedRoute>
+                  <FasesDeEvaluacion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lista-de-premiados"
+              element={
+                <ProtectedRoute>
+                  <ListaDePremiados />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/areas"
+              element={
+                <ProtectedRoute>
+                  <Areas />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/niveles"
+              element={
+                <ProtectedRoute>
+                  <Niveles />
+                </ProtectedRoute>
+              }
+            />
             {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
-
+            <Route
+              path="/form-elements"
+              element={
+                <ProtectedRoute>
+                  <FormElements />
+                </ProtectedRoute>
+              }
+            />
             {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
-
+            <Route
+              path="/basic-tables"
+              element={
+                <ProtectedRoute>
+                  <BasicTables />
+                </ProtectedRoute>
+              }
+            />
             {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-
+            <Route
+              path="/alerts"
+              element={
+                <ProtectedRoute>
+                  <Alerts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/avatars"
+              element={
+                <ProtectedRoute>
+                  <Avatars />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/badge"
+              element={
+                <ProtectedRoute>
+                  <Badges />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/buttons"
+              element={
+                <ProtectedRoute>
+                  <Buttons />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/images"
+              element={
+                <ProtectedRoute>
+                  <Images />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/videos"
+              element={
+                <ProtectedRoute>
+                  <Videos />
+                </ProtectedRoute>
+              }
+            />
             {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+            <Route
+              path="/line-chart"
+              element={
+                <ProtectedRoute>
+                  <LineChart />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bar-chart"
+              element={
+                <ProtectedRoute>
+                  <BarChart />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           {/* Auth Layout */}
@@ -79,11 +217,11 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-code" element={<VerifyCodePage />} />
           <Route path="/new-password" element={<NewPasswordPage />} />
-        
+
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
-    </>
+      </AuthProvider>
+    </Router>
   );
 }
