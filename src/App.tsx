@@ -32,7 +32,7 @@ import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 
-// NUEVA IMPORTACIÓN
+
 import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
 
 export default function App() {
@@ -129,7 +129,7 @@ export default function App() {
               }
             />
 
-            {/* NUEVA RUTA: OLIMPIAS PREMIOS */}
+            {}
             <Route
               path="/olimpias-premios"
               element={
