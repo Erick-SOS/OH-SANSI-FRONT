@@ -61,11 +61,17 @@ const navItems: NavItem[] = [
     name: "Resultados de Calificaciones",
     path: "/resultados-de-calificaciones",
   },
+  // NUEVA OPCIÓN AGREGADA
+  {
+    icon: <MdEmojiEvents size={20} />,
+    name: "Olimpias Premios",
+    path: "/olimpias-premios",
+  },
 ];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const { user } = useContext(AuthContext); // Obtener el estado del usuario
+  const { user } = useContext(AuthContext);
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
