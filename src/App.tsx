@@ -32,6 +32,9 @@ import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 
+// NUEVA IMPORTACIÓN
+import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
+
 export default function App() {
   return (
     <Router>
@@ -125,6 +128,17 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* NUEVA RUTA: OLIMPIAS PREMIOS */}
+            <Route
+              path="/olimpias-premios"
+              element={
+                <ProtectedRoute>
+                  <OlimpiasPremios />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Forms */}
             <Route
               path="/form-elements"
