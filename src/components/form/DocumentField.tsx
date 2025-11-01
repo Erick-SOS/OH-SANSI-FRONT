@@ -6,10 +6,14 @@ interface DocumentFieldProps {
   tipo_documento: string;
   numero_documento: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void; // ←
+  invalidNumero?: boolean;
+  validNumero?: boolean;
+  numeroHint?: string;
   className?: string;
 }
 
-const DocumentField: FC<DocumentFieldProps> = ({ tipo_documento, numero_documento, onChange, className = "" }) => {
+const DocumentField: FC<DocumentFieldProps> = ({ tipo_documento, numero_documento, onChange, onBlur, invalidNumero, validNumero, numeroHint, className = "" }) => {
   return (
     <div className={className}>
       <Label>Documento <span className="text-red-500">*</span></Label>
@@ -19,6 +23,7 @@ const DocumentField: FC<DocumentFieldProps> = ({ tipo_documento, numero_document
             name="tipo_documento"
             value={tipo_documento}
             onChange={onChange}
+            onBlur={onBlur}
             aria-label="Tipo de documento"
             className="w-full border rounded-lg px-3 py-2 text-gray-700"
           >
@@ -33,6 +38,10 @@ const DocumentField: FC<DocumentFieldProps> = ({ tipo_documento, numero_document
             placeholder="Número de documento"
             value={numero_documento}
             onChange={onChange as any}
+            onBlur={onBlur as any}
+            error={Boolean(invalidNumero)}  
+            success={Boolean(validNumero)} 
+            hint={numeroHint}       
             aria-label="Número de documento"
           />
         </div>
