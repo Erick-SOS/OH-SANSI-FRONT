@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import BarraBusquedaOlimpias from "../../components/tables/BarraBusquedaOlimpias";
 import Paginacion from "../../components/ui/Paginacion";
@@ -10,7 +9,7 @@ import { MdDownload, MdFileDownload, MdArrowUpward, MdArrowDownward } from 'reac
 
 interface OlimpiaItem {
   id: number;
-  nombre: string;
+  nombre: string; 
   ci: string;
   areaCompetencia: string;
   nivel: string;
@@ -20,7 +19,7 @@ interface OlimpiaItem {
   distincion: string;
 }
 
-const OlimpiasPremios: React.FC = () => {
+const OlimpistasPremiados: React.FC = () => {
   const [olimpias] = useState<OlimpiaItem[]>([
     { id: 1, nombre: "Juan Daniel Álvarez", ci: "7229843", areaCompetencia: "Matemáticas", nivel: "Primaria", modalidad: "Individual", estado: "Clasificado", nota: 78, distincion: "Medalla de Plata" },
     { id: 2, nombre: "María Rosa López", ci: "7658213", areaCompetencia: "Matemáticas", nivel: "Secundaria", modalidad: "Individual", estado: "Clasificado", nota: 90, distincion: "Medalla de Oro" },
@@ -160,11 +159,12 @@ const OlimpiasPremios: React.FC = () => {
 
   return (
     <>
-      <PageMeta title="Olimpias Premios | TailAdmin" description="Gestión de premiación y certificados" />
-      <PageBreadcrumb pageTitle="Olimpias Premios" />
+      <PageMeta title="Olimpistas Premiados | TailAdmin" description="Gestión de premiación y certificados" />
+      <PageBreadcrumb pageTitle="Olimpistas Premiados" />
 
       <div className="space-y-6">
-        <ComponentCard title="Lista de Premiados">
+        {/* Reemplazamos ComponentCard por un div con estilos equivalentes */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="p-4 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex-1 max-w-md">
@@ -202,7 +202,6 @@ const OlimpiasPremios: React.FC = () => {
               </p>
             )}
 
-            {}
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="inline-block min-w-full align-middle">
                 <div className="overflow-hidden">
@@ -215,7 +214,6 @@ const OlimpiasPremios: React.FC = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                           Nombre Completo
                         </th>
-                        {}
                         {[
                           { clave: 'areaCompetencia' as const, titulo: 'Área' },
                           { clave: 'nivel' as const, titulo: 'Nivel' },
@@ -329,7 +327,7 @@ const OlimpiasPremios: React.FC = () => {
               />
             </div>
           </div>
-        </ComponentCard>
+        </div>
       </div>
 
       <ModalConfirmacion
@@ -350,7 +348,7 @@ const OlimpiasPremios: React.FC = () => {
 
       <ModalConfirmacion
         isOpen={modalCertificadoIndividual !== null}
-        titulo="¿Descargar certificado?"
+        titulo="Descargar certificado"
         mensaje="Se descargará el certificado en formato PDF."
         onConfirmar={() => modalCertificadoIndividual && handleDownloadCertificado(modalCertificadoIndividual)}
         onCancelar={() => setModalCertificadoIndividual(null)}
@@ -359,4 +357,4 @@ const OlimpiasPremios: React.FC = () => {
   );
 };
 
-export default OlimpiasPremios;
+export default OlimpistasPremiados;
