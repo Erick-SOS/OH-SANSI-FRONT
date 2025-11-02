@@ -145,7 +145,7 @@ export default function SignInForm() {
                       error={s.error}
                       success={s.valid}
                       hint={s.message}
-                      className="pr-12"             // ← 1) deja espacio al icono
+                      className="pr-12"
                     />
 
                     <button

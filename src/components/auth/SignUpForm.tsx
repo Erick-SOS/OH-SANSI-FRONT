@@ -31,6 +31,7 @@ export default function SignUpForm() {
     telefono: "",
     tipo_documento: "CI",
     numero_documento: "",
+    complemento_documento: "", 
     profesion: "",
     institucion: "",
     cargo: "",
@@ -81,6 +82,7 @@ export default function SignUpForm() {
       
       case "profesion":
       case "institucion":
+      case "complemento_documento":
       case "cargo": {
         const valid = v.length > 0;
         return { error: false, valid, message: undefined };
@@ -109,6 +111,9 @@ export default function SignUpForm() {
     if (["numero_documento"].includes(name)) {
       newValue = value.replace(/[^0-9-]/g, "");
     }
+    if (name === "complemento_documento") {  
+      newValue = value.toUpperCase().replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ]/g, "");  
+    }
 
     setFormData({ ...formData, [name]: newValue });
     setError("");   
@@ -136,6 +141,7 @@ export default function SignUpForm() {
     telefono: true,
     tipo_documento: true,
     numero_documento: true,
+    complemento_documento: true, 
     profesion: true,
     institucion: true,
     cargo: true,
@@ -189,6 +195,7 @@ export default function SignUpForm() {
       telefono: "",
       tipo_documento: "CI",
       numero_documento: "",
+      complemento_documento:"",
       profesion: "",
       institucion: "",
       cargo: "",
@@ -282,7 +289,7 @@ export default function SignUpForm() {
             );
           })()}
 
-          {(() => { const s = fieldStatus("correo");
+          {(() => { const s = fieldStatus("telefono");
             return (
               <div>
                 <Label>Teléfono <span className="text-red-500">*</span></Label>
@@ -291,15 +298,20 @@ export default function SignUpForm() {
             );
           })()}
 
-          {(() => { const s = fieldStatus("numero_documento");
+          {(() => { 
+            const s = fieldStatus("numero_documento");
+            const sComp = fieldStatus("complemento_documento");
+
             return (
               <DocumentField
                 tipo_documento={formData.tipo_documento}
                 numero_documento={formData.numero_documento}
+                complemento_documento={formData.complemento_documento}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 invalidNumero={s.error}
                 validNumero={s.valid}
+                validComplemento={sComp.valid}  
                 numeroHint={s.message}
               />
             );

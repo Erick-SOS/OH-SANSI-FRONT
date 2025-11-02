@@ -50,7 +50,7 @@ export default function PasswordField({
             error={invalidPassword}  
             success={validPassword}  
             hint={passwordHint}   
-            className="pr-10" 
+            className="pr-12" 
           />
           <button
             type="button"
@@ -96,7 +96,7 @@ export default function PasswordField({
             error={invalidConfirm} 
             success={validConfirm}    
             hint={confirmHint}  
-            className="pr-10"
+            className="pr-12"
           />
           <button
             type="button"
