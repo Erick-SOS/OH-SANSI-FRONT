@@ -61,10 +61,10 @@ const navItems: NavItem[] = [
     name: "Resultados de Calificaciones",
     path: "/resultados-de-calificaciones",
   },
-  // NUEVA OPCIÓN AGREGADA
+  // CAMBIO AQUÍ: Nombre actualizado
   {
     icon: <MdEmojiEvents size={20} />,
-    name: "Olimpias Premios",
+    name: "Premiación y Certificados",
     path: "/olimpias-premios",
   },
 ];
