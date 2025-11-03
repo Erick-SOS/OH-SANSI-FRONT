@@ -61,11 +61,17 @@ const navItems: NavItem[] = [
     name: "Resultados de Calificaciones",
     path: "/resultados-de-calificaciones",
   },
+  // CAMBIO AQUÍ: Nombre actualizado
+  {
+    icon: <MdEmojiEvents size={20} />,
+    name: "Premiación y Certificados",
+    path: "/olimpias-premios",
+  },
 ];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const { user } = useContext(AuthContext); // Obtener el estado del usuario
+  const { user } = useContext(AuthContext);
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
