@@ -1,4 +1,4 @@
-
+// src/components/ui/Paginacion.tsx
 import React from 'react';
 
 interface PaginacionProps {
@@ -16,19 +16,17 @@ const Paginacion: React.FC<PaginacionProps> = ({
   registrosPorPagina,
   onPaginaChange
 }) => {
-  // Calcular el rango de registros mostrados
   const inicioRegistro = (paginaActual - 1) * registrosPorPagina + 1;
   const finRegistro = Math.min(paginaActual * registrosPorPagina, totalRegistros);
 
-  // Generar números de página a mostrar
   const obtenerNumerosPagina = () => {
     const numeros = [];
     const maxBotones = 5;
     
     let inicio = Math.max(1, paginaActual - Math.floor(maxBotones / 2));
+    // eslint-disable-next-line prefer-const
     let fin = Math.min(totalPaginas, inicio + maxBotones - 1);
     
-    // Ajustar si estamos cerca del final
     if (fin - inicio + 1 < maxBotones) {
       inicio = Math.max(1, fin - maxBotones + 1);
     }
@@ -44,19 +42,12 @@ const Paginacion: React.FC<PaginacionProps> = ({
 
   return (
     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-1 p-4 border border-gray-200 rounded-lg bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-      {/* Fecha actual a la izquierda */}
       <div className="text-sm text-gray-600 dark:text-gray-400">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          Mostrando {inicioRegistro} de {finRegistro} de {totalRegistros}
-        </div>
+        Mostrando {inicioRegistro} de {finRegistro} de {totalRegistros}
       </div>
 
-      {/* Contador de registros y controles de paginación */}
       <div className="flex items-center gap-6">
-
-        {/* Controles de paginación */}
         <div className="flex items-center gap-2">
-          {/* Botón página anterior */}
           <button
             onClick={() => onPaginaChange(paginaActual - 1)}
             disabled={paginaActual === 1}
@@ -71,7 +62,6 @@ const Paginacion: React.FC<PaginacionProps> = ({
             </svg>
           </button>
 
-          {/* Números de página */}
           <div className="flex gap-1">
             {numerosPagina.map((numero) => (
               <button
@@ -88,7 +78,6 @@ const Paginacion: React.FC<PaginacionProps> = ({
             ))}
           </div>
 
-          {/* Botón página siguiente */}
           <button
             onClick={() => onPaginaChange(paginaActual + 1)}
             disabled={paginaActual === totalPaginas}
