@@ -7,7 +7,13 @@ import {
   HorizontaLDots,
   UserCircleIcon,
 } from "../icons";
-import { MdOutlineCategory, MdHistory, MdEmojiEvents } from "react-icons/md";
+import { 
+  MdOutlineCategory, 
+  MdHistory, 
+  MdEmojiEvents, 
+  MdTimeline,
+  MdOutlineAssessment  // ← ÍCONO NUEVO: REPORTES
+} from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -47,6 +53,11 @@ const navItems: NavItem[] = [
     path: "/lista-de-inscritos",
   },
   {
+    icon: <MdTimeline size={20} />,
+    name: "Fases de Competencia",
+    path: "/fases-de-competencia",
+  },
+  {
     icon: <UserCircleIcon />,
     name: "Fases de Evaluacion",
     path: "/fases-de-evaluacion",
@@ -61,6 +72,13 @@ const navItems: NavItem[] = [
     name: "Resultados de Calificaciones",
     path: "/resultados-de-calificaciones",
   },
+  // ← NUEVO ÍTEM: GENERACIÓN DE REPORTES
+  {
+    icon: <MdOutlineAssessment size={20} />,
+    name: "Generación de reportes",
+    path: "/reportes",
+  },
+  // ↑ FIN NUEVO ÍTEM
   // CAMBIO AQUÍ: Nombre actualizado
   {
     icon: <MdEmojiEvents size={20} />,
@@ -73,7 +91,6 @@ const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const { user } = useContext(AuthContext);
   const location = useLocation();
-
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main";
     index: number;
@@ -81,7 +98,6 @@ const AppSidebar: React.FC = () => {
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Filtrar ítems según autenticación
   const filteredNavItems = user
     ? navItems
     : navItems.filter(
@@ -110,7 +126,6 @@ const AppSidebar: React.FC = () => {
         });
       }
     });
-
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
@@ -266,7 +281,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200
         ${
           isExpanded || isMobileOpen
             ? "w-[290px]"

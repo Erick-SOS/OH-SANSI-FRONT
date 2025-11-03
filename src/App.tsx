@@ -31,6 +31,8 @@ import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
 import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
+import FasesDeCompetencia from "./pages/FasesDeCompetencia";
+import GeneracionReportes from "./pages/GeneracionReportes"; // ← AÑADIDO
 
 
 import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
@@ -46,7 +48,7 @@ export default function App() {
             {/* Rutas públicas */}
             <Route index path="/" element={<Home />} />
             <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaciones />} />
-
+            
             {/* Rutas protegidas */}
             <Route
               path="/profile"
@@ -128,6 +130,25 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/fases-de-competencia"
+              element={
+                <ProtectedRoute>
+                  <FasesDeCompetencia />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* ← NUEVA RUTA: GENERACIÓN DE REPORTES */}
+            <Route
+              path="/reportes"
+              element={
+                <ProtectedRoute>
+                  <GeneracionReportes />
+                </ProtectedRoute>
+              }
+            />
+            {/* ↑ FIN NUEVA RUTA */}
 
             {}
             <Route
@@ -224,14 +245,12 @@ export default function App() {
               }
             />
           </Route>
-
           {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-code" element={<VerifyCodePage />} />
           <Route path="/new-password" element={<NewPasswordPage />} />
-
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
