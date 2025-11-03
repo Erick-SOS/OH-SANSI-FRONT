@@ -79,6 +79,12 @@ const navItems: NavItem[] = [
     path: "/reportes",
   },
   // ↑ FIN NUEVO ÍTEM
+  // CAMBIO AQUÍ: Nombre actualizado
+  {
+    icon: <MdEmojiEvents size={20} />,
+    name: "Premiación y Certificados",
+    path: "/olimpias-premios",
+  },
 ];
 
 const AppSidebar: React.FC = () => {

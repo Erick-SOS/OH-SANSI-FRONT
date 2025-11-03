@@ -34,6 +34,9 @@ import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
 import GeneracionReportes from "./pages/GeneracionReportes"; // ← AÑADIDO
 
+
+import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
+
 export default function App() {
   return (
     <Router>
@@ -146,6 +149,16 @@ export default function App() {
               }
             />
             {/* ↑ FIN NUEVA RUTA */}
+
+            {}
+            <Route
+              path="/olimpias-premios"
+              element={
+                <ProtectedRoute>
+                  <OlimpiasPremios />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Forms */}
             <Route

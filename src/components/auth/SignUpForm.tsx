@@ -15,6 +15,7 @@ import { CheckCircle } from "lucide-react";
 export default function SignUpForm() {
   const [isChecked, setIsChecked] = useState(false);
   const [error, setError] = useState("");
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const { register } = useContext(AuthContext);
@@ -30,20 +31,77 @@ export default function SignUpForm() {
     telefono: "",
     tipo_documento: "CI",
     numero_documento: "",
+    complemento_documento: "", 
     profesion: "",
     institucion: "",
     cargo: "",
   });
+  
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const { valid, match, passwordMessage } = usePasswordValidation(
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+  };
+
+  const { valid, match, passwordMessage, confirmMessage } = usePasswordValidation(
     formData.password,
     formData.confirmPassword
   );
 
+  const fieldStatus = (name: string): { error: boolean; valid: boolean; message?: string } => {
+    const v = String((formData as any)[name] ?? "").trim();
+    const wasTouched = !!touched[name] || submitAttempted;
+    if (!wasTouched) return { error: false, valid: false }; // no mostrar nada hasta tocar
+
+    switch (name) {
+      case "nombre":{
+        const valid = v.length >= 3;
+        return { error: !valid, valid, message: valid ? undefined : "Ingrese su nombre en el campo" };
+      }
+      case "ap_paterno":{
+        const valid = v.length >= 3;
+        return { error: !valid, valid, message: valid ? undefined : "Ingrese su apellido paterno" };
+      }
+      case "ap_materno": {
+        const valid = v.length >= 3;
+        return { error: !valid, valid, message: valid ? undefined : "Ingrese su apellido materno" };
+      }
+      case "correo": {
+        const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        return { error: !valid, valid, message: valid ? undefined : "Ingrese un correo válido." };
+      }
+      case "telefono": {
+        const valid = v.length >= 7;
+        return { error: !valid, valid, message: valid ? undefined : "Ingrese un teléfono válido (mín. 7 dígitos)." };
+      }
+      case "numero_documento": {
+        const valid = v.length > 0;
+        return { error: !valid, valid, message: valid ? undefined : "Ingrese la parte numerica de su documento de identidad" };
+      }
+      
+      case "profesion":
+      case "institucion":
+      case "complemento_documento":
+      case "cargo": {
+        const valid = v.length > 0;
+        return { error: false, valid, message: undefined };
+      }
+      default: {
+        const valid = v.length > 0;
+        return { error: !valid, valid, message: valid ? undefined : "Rellene los campos obligatorios." };
+      }
+    }
+    
+  };
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let newValue = value;
 
+    if (name === "password" || name === "confirmPassword") {
+      newValue = value.replace(/\s/g, "");
+    }
     if (["nombre", "ap_paterno", "ap_materno", "profesion", "cargo"].includes(name)) {
       newValue = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ\s]/g, "");
     }
@@ -53,8 +111,12 @@ export default function SignUpForm() {
     if (["numero_documento"].includes(name)) {
       newValue = value.replace(/[^0-9-]/g, "");
     }
+    if (name === "complemento_documento") {  
+      newValue = value.toUpperCase().replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ]/g, "");  
+    }
 
     setFormData({ ...formData, [name]: newValue });
+    setError("");   
   };
 
   const getErrorMessage = (err: unknown) => {
@@ -63,98 +125,104 @@ export default function SignUpForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+  e.preventDefault();
+  setError("");
+  setSuccess("");
+  setSubmitAttempted(true);
 
-    const {
-      nombre,
-      ap_paterno,
-      ap_materno,
-      correo,
-      password,
-      confirmPassword,
-      telefono,
-      tipo_documento,
-      numero_documento,
-      profesion,
-      institucion,
-      cargo,
-    } = formData;
+  // 1) Marcar todos los campos como tocados → muestra todos los errores
+  setTouched({
+    nombre: true,
+    ap_paterno: true,
+    ap_materno: true,
+    correo: true,
+    password: true,
+    confirmPassword: true,
+    telefono: true,
+    tipo_documento: true,
+    numero_documento: true,
+    complemento_documento: true, 
+    profesion: true,
+    institucion: true,
+    cargo: true,
+  });
 
-    if (
-      !nombre ||
-      !ap_paterno ||
-      !ap_materno ||
-      !correo ||
-      !password ||
-      !confirmPassword ||
-      !telefono ||
-      !tipo_documento ||
-      !numero_documento
-    ) {
-      setError("Por favor, complete todos los campos obligatorios.");
-      return;
-    }
+  const requeridos: Array<keyof typeof formData> = [
+    "nombre",
+    "ap_paterno",
+    "ap_materno",
+    "correo",
+    "telefono",
+    "numero_documento",
+    "password",
+    "confirmPassword",
+  ];
 
-    if (!valid) {
-      setError("La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas y minúsculas.");
-      return;
-    }
+  // revisa si hay errores en los requeridos
+  const hayErroresBasicos = requeridos.some((f) => fieldStatus(f).error);
 
-    if (!match) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
+  if (hayErroresBasicos || !valid) {
+    setError("Por favor, completa los campos obligatorios y corrige los resaltados.");
+    return;
+  }
 
-    if (!isChecked) {
-      setError("Debe aceptar los términos y condiciones.");
-      return;
-    }
+  if (!isChecked) {
+    setError("Debe aceptar los términos y condiciones.");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const payload: RegistroEvaluadorPayload = {
-        nombre,
-        ap_paterno,
-        ap_materno,
-        correo,
-        password,
-        confirmPassword,
-        telefono,
-        tipo_documento,
-        numero_documento,
-        profesion,
-        institucion,
-        cargo,
-        aceptaTerminos: true,
-      };
+  //  Si todo OK, enviar
+  setLoading(true);
+  try {
+    const payload: RegistroEvaluadorPayload = {
+      ...formData,
+      aceptaTerminos: true,
+    };
 
-      await register(payload);
-      setSuccess("Registro exitoso. Redirigiendo al dashboard...");
-      setTimeout(() => navigate("/dashboard"), 2000); // Redirige tras 2 segundos
+    await register(payload);
+    
+    setSuccess("Registro exitoso. Redirigiendo al dashboard...");
+    setTimeout(() => navigate("/dashboard"), 2000);
 
-      setFormData({
-        nombre: "",
-        ap_paterno: "",
-        ap_materno: "",
-        correo: "",
-        password: "",
-        confirmPassword: "",
-        telefono: "",
-        tipo_documento: "CI",
-        numero_documento: "",
-        profesion: "",
-        institucion: "",
-        cargo: "",
-      });
-      setIsChecked(false);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err));
+    // reset
+    setFormData({
+      nombre: "",
+      ap_paterno: "",
+      ap_materno: "",
+      correo: "",
+      password: "",
+      confirmPassword: "",
+      telefono: "",
+      tipo_documento: "CI",
+      numero_documento: "",
+      complemento_documento:"",
+      profesion: "",
+      institucion: "",
+      cargo: "",
+    });
+    setIsChecked(false);
+    setTouched({});
+  } catch (err: unknown) {
+    setError(getErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+
+   /*} catch (err: unknown) {
+    // Sólo aquí mostramos errores del backend (p. ej., duplicados)
+      const msg = err instanceof Error ? err.message : String(err);
+
+      // Heurística simple para duplicados (ajústala a tu API):
+      if (/duplicad|ya existe|409/i.test(msg)) {
+        setError("El correo ya está registrado.");
+      } else {
+        setError(msg || "Ocurrió un error al registrarse.");
+      }
     } finally {
       setLoading(false);
-    }
-  };
+  }]*/
+};
+
 
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
@@ -184,54 +252,111 @@ export default function SignUpForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          <div>
-            <Label>Nombre <span className="text-red-500">*</span></Label>
-            <Input type="text" name="nombre" placeholder="Ingrese su nombre" value={formData.nombre} onChange={handleChange} />
-          </div>
+          
+          {(() => { const s = fieldStatus("nombre");
+            return (
+              <div>
+                <Label>Nombre <span className="text-red-500">*</span></Label>
+                <Input type="text" name="nombre" placeholder="Ingrese su nombre" value={formData.nombre} onChange={handleChange} onBlur={handleBlur} error={s.error}  success={s.valid} hint={s.message} />
+              </div>
+             );
+          })()}
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <Label>Apellido Paterno <span className="text-red-500">*</span></Label>
-              <Input type="text" name="ap_paterno" placeholder="Apellido paterno" value={formData.ap_paterno} onChange={handleChange} />
-            </div>
-            <div>
-              <Label>Apellido Materno <span className="text-red-500">*</span></Label>
-              <Input type="text" name="ap_materno" placeholder="Apellido materno" value={formData.ap_materno} onChange={handleChange} />
-            </div>
-          </div>
+          {(() => { const s = fieldStatus("ap_paterno");
+            return (
+              <div>
+                <Label>Apellido Paterno <span className="text-red-500">*</span></Label>
+                <Input type="text" name="ap_paterno" placeholder="Apellido paterno" value={formData.ap_paterno} onChange={handleChange} onBlur={handleBlur} error={s.error}  success={s.valid} hint={s.message}/>
+              </div>
+            );
+          })()}
 
-          <div>
-            <Label>Correo electrónico <span className="text-red-500">*</span></Label>
-            <Input type="email" name="correo" placeholder="ejemplo@gmail.com" value={formData.correo} onChange={handleChange} />
-          </div>
-          <div>
-            <Label>Teléfono <span className="text-red-500">*</span></Label>
-            <Input type="text" name="telefono" placeholder="Ej: 76543210" value={formData.telefono} onChange={handleChange} />
-          </div>
+          {(() => { const s = fieldStatus("ap_materno");
+            return (
+              <div>
+                <Label>Apellido Materno <span className="text-red-500">*</span></Label>
+                <Input type="text" name="ap_materno" placeholder="Apellido materno" value={formData.ap_materno} onChange={handleChange} onBlur={handleBlur} error={s.error}  success={s.valid} hint={s.message}/>
+              </div>
+            );
+          })()}
 
-          <DocumentField
-            tipo_documento={formData.tipo_documento}
-            numero_documento={formData.numero_documento}
-            onChange={handleChange}
+          {(() => { const s = fieldStatus("correo");
+            return (
+              <div>
+                <Label>Correo electrónico <span className="text-red-500">*</span></Label>
+                <Input type="email" name="correo" placeholder="ejemplo@gmail.com" value={formData.correo} onChange={handleChange} onBlur={handleBlur} error={s.error}  success={s.valid} hint={s.message}/>
+              </div>
+            );
+          })()}
+
+          {(() => { const s = fieldStatus("telefono");
+            return (
+              <div>
+                <Label>Teléfono <span className="text-red-500">*</span></Label>
+                <Input type="text" name="telefono" placeholder="Ej: 76543210" value={formData.telefono} onChange={handleChange} onBlur={handleBlur} error={s.error}  success={s.valid} hint={s.message}/>
+              </div>
+            );
+          })()}
+
+          {(() => { 
+            const s = fieldStatus("numero_documento");
+            const sComp = fieldStatus("complemento_documento");
+
+            return (
+              <DocumentField
+                tipo_documento={formData.tipo_documento}
+                numero_documento={formData.numero_documento}
+                complemento_documento={formData.complemento_documento}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                invalidNumero={s.error}
+                validNumero={s.valid}
+                validComplemento={sComp.valid}  
+                numeroHint={s.message}
+              />
+            );
+          })()}
+
+          {(() => { const s = fieldStatus("profesion");
+            return (
+              <div>
+                <Label>Profesión</Label>
+                <Input type="text" name="profesion" placeholder="Ej: Ingeniero Civil" value={formData.profesion} onChange={handleChange} onBlur={handleBlur}  success={s.valid} />
+              </div>
+            );
+          })()}
+
+          {(() => { const s = fieldStatus("institucion");
+            return (
+              <div>
+                <Label>Institución / Unidad</Label>
+                <Input type="text" name="institucion" placeholder="Ej: UMSS" value={formData.institucion} onChange={handleChange} onBlur={handleBlur} success={s.valid} />
+              </div>
+            );
+          })()}
+
+          {(() => { const s = fieldStatus("profesion");
+            return (
+              <div>
+                <Label>Cargo</Label>
+                <Input type="text" name="cargo" placeholder="Ej: Docente" value={formData.cargo} onChange={handleChange} onBlur={handleBlur} success={s.valid} />
+              </div>
+            );
+          })()}
+
+          <PasswordField password={formData.password} confirmPassword={formData.confirmPassword} onChange={handleChange}
+            onBlur={handleBlur} blockSpaces
+
+              invalidPassword={touched.password && !match}
+              validPassword={touched.password && match}
+
+              invalidConfirm={touched.confirmPassword && !valid}
+              validConfirm={touched.confirmPassword && valid}
+
+              passwordHint={touched.password ? passwordMessage : undefined}
+              confirmHint={touched.confirmPassword ? confirmMessage : undefined}
           />
-
-          <div>
-            <Label>Profesión</Label>
-            <Input type="text" name="profesion" placeholder="Ej: Ingeniero Civil" value={formData.profesion} onChange={handleChange} />
-          </div>
-          <div>
-            <Label>Institución / Unidad</Label>
-            <Input type="text" name="institucion" placeholder="Ej: UMSS" value={formData.institucion} onChange={handleChange} />
-          </div>
-          <div>
-            <Label>Cargo</Label>
-            <Input type="text" name="cargo" placeholder="Ej: Docente" value={formData.cargo} onChange={handleChange} />
-          </div>
-
-          <PasswordField password={formData.password} confirmPassword={formData.confirmPassword} onChange={handleChange} />
-          {passwordMessage && (
-            <p className={`text-sm ${valid ? "text-green-600" : "text-red-500"}`}>{passwordMessage}</p>
-          )}
+          
 
           <div className="flex items-start gap-3">
             <Checkbox className="w-4 h-4 mt-1" checked={isChecked} onChange={(checked: boolean) => setIsChecked(checked)} />
@@ -241,7 +366,12 @@ export default function SignUpForm() {
             </p>
           </div>
 
-          <SubmitButton loading={loading} text="Registrarte" loadingText="Registrando..." />
+          <SubmitButton
+            loading={loading}
+            text="Registrarte"
+            loadingText="Registrando..."
+            disabled={!isChecked || loading}
+          />
         </form>
 
         <div className="mt-5 text-center">
