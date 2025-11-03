@@ -7,7 +7,13 @@ import {
   HorizontaLDots,
   UserCircleIcon,
 } from "../icons";
-import { MdOutlineCategory, MdHistory, MdEmojiEvents, MdTimeline } from "react-icons/md"; // ÍCONO NUEVO
+import { 
+  MdOutlineCategory, 
+  MdHistory, 
+  MdEmojiEvents, 
+  MdTimeline,
+  MdOutlineAssessment  // ← ÍCONO NUEVO: REPORTES
+} from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -47,9 +53,9 @@ const navItems: NavItem[] = [
     path: "/lista-de-inscritos",
   },
   {
-    icon: <MdTimeline size={20} />, // ÍCONO PERFECTO: Línea de tiempo
-    name: "Fases de Competencia",   // NUEVO ÍTEM
-    path: "/fases-de-competencia",  // RUTA NUEVA
+    icon: <MdTimeline size={20} />,
+    name: "Fases de Competencia",
+    path: "/fases-de-competencia",
   },
   {
     icon: <UserCircleIcon />,
@@ -66,6 +72,13 @@ const navItems: NavItem[] = [
     name: "Resultados de Calificaciones",
     path: "/resultados-de-calificaciones",
   },
+  // ← NUEVO ÍTEM: GENERACIÓN DE REPORTES
+  {
+    icon: <MdOutlineAssessment size={20} />,
+    name: "Generación de reportes",
+    path: "/reportes",
+  },
+  // ↑ FIN NUEVO ÍTEM
 ];
 
 const AppSidebar: React.FC = () => {

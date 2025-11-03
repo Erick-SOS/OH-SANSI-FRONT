@@ -31,7 +31,8 @@ import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
 import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
-import FasesDeCompetencia from "./pages/FasesDeCompetencia"; // NUEVA IMPORTACIÓN
+import FasesDeCompetencia from "./pages/FasesDeCompetencia";
+import GeneracionReportes from "./pages/GeneracionReportes"; // ← AÑADIDO
 
 export default function App() {
   return (
@@ -126,7 +127,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            {/* NUEVA RUTA */}
             <Route
               path="/fases-de-competencia"
               element={
@@ -135,6 +135,18 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            
+            {/* ← NUEVA RUTA: GENERACIÓN DE REPORTES */}
+            <Route
+              path="/reportes"
+              element={
+                <ProtectedRoute>
+                  <GeneracionReportes />
+                </ProtectedRoute>
+              }
+            />
+            {/* ↑ FIN NUEVA RUTA */}
+
             {/* Forms */}
             <Route
               path="/form-elements"
