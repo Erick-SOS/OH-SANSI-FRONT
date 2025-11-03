@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
+import { ChevronLeftIcon } from "../../icons"; // ← eliminé EyeIcon y EyeCloseIcon, no se usan
 import { AuthContext } from "../../context/AuthContext";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
@@ -12,37 +12,32 @@ export default function SignInForm() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  //const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(""); 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name } = e.target;
-    setTouched(prev => ({ ...prev, [name]: true }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    let v = value;
-
-    if (name === "password") v = v.replace(/\s/g, ""); // sin espacios
-    if (name === "correo") v = v.replace(/\s{2,}/g, " "); // compacta espacios internos
-    //setFormData(prev => ({ ...prev, [name]: v }));
-    setError("");
-  };
-
-  const fieldStatus = (name: "correo" | "password"): { error: boolean; valid: boolean; message?: string } => {
+  const fieldStatus = (
+    name: "correo" | "password"
+  ): { error: boolean; valid: boolean; message?: string } => {
     const v = name === "correo" ? email.trim() : password.trim();
     const wasTouched = !!touched[name] || submitAttempted;
     if (!wasTouched) return { error: false, valid: false };
 
     if (name === "correo") {
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      return { error: !ok, valid: ok, message: ok ? undefined : "Ingrese un correo válido." };
+      return {
+        error: !ok,
+        valid: ok,
+        message: ok ? undefined : "Ingrese un correo válido.",
+      };
     }
-    // password (>=8, minúscula y mayúscula)
+
+    // password: >=8 caracteres, mayúscula y minúscula
     const length = v.length >= 8;
     const lower = /[a-z]/.test(v);
     const upper = /[A-Z]/.test(v);
@@ -50,7 +45,8 @@ export default function SignInForm() {
     let message: string | undefined;
     if (!ok) {
       if (!length) message = "La contraseña debe tener al menos 8 caracteres.";
-      else if (!lower || !upper) message = "Debe incluir mayúsculas y minúsculas.";
+      else if (!lower || !upper)
+        message = "Debe incluir mayúsculas y minúsculas.";
     }
     return { error: !ok, valid: ok, message };
   };
@@ -58,30 +54,43 @@ export default function SignInForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
-    
+
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
     const passVal = password.trim();
-    const passOk  = passVal.length >= 8 && /[a-z]/.test(passVal) && /[A-Z]/.test(passVal);
+    const passOk =
+      passVal.length >= 8 && /[a-z]/.test(passVal) && /[A-Z]/.test(passVal);
 
     if (!emailOk || !passOk) {
       setTouched({ correo: true, password: true });
       setSubmitAttempted(true);
-      setError("Por favor, completa los campos obligatorios y corrige los resaltados.");
+      setError(
+        "Por favor, completa los campos obligatorios y corrige los resaltados."
+      );
       return;
     }
 
     // Simulación de autenticación
-    
     try {
       if (email === "admin@gmail.com" && password === "12345678La#") {
-        await login(email, password, { name: "Administrador", rol: "administrador" });
+        await login(email, password, {
+          name: "Administrador",
+          rol: "ADMINISTRADOR",
+        });
         navigate("/");
       } else if (email === "evaluador@gmail.com" && password === "12345678La#") {
-        await login(email, password, { name: "Evaluador", rol: "EVALUADOR" });
+        await login(email, password, {
+          name: "Evaluador",
+          rol: "EVALUADOR",
+        });
         navigate("/");
-      } else if (email === "responsable@gmail.com" && password === "12345678La#") {
-        await login(email, password, { name: "Responsable", rol: "RESPONSABLE" });
+      } else if (
+        email === "responsable@gmail.com" &&
+        password === "12345678La#"
+      ) {
+        await login(email, password, {
+          name: "Responsable",
+          rol: "RESPONSABLE",
+        });
         navigate("/");
       } else {
         setError("Correo o contraseña incorrectos");
@@ -109,37 +118,46 @@ export default function SignInForm() {
             Inicia sesión
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            ¡Introduce tu correo y contraseña para iniciar sesion!
+            ¡Introduce tu correo y contraseña para iniciar sesión!
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-            
-            {(() => { const s = fieldStatus("correo");
+            {/* Campo correo */}
+            {(() => {
+              const s = fieldStatus("correo");
               return (
                 <Input
                   type="email"
                   name="correo"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value.replace(/\s{2,}/g, " "))}
+                  onChange={(e) =>
+                    setEmail(e.target.value.replace(/\s{2,}/g, " "))
+                  }
                   placeholder="info@gmail.com"
                   onBlur={handleBlur}
                   error={s.error}
                   success={s.valid}
                   hint={s.message}
                 />
-               );
+              );
             })()}
 
-            {(() => { const s = fieldStatus("password");
+            {/* Campo contraseña */}
+            {(() => {
+              const s = fieldStatus("password");
               return (
                 <div>
-                  <Label>Contraseña <span className="text-error-500">*</span></Label>
+                  <Label>
+                    Contraseña <span className="text-error-500">*</span>
+                  </Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       name="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value.replace(/\s/g, ""))}
+                      onChange={(e) =>
+                        setPassword(e.target.value.replace(/\s/g, ""))
+                      }
                       placeholder="Ingresa tu contraseña"
                       onBlur={handleBlur}
                       error={s.error}
@@ -150,26 +168,40 @@ export default function SignInForm() {
 
                     <button
                       type="button"
-                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      onMouseDown={(e) => e.preventDefault()} // evita perder el foco
+                      aria-label={
+                        showPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setShowPassword(!showPassword)}
                       className="
-                        absolute right-3 top-[6px]   // ← 2) fija la altura (centro de h-11)
+                        absolute right-3 top-[6px]
                         z-30 p-1.5 rounded-full border shadow-sm
                         bg-white text-gray-700 hover:text-gray-900
                         dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white
                       "
                     >
                       {showPassword ? (
-                        /* ojo-cerrado */
-                        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <path d="M3 3l18 18" />
                           <path d="M10.58 10.58A3 3 0 0012 15a3 3 0 002.42-4.42M9.88 5.52A10.94 10.94 0 0112 5c7 0 11 7 11 7a17.1 17.1 0 01-4.38 4.62" />
                           <path d="M6.62 6.62A17.1 17.1 0 001 12s4 7 11 7a10.94 10.94 0 004.48-.9" />
                         </svg>
                       ) : (
-                        /* ojo-abierto */
-                        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
@@ -205,7 +237,7 @@ export default function SignInForm() {
               to="/signup"
               className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
             >
-              Registrate
+              Regístrate
             </Link>
           </div>
         </div>
