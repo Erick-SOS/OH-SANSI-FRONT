@@ -67,8 +67,7 @@ const DocumentField: FC<DocumentFieldProps> = ({ tipo_documento, numero_document
             value={complemento_documento}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               // solo letras, mayúsculas
-              const raw = e.target.value.replace(/[^A-Za-z]/g, "");
-              const upper = raw.toUpperCase();
+              const upper = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0,2);
               onChange({
                 ...e,
                 target: { ...e.target, name: "complemento_documento", value: upper },
@@ -76,7 +75,6 @@ const DocumentField: FC<DocumentFieldProps> = ({ tipo_documento, numero_document
             }}
             onBlur={onBlur as any}
             className="uppercase"
-            // Verde solo si hay algo y pasó tu validación
             success={!!validComplemento}
           />
         </div>
