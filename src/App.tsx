@@ -32,8 +32,8 @@ import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
-import GeneracionReportes from "./pages/GeneracionReportes"; // ← AÑADIDO
-
+import GeneracionReportes from "./pages/GeneracionReportes";
+import Responsables from "./pages/Responsables.tsx";
 
 import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
 
@@ -138,8 +138,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            
-            {/* ← NUEVA RUTA: GENERACIÓN DE REPORTES */}
             <Route
               path="/reportes"
               element={
@@ -148,9 +146,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            {/* ↑ FIN NUEVA RUTA */}
-
-            {}
             <Route
               path="/olimpias-premios"
               element={
@@ -159,7 +154,14 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
+            <Route
+              path="/Responsables"
+              element={
+                <ProtectedRoute>
+                  <Responsables />
+                </ProtectedRoute>
+              }
+            />
             {/* Forms */}
             <Route
               path="/form-elements"
