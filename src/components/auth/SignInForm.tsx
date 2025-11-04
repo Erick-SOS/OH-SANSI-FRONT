@@ -76,13 +76,13 @@ export default function SignInForm() {
           name: "Administrador",
           rol: "ADMINISTRADOR",
         });
-        navigate("/");
+        navigate("/dashboard");
       } else if (email === "evaluador@gmail.com" && password === "12345678La#") {
         await login(email, password, {
           name: "Evaluador",
           rol: "EVALUADOR",
         });
-        navigate("/");
+        navigate("/dashboard");
       } else if (
         email === "responsable@gmail.com" &&
         password === "12345678La#"
@@ -91,7 +91,7 @@ export default function SignInForm() {
           name: "Responsable",
           rol: "RESPONSABLE",
         });
-        navigate("/");
+        navigate("/dashboard");
       } else {
         setError("Correo o contraseña incorrectos");
       }
