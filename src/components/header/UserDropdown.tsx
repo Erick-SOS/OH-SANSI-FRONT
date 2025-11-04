@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext"; // Suponiendo que tienes un contexto de autenticación
+import { AuthContext } from "../../context/AuthContext";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,9 +18,9 @@ export default function UserDropdown() {
   }
 
   function handleSignOut() {
-    logout(); // Actualiza el estado de autenticación a no autenticado
+    logout(); // Elimina usuario del contexto
     closeDropdown();
-    navigate(""); // Redirige al dashboard
+    navigate("/", { replace: true }); // ← A LA PÁGINA PÚBLICA
   }
 
   if (!user) {
