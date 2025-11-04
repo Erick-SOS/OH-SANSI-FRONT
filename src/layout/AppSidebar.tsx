@@ -5,14 +5,18 @@ import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  UserCircleIcon,
 } from "../icons";
 import { 
   MdOutlineCategory, 
   MdHistory, 
   MdEmojiEvents, 
   MdTimeline,
-  MdOutlineAssessment  // ← ÍCONO NUEVO: REPORTES
+  MdOutlineAssessment,  // ← ÍCONO NUEVO: REPORTES
+  MdAssignmentInd,    // Designar responsables
+  MdPeople,           // Lista de inscritos
+  MdChecklist,        // Fases de evaluación
+  MdBarChart,         // Resultados
+  MdCardGiftcard,
 } from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
 
@@ -27,15 +31,20 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    path: "/",
+    path: "/dashboard",
   },
   {
     icon: <MdOutlineCategory size={20} />,
-    name: "Gestionar areas y niveles",
+    name: "Gestionar áreas y niveles",
     subItems: [
-      { name: "Areas", path: "/areas", pro: false },
-      { name: "Niveles", path: "/niveles", pro: false },
+      { name: "Áreas", path: "/areas" },
+      { name: "Niveles", path: "/niveles" },
     ],
+  },
+  {
+    icon: <MdAssignmentInd size={20} />,
+    name: "Designar responsables",
+    path: "/Responsables",
   },
   {
     icon: <MdHistory size={20} />,
@@ -48,7 +57,7 @@ const navItems: NavItem[] = [
     path: "/cantidad-de-medallas",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <MdPeople size={20} />,
     name: "Lista de Inscritos",
     path: "/lista-de-inscritos",
   },
@@ -58,30 +67,22 @@ const navItems: NavItem[] = [
     path: "/fases-de-competencia",
   },
   {
-    icon: <UserCircleIcon />,
-    name: "Fases de Evaluacion",
+    icon: <MdChecklist size={20} />,
+    name: "Fases de Evaluación",
     path: "/fases-de-evaluacion",
   },
   {
-    icon: <UserCircleIcon />,
-    name: "Lista de Premiados",
-    path: "/lista-de-premiados",
-  },
-  {
-    icon: <UserCircleIcon />,
+    icon: <MdBarChart size={20} />,
     name: "Resultados de Calificaciones",
     path: "/resultados-de-calificaciones",
   },
-  // ← NUEVO ÍTEM: GENERACIÓN DE REPORTES
   {
     icon: <MdOutlineAssessment size={20} />,
-    name: "Generación de reportes",
+    name: "Generación de Reportes",
     path: "/reportes",
   },
-  // ↑ FIN NUEVO ÍTEM
-  // CAMBIO AQUÍ: Nombre actualizado
   {
-    icon: <MdEmojiEvents size={20} />,
+    icon: <MdCardGiftcard size={20} />,
     name: "Premiación y Certificados",
     path: "/olimpias-premios",
   },

@@ -1,4 +1,5 @@
 import { createContext, useState, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 interface AuthContextType {
@@ -37,15 +38,14 @@ export interface RegistroEvaluadorPayload {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<{ name: string; email: string; rol: string } | null>(null);
+  const navigate = useNavigate(); // 👈 Importante
 
   const login = async (correo: string, password: string, simulatedData?: { name: string; rol: string }) => {
     try {
       if (simulatedData) {
-        // Simulación de login
         setUser({ name: simulatedData.name, email: correo, rol: simulatedData.rol });
-        localStorage.setItem("token", "simulated-token"); // Token simulado
+        localStorage.setItem("token", "simulated-token");
       } else {
-        // Lógica para cuando el endpoint esté disponible
         const response = await axios.post("http://localhost:3000/api/evaluadores/login", {
           correo,
           password,
@@ -74,13 +74,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Simulación de logout (no necesitamos backend para esto)
       setUser(null);
       localStorage.removeItem("token");
+
+      // 👇 Redirige al inicio
+      navigate("/");
     } catch (error) {
       console.error("Error en logout:", error);
       setUser(null);
       localStorage.removeItem("token");
+      navigate("/"); // 👈 También redirige en caso de error
     }
   };
 

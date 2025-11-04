@@ -207,22 +207,7 @@ export default function SignUpForm() {
   } finally {
     setLoading(false);
   }
-
-   /*} catch (err: unknown) {
-    // Sólo aquí mostramos errores del backend (p. ej., duplicados)
-      const msg = err instanceof Error ? err.message : String(err);
-
-      // Heurística simple para duplicados (ajústala a tu API):
-      if (/duplicad|ya existe|409/i.test(msg)) {
-        setError("El correo ya está registrado.");
-      } else {
-        setError(msg || "Ocurrió un error al registrarse.");
-      }
-    } finally {
-      setLoading(false);
-  }]*/
 };
-
 
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
