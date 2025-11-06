@@ -15,7 +15,6 @@ import CantidadDeMedallas from "./pages/CantidadDeMedallas";
 import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
 import ListaDePremiados from "./pages/ListaDePremiados";
 import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
-import { OlympiansListLocalprueba } from "./pages/OlympiansListlocalprueba";
 import ResetPasswordPage from "./pages/AuthPages/ResetPasswordPage";
 import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
 import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
@@ -31,6 +30,7 @@ import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
 import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
 import Reglamento from "./pages/PublicInfo/Reglamento";
+import { OlympiansListLocalprueba } from "./components/importarOlimpista/OlympiansListLocalprueba.tsx";
 
 
 export default function App() {
