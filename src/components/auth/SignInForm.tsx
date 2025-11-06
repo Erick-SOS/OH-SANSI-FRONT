@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeftIcon } from "../../icons"; // ← eliminé EyeIcon y EyeCloseIcon, no se usan
+import { ChevronLeftIcon } from "../../icons";
 import { AuthContext } from "../../context/AuthContext";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
@@ -13,13 +13,36 @@ export default function SignInForm() {
   const navigate = useNavigate();
 
   const [error, setError] = useState("");
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [success, setSuccess] = useState("");
+
+  type Campo = "correo" | "password";
+  const [touched, setTouched] = useState<Record<Campo, boolean>>({
+    correo: false,
+    password: false,
+  });
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
   };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const name = e.target.name as Campo;
+  const raw = e.target.value;
+
+  if (name === "correo") {
+    const clean = raw.replace(/\s+/g, "").slice(0, 80);
+    setEmail(clean);
+  } else if (name === "password") {
+    const clean = raw.replace(/\s/g, "").slice(0, 30);
+    setPassword(clean);
+  }
+
+  setTouched(prev => ({ ...prev, [name]: true }));
+  setError("");
+  setSuccess("");
+};
 
   const fieldStatus = (
     name: "correo" | "password"
@@ -33,27 +56,30 @@ export default function SignInForm() {
       return {
         error: !ok,
         valid: ok,
-        message: ok ? undefined : "Ingrese un correo válido.",
+        message: ok ? undefined : "Ingrese el correo que uso para su registró con formato valido.",
       };
     }
 
-    // password: >=8 caracteres, mayúscula y minúscula
     const length = v.length >= 8;
     const lower = /[a-z]/.test(v);
     const upper = /[A-Z]/.test(v);
     const ok = length && lower && upper;
     let message: string | undefined;
     if (!ok) {
-      if (!length) message = "La contraseña debe tener al menos 8 caracteres.";
-      else if (!lower || !upper)
-        message = "Debe incluir mayúsculas y minúsculas.";
+      if (!length) message = "Ingrese la contraseña que definió en su registro.";
+      else if (!lower || !upper) message = "Ingrese su contraseña con formato invalido";
     }
     return { error: !ok, valid: ok, message };
+  };
+
+  const preventSpaceKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === " ") e.preventDefault();
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
     const passVal = password.trim();
@@ -64,38 +90,28 @@ export default function SignInForm() {
       setTouched({ correo: true, password: true });
       setSubmitAttempted(true);
       setError(
-        "Por favor, completa los campos obligatorios y corrige los resaltados."
+        "Por favor, complete los campos obligatorios"
       );
       return;
     }
 
-    // Simulación de autenticación
     try {
       if (email === "admin@gmail.com" && password === "12345678La#") {
-        await login(email, password, {
-          name: "Administrador",
-          rol: "ADMINISTRADOR",
-        });
-        navigate("/dashboard");
+        await login(email, password, { name: "Administrador", rol: "administrador" });
+        setSuccess("Inicio de sesión correcto. Redirigiendo…");
+        setTimeout(() => navigate("/dashboard"), 1200);
       } else if (email === "evaluador@gmail.com" && password === "12345678La#") {
-        await login(email, password, {
-          name: "Evaluador",
-          rol: "EVALUADOR",
-        });
-        navigate("/dashboard");
-      } else if (
-        email === "responsable@gmail.com" &&
-        password === "12345678La#"
-      ) {
-        await login(email, password, {
-          name: "Responsable",
-          rol: "RESPONSABLE",
-        });
-        navigate("/dashboard");
+        await login(email, password, { name: "Evaluador", rol: "EVALUADOR" });
+        setSuccess("Inicio de sesión correcto. Redirigiendo…");
+        setTimeout(() => navigate("/dashboard"), 1200);
+      } else if (email === "responsable@gmail.com" && password === "12345678La#") {
+        await login(email, password, { name: "Responsable", rol: "RESPONSABLE" });
+        setSuccess("Inicio de sesión correcto. Redirigiendo…");
+        setTimeout(() => navigate("/dashboard"), 1200);
       } else {
         setError("Correo o contraseña incorrectos");
       }
-    } catch (err) {
+    } catch {
       setError("Error al iniciar sesión. Por favor, intenta de nuevo.");
     }
   };
@@ -121,28 +137,50 @@ export default function SignInForm() {
             ¡Introduce tu correo y contraseña para iniciar sesión!
           </p>
 
+          {/* BANNERS */}
+          {error && (
+            <div
+              role="alert"
+              className="mt-3 mb-3 flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-500
+                         dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200"
+            >
+              {error}
+            </div>
+          )}
+          {success && (
+            <div
+              role="status"
+              className="mt-3 mb-3 flex items-center gap-2 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700
+                         dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-200"
+            >
+              {success}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-            {/* Campo correo */}
             {(() => {
               const s = fieldStatus("correo");
               return (
-                <Input
-                  type="email"
-                  name="correo"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value.replace(/\s{2,}/g, " "))
-                  }
-                  placeholder="info@gmail.com"
-                  onBlur={handleBlur}
-                  error={s.error}
-                  success={s.valid}
-                  hint={s.message}
-                />
+                <div>
+                  <Label>
+                    Correo <span className="text-error-500">*</span>
+                  </Label>
+                  <Input
+                    type="email"
+                    name="correo"
+                    value={email}
+                    placeholder="info@gmail.com"
+                    onKeyDown={preventSpaceKey}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={s.error}
+                    success={s.valid}
+                    hint={s.message}
+                  />
+                </div>
               );
             })()}
 
-            {/* Campo contraseña */}
             {(() => {
               const s = fieldStatus("password");
               return (
@@ -150,69 +188,54 @@ export default function SignInForm() {
                   <Label>
                     Contraseña <span className="text-error-500">*</span>
                   </Label>
-                  <div className="relative">
+                  <div className="relative h-11">
                     <Input
                       type={showPassword ? "text" : "password"}
                       name="password"
                       value={password}
-                      onChange={(e) =>
-                        setPassword(e.target.value.replace(/\s/g, ""))
-                      }
                       placeholder="Ingresa tu contraseña"
+                      onChange={handleChange}
                       onBlur={handleBlur}
                       error={s.error}
                       success={s.valid}
-                      hint={s.message}
-                      className="pr-12"
+                      hint={undefined}
+                      className="pr-12 h-11"
                     />
 
-                    <button
-                      type="button"
-                      aria-label={
-                        showPassword
-                          ? "Ocultar contraseña"
-                          : "Mostrar contraseña"
-                      }
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="
-                        absolute right-3 top-[6px]
-                        z-30 p-1.5 rounded-full border shadow-sm
-                        bg-white text-gray-700 hover:text-gray-900
-                        dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white
-                      "
-                    >
-                      {showPassword ? (
-                        <svg
-                          viewBox="0 0 24 24"
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M3 3l18 18" />
-                          <path d="M10.58 10.58A3 3 0 0012 15a3 3 0 002.42-4.42M9.88 5.52A10.94 10.94 0 0112 5c7 0 11 7 11 7a17.1 17.1 0 01-4.38 4.62" />
-                          <path d="M6.62 6.62A17.1 17.1 0 001 12s4 7 11 7a10.94 10.94 0 004.48-.9" />
-                        </svg>
-                      ) : (
-                        <svg
-                          viewBox="0 0 24 24"
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
-                    </button>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <button
+                        type="button"
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="p-1.5 rounded-full border shadow-sm
+                                  bg-white text-gray-700 hover:text-gray-900
+                                  dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white"
+                      >
+                        {showPassword ? (
+                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 3l18 18" />
+                            <path d="M10.58 10.58A3 3 0 0012 15a3 3 0 002.42-4.42M9.88 5.52A10.94 10.94 0 0112 5c7 0 11 7 11 7a17.1 17.1 0 01-4.38 4.62" />
+                            <path d="M6.62 6.62A17.1 17.1 0 001 12s4 7 11 7a10.94 10.94 0 004.48-.9" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
+                  {s.message && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {s.message}
+                    </p>
+                  )}
                 </div>
               );
             })()}
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex justify-end">
               <Link
@@ -233,11 +256,8 @@ export default function SignInForm() {
 
           <div className="mt-5 text-sm text-center text-gray-700 dark:text-gray-400">
             ¿No tienes una cuenta?{" "}
-            <Link
-              to="/signup"
-              className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-            >
-              Regístrate
+            <Link to="/signup" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">
+              Registrate
             </Link>
           </div>
         </div>

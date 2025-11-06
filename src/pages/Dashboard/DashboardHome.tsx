@@ -19,26 +19,6 @@ const DashboardHome = () => {
         description="Panel de administración - Olimpiadas Oh! SanSí 2025"
       />
 
-      {/* Header de bienvenida */}
-      <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-sky-800 dark:text-sky-100">
-              Bienvenido, {user?.name}!
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Rol: <span className="font-medium">{user?.rol}</span>
-            </p>
-          </div>
-          <button
-            onClick={logout}
-            className="mt-3 sm:mt-0 px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition"
-          >
-            Cerrar Sesión
-          </button>
-        </div>
-      </div>
-
       {/* Dashboard de e-commerce (tu contenido original) */}
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">
