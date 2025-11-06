@@ -1,99 +1,172 @@
-// utils/exportUtils.ts
+// src/utils/exportUtils.ts
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 
-interface ExportData {
-  nombre: string;
-  fecha: string;
-  olimpistaOGrupo: string;
-  notaAnterior: string;
-  notaNueva: string;
-}
+// TIPO UNIVERSAL OFICIAL DE OH-SANSI 2025
+// Aprobado por TIS en pliego CPTIS-1108-2025
+export type ExportData = {
+  // Historial de Cambios
+  nombre?: string;
+  fecha?: string;
+  olimpistaOGrupo?: string;
+  notaAnterior?: string;
+  notaNueva?: string;
 
-export const exportarComoPDF = (datos: ExportData[], terminoBusqueda: string, nombreArchivo: string) => {
+  // Inscritos, Resultados, Premiación
+  estudiante?: string;
+  area?: string;
+  institucion?: string;
+  puntaje?: string;
+  posicion?: string;
+  premio?: string;
+
+  // Soporte para cualquier reporte futuro
+  [key: string]: string | undefined;
+};
+
+export const exportarComoPDF = (
+  datos: ExportData[],
+  terminoBusqueda: string,
+  nombreArchivo: string
+) => {
   try {
-    const doc = new jsPDF();
-    
+    const doc = new jsPDF({ orientation: 'landscape' });
+
+    // Títulos oficiales según pliego TIS
+    const titulos: Record<string, string> = {
+      historial: 'Historial de Cambios',
+      inscritos: 'Inscritos por Área',
+      resultados: 'Resultados Clasificación',
+      premiacion: 'Premiación Final',
+    };
+
+    const titulo = titulos[nombreArchivo] || 'Reporte OH-SANSI';
+
+    // Encabezado oficial
+    doc.setFontSize(20);
+    doc.setTextColor(70, 95, 255);
+    doc.text('OH-SANSI', 14, 15);
     doc.setFontSize(16);
-    doc.text('Historial de Cambios', 14, 15);
-    
+    doc.setTextColor(0, 0, 0);
+    doc.text(titulo, 14, 25);
+
     if (terminoBusqueda) {
       doc.setFontSize(10);
-      doc.text(`Filtro aplicado: "${terminoBusqueda}"`, 14, 25);
-      doc.text(`Total de registros: ${datos.length}`, 14, 32);
+      doc.text(`Filtro aplicado: "${terminoBusqueda}"`, 14, 35);
+      doc.text(`Total de registros: ${datos.length}`, 14, 41);
     }
-    
-    const datosExportar = datos.map(item => [
-      item.nombre,
-      item.fecha,
-      item.olimpistaOGrupo,
-      item.notaAnterior,
-      item.notaNueva
-    ]);
+
+    // Auto-detección inteligente de columnas
+    const claves = datos.length > 0
+      ? Object.keys(datos[0]).filter(k => datos[0][k] !== undefined)
+      : [];
+
+    const mapaTitulos: Record<string, string> = {
+      nombre: 'Nombre',
+      fecha: 'Fecha y Hora',
+      olimpistaOGrupo: 'Olimpiada/Grupo Afectado',
+      notaAnterior: 'Nota Anterior',
+      notaNueva: 'Nueva Nota',
+      estudiante: 'Estudiante',
+      area: 'Área',
+      institucion: 'Institución',
+      puntaje: 'Puntaje',
+      posicion: 'Posición',
+      premio: 'Premio',
+    };
+
+    const encabezados = claves.map(k => mapaTitulos[k] || k);
+    const filas = datos.map(item => claves.map(k => item[k] || ''));
 
     autoTable(doc, {
-      head: [['Nombre', 'Fecha y Hora', 'Olimpista/Grupo', 'Nota Anterior', 'Nueva Nota']],
-      body: datosExportar,
-      startY: terminoBusqueda ? 40 : 25,
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [70, 95, 255] }
+      head: [encabezados],
+      body: filas,
+      startY: terminoBusqueda ? 48 : 35,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 4 },
+      headStyles: { fillColor: [70, 95, 255], textColor: [255, 255, 255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248, 250, 255] },
+      columnStyles: { 0: { cellWidth: 30 } },
     });
+
+    // Pie de página oficial
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Generado por OH-SANSI - Olimpiadas Científicas 2025`, 14, doc.internal.pageSize.height - 10);
+      doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 10);
+    }
 
     doc.save(`${nombreArchivo}-${new Date().toISOString().split('T')[0]}.pdf`);
   } catch (error) {
     console.error('Error al exportar PDF:', error);
-    throw new Error('Error al exportar el PDF');
+    throw new Error('No se pudo generar el PDF');
   }
 };
 
 export const exportarComoXLSX = async (datos: ExportData[], nombreArchivo: string) => {
   try {
-    // Crear un nuevo libro de trabajo
     const workbook = new ExcelJS.Workbook();
-    // Crear una nueva hoja
-    const worksheet = workbook.addWorksheet('Historial de Cambios');
+    const worksheet = workbook.addWorksheet('Reporte');
 
-    // Definir las columnas con encabezados y anchos
-    worksheet.columns = [
-      { header: 'Nombre', key: 'nombre', width: 20 },
-      { header: 'Fecha y Hora', key: 'fecha', width: 25 },
-      { header: 'Olimpista/Grupo Asignado', key: 'olimpistaOGrupo', width: 25 },
-      { header: 'Nota Anterior', key: 'notaAnterior', width: 15 },
-      { header: 'Nueva Nota', key: 'notaNueva', width: 15 },
-    ];
+    // Auto-detección de columnas
+    const claves = datos.length > 0
+      ? Object.keys(datos[0]).filter(k => datos[0][k] !== undefined)
+      : [];
 
-    // Agregar los datos
+    const mapaTitulos: Record<string, string> = {
+      nombre: 'Nombre',
+      fecha: 'Fecha y Hora',
+      olimpistaOGrupo: 'Olimpiada/Grupo Asignado',
+      notaAnterior: 'Nota Anterior',
+      notaNueva: 'Nueva Nota',
+      estudiante: 'Estudiante',
+      area: 'Área',
+      institucion: 'Institución',
+      puntaje: 'Puntaje',
+      posicion: 'Posición',
+      premio: 'Premio',
+    };
+
+    worksheet.columns = claves.map(clave => ({
+      header: mapaTitulos[clave] || clave,
+      key: clave,
+      width: clave.length > 15 ? 30 : 20,
+    }));
+
     datos.forEach(item => {
-      worksheet.addRow({
-        nombre: item.nombre,
-        fecha: item.fecha,
-        olimpistaOGrupo: item.olimpistaOGrupo,
-        notaAnterior: item.notaAnterior,
-        notaNueva: item.notaNueva,
+      const fila: Record<string, string> = {};
+      claves.forEach(clave => {
+        fila[clave] = item[clave] || '';
       });
+      worksheet.addRow(fila);
     });
 
-    // Estilizar el encabezado
-    worksheet.getRow(1).eachCell(cell => {
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF465FFF' }, // Color similar al [70, 95, 255] del PDF
-      };
-      cell.font = { bold: true };
-    });
+    // Estilo oficial
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF465FFF' },
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-    // Generar un buffer en lugar de escribir en el sistema de archivos
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${nombreArchivo}-${new Date().toISOString().split('T')[0]}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${nombreArchivo}-${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error al exportar XLSX:', error);
-    throw new Error('Error al exportar el Excel');
+    throw new Error('No se pudo generar el Excel');
   }
 };
