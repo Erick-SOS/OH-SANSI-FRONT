@@ -1,4 +1,4 @@
-import { Olympian } from "../../types/olympista";
+import { Olympian } from "./types/olympista";
 
 
 export const LS_KEY = "olympians:v4";
