@@ -72,11 +72,6 @@ const navItems: NavItem[] = [
     path: "/fases-de-evaluacion",
   },
   {
-    icon: <MdBarChart size={20} />,
-    name: "Resultados de Calificaciones",
-    path: "/resultados-de-calificaciones",
-  },
-  {
     icon: <MdOutlineAssessment size={20} />,
     name: "Generación de Reportes",
     path: "/reportes",

@@ -7,6 +7,8 @@ interface InputProps {
   name?: string;
   placeholder?: string;
   value?: string | number;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  onPaste?: React.ClipboardEventHandler<HTMLInputElement>;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   className?: string;
@@ -25,6 +27,8 @@ const Input: FC<InputProps> = ({
   name,
   placeholder,
   value,
+  onKeyDown,
+  onPaste,
   onChange,
   onBlur,
   className = "",
@@ -56,6 +60,8 @@ const Input: FC<InputProps> = ({
         name={name}
         placeholder={placeholder}
         value={value}
+        onKeyDown={onKeyDown}
+        onPaste={onPaste}
         onChange={onChange}
         onBlur={onBlur} 
         min={min}

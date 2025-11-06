@@ -79,10 +79,14 @@ export default function SignUpForm() {
         const valid = v.length > 0;
         return { error: !valid, valid, message: valid ? undefined : "Ingrese la parte numerica de su documento de identidad" };
       }
+      case "complemento_documento": {
+        if (!v) return { error: false, valid: false };
+        const ok = /^[A-Z0-9Ñ-]{1,3}$/.test(v) && (v.match(/-/g)?.length ?? 0) <= 1;
+        return { error: !ok, valid: ok, message: ok ? undefined : "Máx. 3 (A-Z/Ñ, 0-9, un guion)." };
+      }
       
       case "profesion":
       case "institucion":
-      case "complemento_documento":
       case "cargo": {
         const valid = v.length > 0;
         return { error: false, valid, message: undefined };
@@ -95,29 +99,51 @@ export default function SignUpForm() {
     
   };
   
+  const preventSpaceKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === " ") e.preventDefault();
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let newValue = value;
 
-    if (name === "password" || name === "confirmPassword") {
-      newValue = value.replace(/\s/g, "");
-    }
-    if (["nombre", "ap_paterno", "ap_materno", "profesion", "cargo"].includes(name)) {
-      newValue = value.replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ\s]/g, "");
-    }
-    if (["telefono"].includes(name)) {
-      newValue = value.replace(/[^0-9]/g, "");
-    }
-    if (["numero_documento"].includes(name)) {
-      newValue = value.replace(/[^0-9-]/g, "");
-    }
-    if (name === "complemento_documento") {  
-      newValue = value.toUpperCase().replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ]/g, "");  
+    if (name === "correo") {
+      newValue = value.replace(/\s+/g, "").slice(0, 80);
     }
 
-    setFormData({ ...formData, [name]: newValue });
-    setError("");   
+    if (name === "password" || name === "confirmPassword") {
+      newValue = value.replace(/\s/g, "").slice(0, 30);
+    }
+    if (["nombre", "ap_paterno", "ap_materno", "institucion", "profesion", "cargo"].includes(name)) {
+      newValue = value
+        .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/^\s+/, "")
+        .slice(0, 40);
+    }
+    if (name === "telefono") {
+      newValue = value.replace(/[^0-9]/g, "").slice(0, 9);
+    }
+    if (name === "numero_documento") {
+      newValue = value.replace(/[^0-9-]/g, "").slice(0, 10);
+    }
+    if (name === "complemento_documento") {
+      let s = value.toUpperCase().replace(/[^A-Z0-9Ñ-]/g, "");
+
+      const firstDash = s.indexOf("-");
+      if (firstDash !== -1) {
+        s = s.slice(0, firstDash + 1) + s.slice(firstDash + 1).replace(/-/g, "");
+      }
+      newValue = s.slice(0, 3);
+    }
+    
+
+    setFormData(prev => ({ ...prev, [name]: newValue }));
+    setTouched(prev => ({ ...prev, [name]: true }));   // ← valida mientras escribe
+    setError("");
+    setSuccess("");
   };
+
 
   const getErrorMessage = (err: unknown) => {
     if (err instanceof Error) return err.message;
@@ -269,7 +295,7 @@ export default function SignUpForm() {
             return (
               <div>
                 <Label>Correo electrónico <span className="text-red-500">*</span></Label>
-                <Input type="email" name="correo" placeholder="ejemplo@gmail.com" value={formData.correo} onChange={handleChange} onBlur={handleBlur} error={s.error}  success={s.valid} hint={s.message}/>
+                <Input type="email" name="correo" placeholder="ejemplo@gmail.com" value={formData.correo} onKeyDown={preventSpaceKey} onChange={handleChange} onBlur={handleBlur} error={s.error}  success={s.valid} hint={s.message}/>
               </div>
             );
           })()}
@@ -320,7 +346,7 @@ export default function SignUpForm() {
             );
           })()}
 
-          {(() => { const s = fieldStatus("profesion");
+          {(() => { const s = fieldStatus("cargo");
             return (
               <div>
                 <Label>Cargo</Label>
@@ -329,17 +355,21 @@ export default function SignUpForm() {
             );
           })()}
 
-          <PasswordField password={formData.password} confirmPassword={formData.confirmPassword} onChange={handleChange}
-            onBlur={handleBlur} blockSpaces
+          <PasswordField
+            password={formData.password}
+            confirmPassword={formData.confirmPassword}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            blockSpaces
 
-              invalidPassword={touched.password && !match}
-              validPassword={touched.password && match}
+            invalidPassword={!!touched.password && !match}
+            validPassword={!!touched.password && match}
 
-              invalidConfirm={touched.confirmPassword && !valid}
-              validConfirm={touched.confirmPassword && valid}
+            invalidConfirm={!!touched.confirmPassword && (!match || !valid)}
+            validConfirm={!!touched.confirmPassword && match && valid}
 
-              passwordHint={touched.password ? passwordMessage : undefined}
-              confirmHint={touched.confirmPassword ? confirmMessage : undefined}
+            passwordHint={touched.password ? passwordMessage : undefined}
+            confirmHint={touched.confirmPassword ? confirmMessage : undefined}
           />
           
 
