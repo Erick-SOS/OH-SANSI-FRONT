@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Search, Download, FileSpreadsheet } from "lucide-react";
 import { ImportModal } from "./ImportModal";
-import { Olympian } from "../../types/olympista";
+import { Olympian } from "./types/olympista";
 import { download, loadFromLS, saveToLS, toCSV } from "./helpers";
 import { OlympiansTable } from "./OlympiasnTable";
 import { uploadCSV } from "../../api/OlympiasService";
- // ✅ nuevo servicio
 
 export const OlympiansListLocalprueba: React.FC = () => {
   const [rows, setRows] = useState<Olympian[]>([]);
@@ -53,12 +52,7 @@ export const OlympiansListLocalprueba: React.FC = () => {
     setImportErr(null);
   };
 
-  const onDownloadErrors =  () => {
-    if (rowErrors.length) {
-      download("errores.csv", toCSV(rowErrors));
-    }
-  };
-    const generateErrorCSV = () => {
+  const generateErrorCSV = () => {
     if (!rowErrors.length && !rowWarnings.length) return;
 
     const rows: string[] = [];
