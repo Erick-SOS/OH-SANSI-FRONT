@@ -1,220 +1,221 @@
 // src/pages/GeneracionReportes.tsx
 import React, { useState, useMemo } from 'react';
+import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
+import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
+import { exportarComoPDF, exportarComoXLSX, type ExportData } from '../utils/exportUtils';
 
-// Tipos de reporte
-const tiposReporte = [
-  { value: 'historial', label: 'Historial de Cambios' },
-  { value: 'inscritos', label: 'Inscritos por Área' },
-  { value: 'resultados', label: 'Resultados Clasificación' },
-  { value: 'premiacion', label: 'Premiación Final' },
-] as const;
+type ReporteKey = 'historial' | 'inscritos' | 'resultados' | 'premiacion';
 
-// Columnas por tipo
-const columnas = {
-  historial: ['N°', 'Nombre', 'Fecha y Hora', 'Olimpiada/Grupo Afectado', 'Nota Anterior', 'Nueva Nota'],
-  inscritos: ['N°', 'Estudiante', 'Área', 'Institución', 'Fecha Inscripción'],
-  resultados: ['N°', 'Estudiante', 'Puntaje', 'Posición', 'Área'],
-  premiacion: ['N°', 'Estudiante', 'Premio', 'Área', 'Institución'],
-} as const;
-
-// Datos de ejemplo (20 filas)
-const datosEjemplo = {
-  historial: Array.from({ length: 20 }, (_, i) => ({
-    nombre: `Umad Wilson ${i + 1}`,
-    fecha: `20/03/2025 - 18:0${i % 5} hrs`,
-    grupo: 'Abraham Espinoza',
-    notaAnt: 20 - (i % 5),
-    notaNueva: 20,
-  })),
-  inscritos: Array.from({ length: 20 }, (_, i) => ({
-    estudiante: `Estudiante ${i + 1}`,
-    area: ['Matemáticas', 'Física', 'Química'][i % 3],
-    institucion: 'Colegio Nacional',
-    fecha: '01/03/2025',
-  })),
-  resultados: Array.from({ length: 20 }, (_, i) => ({
-    estudiante: `Estudiante ${i + 1}`,
-    puntaje: 95 - i,
-    posicion: i + 1,
-    area: 'Física',
-  })),
-  premiacion: Array.from({ length: 20 }, (_, i) => ({
-    estudiante: `Ganador ${i + 1}`,
-    premio: ['Oro', 'Plata', 'Bronce'][i % 3],
-    area: 'Química',
-    institucion: 'IEP San José',
-  })),
-} as const;
-
-type ReporteKey = keyof typeof datosEjemplo;
+const configuraciones = {
+  historial: {
+    titulo: 'Historial de Cambios',
+    columnas: [
+      { clave: 'nombre', titulo: 'Nombre', alineacion: 'izquierda' as const },
+      { clave: 'fecha', titulo: 'Fecha y Hora', alineacion: 'izquierda' as const },
+      { clave: 'olimpistaOGrupo', titulo: 'Olimpiada/Grupo Afectado', alineacion: 'izquierda' as const },
+      { clave: 'notaAnterior', titulo: 'Nota Anterior', alineacion: 'centro' as const },
+      { clave: 'notaNueva', titulo: 'Nueva Nota', alineacion: 'centro' as const },
+    ],
+    datos: Array.from({ length: 57 }, (_, i): ExportData => ({
+      nombre: i % 2 === 0 ? 'Umad Wilson' : 'Juan Pérez',
+      fecha: `20/03/2025 - 18:0${(i % 5) + 1} hrs`,
+      olimpistaOGrupo: 'Abraham Espinoza',
+      notaAnterior: String(20 - (i % 5)),
+      notaNueva: '20',
+    })),
+  },
+  inscritos: {
+    titulo: 'Inscritos por Área',
+    columnas: [
+      { clave: 'estudiante', titulo: 'Estudiante', alineacion: 'izquierda' as const },
+      { clave: 'area', titulo: 'Área', alineacion: 'izquierda' as const },
+      { clave: 'institucion', titulo: 'Institución', alineacion: 'izquierda' as const },
+      { clave: 'fecha', titulo: 'Fecha Inscripción', alineacion: 'centro' as const },
+    ],
+    datos: Array.from({ length: 57 }, (_, i): ExportData => ({
+      estudiante: `Estudiante ${i + 1}`,
+      area: ['Matemáticas', 'Física', 'Química'][i % 3],
+      institucion: 'Colegio Nacional',
+      fecha: '01/03/2025',
+    })),
+  },
+  resultados: {
+    titulo: 'Resultados Clasificación',
+    columnas: [
+      { clave: 'estudiante', titulo: 'Estudiante', alineacion: 'izquierda' as const },
+      { clave: 'puntaje', titulo: 'Puntaje', alineacion: 'centro' as const },
+      { clave: 'posicion', titulo: 'Posición', alineacion: 'centro' as const },
+      { clave: 'area', titulo: 'Área', alineacion: 'izquierda' as const },
+    ],
+    datos: Array.from({ length: 57 }, (_, i): ExportData => ({
+      estudiante: `Estudiante ${i + 1}`,
+      puntaje: String(95 - i),
+      posicion: String(i + 1),
+      area: 'Física',
+    })),
+  },
+  premiacion: {
+    titulo: 'Premiación Final',
+    columnas: [
+      { clave: 'estudiante', titulo: 'Estudiante', alineacion: 'izquierda' as const },
+      { clave: 'premio', titulo: 'Premio', alineacion: 'centro' as const },
+      { clave: 'area', titulo: 'Área', alineacion: 'izquierda' as const },
+      { clave: 'institucion', titulo: 'Institución', alineacion: 'izquierda' as const },
+    ],
+    datos: Array.from({ length: 57 }, (_, i): ExportData => ({
+      estudiante: `Ganador ${i + 1}`,
+      premio: ['Oro', 'Plata', 'Bronce'][i % 3],
+      area: 'Química',
+      institucion: 'IEP San José',
+    })),
+  },
+};
 
 const GeneracionReportes: React.FC = () => {
   const [tipo, setTipo] = useState<ReporteKey>('historial');
-  const [busqueda, setBusqueda] = useState('');
-  const [pagina, setPagina] = useState(1);
-  const porPagina = 7;
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [terminoBusqueda, setTerminoBusqueda] = useState('');
+  const [exportando, setExportando] = useState(false);
 
-  const datos = datosEjemplo[tipo];
-  const cols = columnas[tipo];
+  const config = configuraciones[tipo];
+  const registrosPorPagina = 7;
 
-  const filtrados = useMemo(() => {
-    return datos.filter((item) =>
-      Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(busqueda.toLowerCase())
-      )
+  const datosFiltrados = useMemo((): ExportData[] => {
+    if (!terminoBusqueda.trim()) return config.datos;
+    const termino = terminoBusqueda.toLowerCase();
+    return config.datos.filter((item) =>
+      Object.values(item).some((val) => typeof val === 'string' && val.toLowerCase().includes(termino))
     );
-  }, [datos, busqueda]);
+  }, [config.datos, terminoBusqueda]);
 
-  const paginados = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina);
-  const totalPaginas = Math.ceil(filtrados.length / porPagina);
+  const datosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * registrosPorPagina;
+    const fin = inicio + registrosPorPagina;
+    return datosFiltrados.slice(inicio, fin);
+  }, [datosFiltrados, paginaActual]);
 
-  // Exportar como CSV
-  const exportarCSV = () => {
-    const header = cols.join(',') + '\n';
-    const rows = paginados.map((row, i) =>
-      [(pagina - 1) * porPagina + i + 1, ...Object.values(row)].join(',')
-    ).join('\n');
-    const csv = '\uFEFF' + header + rows;
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${tipo}_reporte.csv`;
-    link.click();
+  const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
+
+  const handleCambioPagina = (pagina: number) => setPaginaActual(pagina);
+  
+  const handleBuscarChange = (termino: string) => {
+    setTerminoBusqueda(termino);
+    setPaginaActual(1);
   };
 
-  // Exportar como PDF (imprime)
-  const exportarPDF = () => {
-    const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) return;
+  const handleExportarPDF = async () => {
+    setExportando(true);
+    try {
+      await exportarComoPDF(datosFiltrados, terminoBusqueda, tipo);
+    } catch (error) {
+      alert((error as Error).message);
+    } finally {
+      setExportando(false);
+    }
+  };
 
-    const filas = paginados
-      .map((row, i) => {
-        const valores = [(pagina - 1) * porPagina + i + 1, ...Object.values(row)];
-        return `<tr>${valores.map(v => `<td style="padding:8px;border:1px solid #ddd;">${v}</td>`).join('')}</tr>`;
-      })
-      .join('');
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Reporte ${tipo}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-          </style>
-        </head>
-        <body>
-          <h1>Reporte: ${tiposReporte.find(t => t.value === tipo)?.label}</h1>
-          <table>
-            <thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-            <tbody>${filas}</tbody>
-          </table>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+  const handleExportarXLSX = async () => {
+    setExportando(true);
+    try {
+      await exportarComoXLSX(datosFiltrados, tipo);
+    } catch (error) {
+      alert((error as Error).message);
+    } finally {
+      setExportando(false);
+    }
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Generación de reportes</h1>
+    <div className="p-1">
+      {/* TÍTULO + BREADCRUMB */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
+          Generación de reportes
+        </h1>
+        <nav className="text-sm text-gray-600 dark:text-gray-400">
+          <span>Inicio</span>
+          <span className="mx-2">›</span>
+          <span className="text-gray-800 dark:text-white">Generación de reportes</span>
+        </nav>
+      </div>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex flex-wrap items-center gap-4 justify-center">
-          <span className="text-sm font-medium text-gray-700">Tipo de reporte</span>
-          <select
-            value={tipo}
-            onChange={(e) => { setTipo(e.target.value as ReporteKey); setPagina(1); }}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {tiposReporte.map(t => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
-          <button className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">
-            Generar reporte
-          </button>
+      {/* SELECTOR + BOTONES */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Tipo de reporte:
+            </span>
+            <select
+              value={tipo}
+              onChange={(e) => {
+                setTipo(e.target.value as ReporteKey);
+                setPaginaActual(1);
+                setTerminoBusqueda('');
+              }}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#465FFF] bg-white dark:bg-gray-700"
+            >
+              <option value="historial">Historial de Cambios</option>
+              <option value="inscritos">Inscritos por Área</option>
+              <option value="resultados">Resultados Clasificación</option>
+              <option value="premiacion">Premiación Final</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleExportarPDF}
+              disabled={exportando}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exportando ? 'Exportando...' : 'Exportar como PDF'}
+            </button>
+            <button
+              onClick={handleExportarXLSX}
+              disabled={exportando}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exportando ? 'Exportando...' : 'Exportar como XLSX'}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <div className="relative">
-            <svg className="absolute left-3 top-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button onClick={exportarPDF} className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Exportar como PDF
-            </button>
-            <button onClick={exportarCSV} className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Exportar como XLSX
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                {cols.map((col) => (
-                  <th key={col} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginados.map((row, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {(pagina - 1) * porPagina + index + 1}
-                  </td>
-                  {Object.values(row).map((val, i) => (
-                    <td key={i} className="px-6 py-4 text-sm text-gray-900">
-                      {String(val)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center bg-gray-50">
-          <p className="text-sm text-gray-600">
-            Mostrando {(pagina - 1) * porPagina + 1} de {Math.min(pagina * porPagina, filtrados.length)} de {filtrados.length}
-          </p>
-          <Paginacion
-            paginaActual={pagina}
-            totalPaginas={totalPaginas}
-            totalRegistros={filtrados.length}
-            registrosPorPagina={porPagina}
-            onPaginaChange={setPagina}
-          />
-        </div>
+      {/* BARRA DE BÚSQUEDA */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
+        <BarraBusquedaAreas
+          terminoBusqueda={terminoBusqueda}
+          onBuscarChange={handleBuscarChange}
+        />
       </div>
+
+      {/* RESULTADOS */}
+      {terminoBusqueda && (
+        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          {datosFiltrados.length} resultados encontrados para "{terminoBusqueda}"
+        </div>
+      )}
+
+      {/* TABLA */}
+      <div className="mb-1">
+        <TablaBase
+          datos={datosPaginados}
+          columnas={config.columnas}
+          conOrdenamiento={false}
+          conAcciones={false}
+          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+        />
+      </div>
+
+      {/* PAGINACIÓN */}
+      <Paginacion
+        paginaActual={paginaActual}
+        totalPaginas={totalPaginas}
+        totalRegistros={datosFiltrados.length}
+        registrosPorPagina={registrosPorPagina}
+        onPaginaChange={handleCambioPagina}
+      />
     </div>
   );
 };

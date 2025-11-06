@@ -15,7 +15,6 @@ import {
   MdAssignmentInd,    // Designar responsables
   MdPeople,           // Lista de inscritos
   MdChecklist,        // Fases de evaluación
-  MdBarChart,         // Resultados
   MdCardGiftcard,
 } from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
@@ -67,10 +66,13 @@ const navItems: NavItem[] = [
     path: "/fases-de-competencia",
   },
   {
-    icon: <MdChecklist size={20} />,
-    name: "Fases de Evaluación",
-    path: "/fases-de-evaluacion",
-  },
+  icon: <MdChecklist size={20} />,
+  name: "Fases de Evaluación",
+  subItems: [
+    { name: "Individual", path: "/fases-de-evaluacion/individual" },
+    { name: "Grupal", path: "/fases-de-evaluacion/grupal" },
+  ],
+},
   {
     icon: <MdOutlineAssessment size={20} />,
     name: "Generación de Reportes",

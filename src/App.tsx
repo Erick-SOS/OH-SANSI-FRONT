@@ -12,7 +12,6 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import HistorialDeCambios from "./pages/HistorialDeCambios";
 import CantidadDeMedallas from "./pages/CantidadDeMedallas";
-import FasesDeEvaluacion from "./pages/FasesDeEvaluacion";
 import ListaDePremiados from "./pages/ListaDePremiados";
 import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
 import ResetPasswordPage from "./pages/AuthPages/ResetPasswordPage";
@@ -31,7 +30,8 @@ import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
 import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
 import Reglamento from "./pages/PublicInfo/Reglamento";
 import { OlympiansListLocalprueba } from "./components/importarOlimpista/OlympiansListLocalprueba.tsx";
-
+import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
+import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
 
 export default function App() {
   return (
@@ -44,7 +44,6 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
             <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaciones />} />
-
             <Route path="/sobre-el-proyecto" element={<SobreElProyecto />} />
             <Route path="/areas-publicas" element={<AreasPublicas />} />
             <Route path="/fases-evaluacion-publica" element={<FasesEvaluacionPublica />} />
@@ -61,64 +60,30 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             {/* ---- TODAS LAS RUTAS PROTEGIDAS ---- */}
+            <Route path="/profile" element={<ProtectedRoute><UserProfiles /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+            <Route path="/blank" element={<ProtectedRoute><Blank /></ProtectedRoute>} />
+            <Route path="/historial-de-cambios" element={<ProtectedRoute><HistorialDeCambios /></ProtectedRoute>} />
+            <Route path="/cantidad-de-medallas" element={<ProtectedRoute><CantidadDeMedallas /></ProtectedRoute>} />
+            <Route path="/lista-de-inscritos" element={<ProtectedRoute><OlympiansListLocalprueba /></ProtectedRoute>} />
+            <Route path="/lista-de-premiados" element={<ProtectedRoute><ListaDePremiados /></ProtectedRoute>} />
+            <Route path="/areas" element={<ProtectedRoute><Areas /></ProtectedRoute>} />
+            <Route path="/niveles" element={<ProtectedRoute><Niveles /></ProtectedRoute>} />
+            <Route path="/fases-de-competencia" element={<ProtectedRoute><FasesDeCompetencia /></ProtectedRoute>} />
+            <Route path="/reportes" element={<ProtectedRoute><GeneracionReportes /></ProtectedRoute>} />
+            <Route path="/olimpias-premios" element={<ProtectedRoute><OlimpiasPremios /></ProtectedRoute>} />
+            <Route path="/Responsables" element={<ProtectedRoute><Responsables /></ProtectedRoute>} />
             <Route
-              path="/profile"
-              element={<ProtectedRoute><UserProfiles /></ProtectedRoute>}
+              path="/fases-de-evaluacion/individual"
+              element={<ProtectedRoute><FasesEvaluacionIndividual /></ProtectedRoute>}
             />
             <Route
-              path="/calendar"
-              element={<ProtectedRoute><Calendar /></ProtectedRoute>}
+              path="/fases-de-evaluacion/grupal"
+              element={<ProtectedRoute><FasesEvaluacionGrupal /></ProtectedRoute>}
             />
-            <Route
-              path="/blank"
-              element={<ProtectedRoute><Blank /></ProtectedRoute>}
-            />
-            <Route
-              path="/historial-de-cambios"
-              element={<ProtectedRoute><HistorialDeCambios /></ProtectedRoute>}
-            />
-            <Route
-              path="/cantidad-de-medallas"
-              element={<ProtectedRoute><CantidadDeMedallas /></ProtectedRoute>}
-            />
-            <Route
-              path="/lista-de-inscritos"
-              element={<ProtectedRoute><OlympiansListLocalprueba /></ProtectedRoute>}
-            />
-            <Route
-              path="/fases-de-evaluacion"
-              element={<ProtectedRoute><FasesDeEvaluacion /></ProtectedRoute>}
-            />
-            <Route
-              path="/lista-de-premiados"
-              element={<ProtectedRoute><ListaDePremiados /></ProtectedRoute>}
-            />
-            <Route
-              path="/areas"
-              element={<ProtectedRoute><Areas /></ProtectedRoute>}
-            />
-            <Route
-              path="/niveles"
-              element={<ProtectedRoute><Niveles /></ProtectedRoute>}
-            />
-            <Route
-              path="/fases-de-competencia"
-              element={<ProtectedRoute><FasesDeCompetencia /></ProtectedRoute>}
-            />
-            <Route
-              path="/reportes"
-              element={<ProtectedRoute><GeneracionReportes /></ProtectedRoute>}
-            />
-            <Route
-              path="/olimpias-premios"
-              element={<ProtectedRoute><OlimpiasPremios /></ProtectedRoute>}
-            />
-            <Route
-              path="/Responsables"
-              element={<ProtectedRoute><Responsables /></ProtectedRoute>}
-            />
-            {/* ... UI Elements, Forms, Tables, Charts ... */}
+
           </Route>
 
           {/* ================== AUTH ================== */}
