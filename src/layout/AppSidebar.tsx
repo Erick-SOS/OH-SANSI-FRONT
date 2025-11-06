@@ -15,7 +15,6 @@ import {
   MdAssignmentInd,    // Designar responsables
   MdPeople,           // Lista de inscritos
   MdChecklist,        // Fases de evaluación
-  MdBarChart,         // Resultados
   MdCardGiftcard,
 } from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
