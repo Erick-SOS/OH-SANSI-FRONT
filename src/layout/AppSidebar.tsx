@@ -33,16 +33,6 @@ const navItems: NavItem[] = [
     path: "/dashboard",
   },
   {
-    icon: <GridIcon />,
-    name: "Dashboard Responsable",
-    path: "/dashboard-responsable",
-  },
-  {
-    icon: <GridIcon />,
-    name: "Dashboard Administrador",
-    path: "/dashboard-admin",
-  },
-  {
     icon: <MdOutlineCategory size={20} />,
     name: "Gestionar áreas y niveles",
     subItems: [
