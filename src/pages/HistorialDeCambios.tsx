@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
-import { exportarComoPDF, exportarComoXLSX } from '../utils/exportUtils'; // Ajustada la ruta
+import { exportarComoPDF, exportarComoXLSX, ExportData } from '../utils/exportUtils'; // Ajustada la ruta
 
 interface HistorialItem {
   id: number;
@@ -137,7 +137,7 @@ const HistorialDeCambios: React.FC = () => {
   const handleExportarComoPDF = async () => {
     setExportando(true);
     try {
-      await exportarComoPDF(datosFiltrados, terminoBusqueda, 'historial-cambios');
+      await exportarComoPDF(datosFiltrados.map(({ id, ...rest }) => rest) as ExportData[], terminoBusqueda, 'historial-cambios');
     } catch (error) {
       alert((error as Error).message);
     } finally {
@@ -148,7 +148,7 @@ const HistorialDeCambios: React.FC = () => {
   const handleExportarComoXLSX = async () => {
     setExportando(true);
     try {
-      await exportarComoXLSX(datosFiltrados, 'historial-cambios');
+      await exportarComoXLSX(datosFiltrados.map(({ id, ...rest }) => rest) as ExportData[], 'historial-cambios');
     } catch (error) {
       alert((error as Error).message);
     } finally {
