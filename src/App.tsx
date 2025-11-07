@@ -24,6 +24,8 @@ import GeneracionReportes from "./pages/GeneracionReportes";
 import Responsables from "./pages/Responsables.tsx";
 import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
+import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
+import DashboardResponsable from "./pages/Dashboard/DashboardResponsable";
 import ProtectedLayoutWithSidebar from "./layout/ProtectedLayoutWithSidebar";
 import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
@@ -51,14 +53,19 @@ export default function App() {
           </Route>
 
           {/* ================== LAYOUT PROTEGIDO (con Sidebar) ================== */}
-          <Route element={<ProtectedLayoutWithSidebar />}>
+          <Route path="/" element={<ProtectedLayoutWithSidebar />}>
+            {/* Dashboard general */}
+            <Route index element={<DashboardHome />} />
+            <Route path="dashboard" element={<DashboardHome />} />
+            {/* Dashboard de responsable de area */}
             <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardHome />
-                </ProtectedRoute>
-              }
+              path="dashboard-admin"
+              element={<DashboardAdmin />}
+            />
+            {/* Dashboard de responsable de area */}
+            <Route
+              path="dashboard-responsable"
+              element={<DashboardResponsable />}
             />
 
             {/* ---- TODAS LAS RUTAS PROTEGIDAS ---- */}
