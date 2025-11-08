@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logoImg from "../../../public/images/LogoUmss/unnamed.png";
+import images from "../../assets/images";
 
 const Footer = () => {
   return (
@@ -10,11 +10,10 @@ const Footer = () => {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <img
-                src={logoImg}
+                src={images.logoUmss}
                 alt="Logo Oh! SanSí"
-                className="h-8 w-8 object-contain"
+                className="h-30 w-90 object-contain"
               />
-              <span className="text-xl font-bold">Oh! SanSí</span>
             </div>
             <p className="text-gray-400 text-sm">
               Olimpiada en Ciencias y Tecnología San Simón, un espacio para el
@@ -22,28 +21,38 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Columna 2 */}
+          {/* Columna 2 - Enlaces Rápidos (coherentes con Header) */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Enlaces Rápidos</h3>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
+                <Link to="/" className="hover:text-blue-400 transition">
+                  Inicio
+                </Link>
+              </li>
+              <li>
+                <Link to="/sobre-el-proyecto" className="hover:text-blue-400 transition">
+                  Sobre el Proyecto
+                </Link>
+              </li>
+              <li>
+                <Link to="/areas-publicas" className="hover:text-blue-400 transition">
+                  Áreas
+                </Link>
+              </li>
+              <li>
                 <Link to="/resultados-de-calificaciones" className="hover:text-blue-400 transition">
-                  Consulta de Resultados
+                  Consultar Resultados
                 </Link>
               </li>
               <li>
-                <Link to="/areas" className="hover:text-blue-400 transition">
-                  Áreas de Competencia
-                </Link>
-              </li>
-              <li>
-                <Link to="/fases-de-evaluacion" className="hover:text-blue-400 transition">
+                <Link to="/fases-evaluacion-publica" className="hover:text-blue-400 transition">
                   Fases de Evaluación
                 </Link>
               </li>
               <li>
-                <Link to="/lista-de-premiados" className="hover:text-blue-400 transition">
-                  Premiación
+                <Link to="/reglamento" className="hover:text-blue-400 transition">
+                  Reglamento
                 </Link>
               </li>
             </ul>
