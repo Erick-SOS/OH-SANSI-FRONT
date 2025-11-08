@@ -99,7 +99,7 @@ export default function SignInForm() {
       if (email === "admin@gmail.com" && password === "12345678La#") {
         await login(email, password, { name: "Administrador", rol: "administrador" });
         setSuccess("Inicio de sesión correcto. Redirigiendo…");
-        setTimeout(() => navigate("/dashboard-admin"), 1200);
+        setTimeout(() => navigate("/dashboard"), 1200);
       } else if (email === "evaluador@gmail.com" && password === "12345678La#") {
         await login(email, password, { name: "Evaluador", rol: "EVALUADOR" });
         setSuccess("Inicio de sesión correcto. Redirigiendo…");
@@ -107,7 +107,7 @@ export default function SignInForm() {
       } else if (email === "responsable@gmail.com" && password === "12345678La#") {
         await login(email, password, { name: "Responsable", rol: "RESPONSABLE" });
         setSuccess("Inicio de sesión correcto. Redirigiendo…");
-        setTimeout(() => navigate("/dashboard-responsable"), 1200);
+        setTimeout(() => navigate("/dashboard"), 1200);
       } else {
         setError("Correo o contraseña incorrectos");
       }
