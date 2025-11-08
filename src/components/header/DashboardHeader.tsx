@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { ThemeToggleButton } from "../common/ThemeToggleButton";
 import UserDropdown from "./UserDropdown";
 import { AuthContext } from "../../context/AuthContext";
-import logoImg from "../../../public/images/LogoUmss/unnamed.png";
 
 const DashboardHeader = () => {
   const { user } = useContext(AuthContext);
@@ -14,14 +13,18 @@ const DashboardHeader = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center space-x-2">
-            <img src={logoImg} alt="Logo" className="h-8 w-8 object-contain" />
+            {/* Logo con URL directa (funciona) */}
+            <img 
+              src="/images/LogoUmss/unnamed.png" 
+              alt="Logo Oh! SanSí" 
+              className="h-8 w-8 object-contain"
+            />
             <span className="text-xl font-bold text-sky-800 dark:text-sky-100">
               Oh! SanSí
             </span>
           </Link>
 
-          {/* Right Side */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4 pr-1 sm:pr-20">
             <ThemeToggleButton />
             {user ? <UserDropdown /> : null}
           </div>

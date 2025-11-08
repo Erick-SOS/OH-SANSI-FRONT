@@ -1,11 +1,11 @@
-import { useContext } from "react";
-import { AuthContext } from "../../context/AuthContext";
+//import { useContext } from "react";para la auth
+//import { AuthContext } from "../../context/AuthContext";para la auth
 import PageMeta from "../../components/common/PageMeta";
 import MetricCard from "../../components/dashboard/MetricCard";
 import DonutChartCard from "../../components/dashboard/DonutChartCard";
 
 const DashboardAdmin = () => {
-  const { user } = useContext(AuthContext);
+  //const { user } = useContext(AuthContext); para la auth
 
   // Mock de datos: reemplazables con lo que venga del backend
   const totalOlimpistas = 3394;
