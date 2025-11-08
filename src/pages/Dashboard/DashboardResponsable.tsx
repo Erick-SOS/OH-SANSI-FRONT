@@ -1,11 +1,11 @@
-//import { useContext } from "react"; para la auth
-//import { AuthContext } from "../../context/AuthContext"; para la auth
+//import { useContext } from "react"; para auth
+//import { AuthContext } from "../../context/AuthContext"; para auth
 import PageMeta from "../../components/common/PageMeta";
 import MetricCard from "../../components/dashboard/MetricCard";
 import DonutChartCard from "../../components/dashboard/DonutChartCard";
 
 const DashboardResponsable = () => {
-  //const { user } = useContext(AuthContext); para la auth
+  //const { user } = useContext(AuthContext); para auth
 
   const areaName = "Matemáticas";
 

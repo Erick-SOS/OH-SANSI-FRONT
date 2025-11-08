@@ -1,17 +1,19 @@
 import { Link } from "react-router-dom";
 import { ThemeToggleButton } from "../common/ThemeToggleButton";
-import logoImg from "../../../public/images/LogoUmss/unnamed.png";
+import images from "../../assets/images";
 
 const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-sky-100 to-cyan-50 dark:from-sky-900 dark:to-cyan-900 border-b border-sky-200 dark:border-sky-700 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2">
-            <img src={logoImg} alt="Logo" className="h-8 w-8 object-contain" />
-            <span className="text-xl font-bold text-sky-800 dark:text-sky-100">
-              Oh! SanSí
-            </span>
+          <Link to="/" className="flex items-center space-x-3">
+            {/* Logo más grande */}
+            <img 
+              src={images.logoUmss} 
+              alt="Logo UMSS - Oh! SanSí" 
+              className="h-60 w-60 object-contain transition-transform hover:scale-110" 
+            />
           </Link>
           
           <nav className="hidden md:flex items-center space-x-8">
