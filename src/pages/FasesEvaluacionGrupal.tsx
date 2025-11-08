@@ -60,53 +60,103 @@ const FasesEvaluacionGrupal: React.FC = () => {
   };
 
   const columns = [
-    { clave: 'nombre', titulo: 'Nombre', alineacion: 'izquierda' as const, ordenable: true },
-    { clave: 'areaCompetencia', titulo: 'Área de Competencia', alineacion: 'izquierda' as const, ordenable: true },
-    { clave: 'nivel', titulo: 'Nivel', alineacion: 'izquierda' as const, ordenable: true },
-    {
-      clave: 'nota',
-      titulo: 'Nota',
-      alineacion: 'centro' as const,
-      formatearCelda: (valor: number, fila: EvaluacionItem) => (
-        <input
-          type="text"
-          value={edits[fila.id]?.nota ?? valor}
-          onChange={(e) => {
-            const nuevoValor = e.target.value;
-            if (/^\d*$/.test(nuevoValor)) {
-              handleValueChange(fila.id, 'nota', nuevoValor === '' ? 0 : Number(nuevoValor));
-            }
-          }}
-          className={`w-20 text-center border rounded-xl px-2 py-1 ${
-            edits[fila.id]?.nota !== undefined && edits[fila.id]?.nota !== valor
-              ? 'border-red-500 bg-red-50'
-              : savedEdits[fila.id]?.nota !== undefined
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-300'
-          }`}
-        />
-      )
-    },
-    {
-      clave: 'observacion',
-      titulo: 'Observación',
-      alineacion: 'izquierda' as const,
-      formatearCelda: (valor: string, fila: EvaluacionItem) => (
-        <textarea
-          value={edits[fila.id]?.observacion ?? valor}
-          onChange={(e) => handleValueChange(fila.id, 'observacion', e.target.value)}
-          placeholder="Ingrese observación..."
-          className={`w-full p-1 border rounded-xl ${
-            edits[fila.id]?.observacion !== undefined && edits[fila.id]?.observacion !== valor
-              ? 'border-red-500 bg-red-50'
-              : savedEdits[fila.id]?.observacion !== undefined
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-300'
-          }`}
-        />
-      )
-    },
-  ];
+  { clave: 'nombre', titulo: 'Nombre', alineacion: 'izquierda' as const, ordenable: true },
+  { clave: 'areaCompetencia', titulo: 'Área de Competencia', alineacion: 'izquierda' as const, ordenable: true },
+  { clave: 'nivel', titulo: 'Nivel', alineacion: 'izquierda' as const, ordenable: true },
+  {
+    clave: 'nota',
+    titulo: 'Nota',
+    alineacion: 'centro' as const,
+    formatearCelda: (valor: number, fila: EvaluacionItem) => {
+      const valorActual = edits[fila.id]?.nota ?? valor;
+      const esValido = valorActual <= 100;
+
+      return (
+        <div className="relative">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={valorActual}
+            onChange={(e) => {
+              const input = e.target.value;
+              if (input === '' || /^\d+$/.test(input)) {
+                const num = input === '' ? 0 : Number(input);
+                if (num <= 100) {
+                  handleValueChange(fila.id, 'nota', num);
+                }
+              }
+            }}
+            className={`w-20 text-center border rounded-xl px-2 py-1 transition-all
+              ${!esValido 
+                ? 'border-red-500 bg-red-50 animate-pulse' 
+                : edits[fila.id]?.nota !== undefined && edits[fila.id]?.nota !== valor
+                ? 'border-yellow-500 bg-yellow-50'
+                : savedEdits[fila.id]?.nota !== undefined
+                ? 'border-green-500 bg-green-50'
+                : 'border-gray-300'
+              }`}
+            placeholder="0-100"
+          />
+          {!esValido && (
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs px-2 py-1 rounded whitespace-NOwrap">
+              Máximo 100 pts
+            </div>
+          )}
+        </div>
+      );
+    }
+  },
+  {
+    clave: 'observacion',
+    titulo: 'Observación',
+    alineacion: 'izquierda' as const,
+    formatearCelda: (valor: string, fila: EvaluacionItem) => {
+      const textoActual = edits[fila.id]?.observacion ?? valor;
+      const caracteresRestantes = 100 - (textoActual?.length || 0);
+      const excedido = caracteresRestantes < 0;
+
+      return (
+        <div className="relative">
+          <textarea
+            value={textoActual}
+            onChange={(e) => {
+              const texto = e.target.value;
+              if (texto.length <= 100) {
+                handleValueChange(fila.id, 'observacion', texto);
+              }
+            }}
+            placeholder="Máximo 100 caracteres..."
+            className={`w-full p-2 border rounded-xl resize-none transition-all
+              ${excedido 
+                ? 'border-red-500 bg-red-50 animate-pulse' 
+                : edits[fila.id]?.observacion !== undefined && edits[fila.id]?.observacion !== valor
+                ? 'border-yellow-500 bg-yellow-50'
+                : savedEdits[fila.id]?.observacion !== undefined
+                ? 'border-green-500 bg-green-50'
+                : 'border-gray-300'
+              }`}
+            rows={2}
+          />
+          <div className={`absolute bottom-1 right-2 text-xs ${
+            excedido 
+              ? 'text-red-600 font-bold' 
+              : caracteresRestantes <= 20 
+              ? 'text-orange-600' 
+              : 'text-gray-500'
+          }`}>
+            {caracteresRestantes}
+          </div>
+          {excedido && (
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs px-2 py-1 rounded whitespace-NOwrap">
+              Límite: 100 caracteres
+            </div>
+          )}
+        </div>
+      );
+    }
+  },
+];
 
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return evaluaciones;
