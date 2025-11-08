@@ -18,6 +18,7 @@ import {
   MdCardGiftcard,
 } from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
+import images from "../assets/images";
 
 type NavItem = {
   name: string;
@@ -29,8 +30,13 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/dashboard",
+    name: "Dashboard Responsable",
+    path: "/dashboard-responsable",
+  },
+  {
+    icon: <GridIcon />,
+    name: "Dashboard Administrador",
+    path: "/dashboard-admin",
   },
   {
     icon: <MdOutlineCategory size={20} />,
@@ -292,39 +298,27 @@ const AppSidebar: React.FC = () => {
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div
-        className={`py-8 flex ${
+      
+        <div className={`py-8 flex ${
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-        }`}
-      >
-        <Link to="/">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
+        }`}>
+          <div className="flex items-center">
+            {isExpanded || isHovered || isMobileOpen ? (
               <img
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
+                src={images.logoUmss}
+                alt="UMSS - Oh! SanSí"
+                className="h-10 w-auto object-contain"
               />
+            ) : (
               <img
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
+                src={images.logoUmss}
+                alt="UMSS"
+                className="h-10 w-10 object-contain rounded-md"
               />
-            </>
-          ) : (
-            <img
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
-          )}
-        </Link>
-      </div>
+            )}
+          </div>
+        </div>
+
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
