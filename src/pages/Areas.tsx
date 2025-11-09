@@ -4,15 +4,16 @@ import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
 import AgregarModal from '../components/ui/modal/AgregarModal';
-import { Area, getAreas, createArea, deleteArea } from '../api/areas';
 
-// Interfaz para el estado de las áreas
-interface AreaEstado extends Area {
-  area?: string;
-}
+// MOCK: Datos falsos en memoria
+let mockAreas: { id: number; codigo: string; nombre: string; descripcion: string; estado?: boolean }[] = [
+  { id: 1, codigo: "A001", nombre: "Matemáticas", descripcion: "Área de matemáticas", estado: true },
+  { id: 2, codigo: "A002", nombre: "Ciencias", descripcion: "Área de ciencias naturales", estado: true },
+  { id: 3, codigo: "A003", nombre: "Lenguaje", descripcion: "Área de lenguaje", estado: true },
+];
 
 const Areas: React.FC = () => {
-  const [datosAreas, setDatosAreas] = useState<AreaEstado[]>([]);
+  const [datosAreas, setDatosAreas] = useState(mockAreas);
   const [busquedaAreas, setBusquedaAreas] = useState('');
   const [paginaAreas, setPaginaAreas] = useState(1);
   const registrosPorPagina = 7;
@@ -23,33 +24,24 @@ const Areas: React.FC = () => {
     nombre: string;
   }>({ isOpen: false, id: null, nombre: '' });
 
-  const [modalAgregar, setModalAgregar] = useState<{
-    isOpen: boolean;
-  }>({ isOpen: false });
+  const [modalAgregar, setModalAgregar] = useState(false);
 
-  // Cargar datos desde API al iniciar
+  // CARGAR DATOS (MOCK)
+  const cargarAreas = () => {
+    setDatosAreas([...mockAreas]);
+  };
+
   useEffect(() => {
-    const fetchDatos = async () => {
-      try {
-        const areas = await getAreas();
-        setDatosAreas(
-          areas.map(area => ({
-            ...area,
-            area: area.nombre,
-          }))
-        );
-      } catch (error) {
-        console.error("Error cargando áreas:", error);
-      }
-    };
-    fetchDatos();
+    cargarAreas();
   }, []);
 
+  // FILTROS
   const areasFiltradas = useMemo(() => {
     if (!busquedaAreas.trim()) return datosAreas;
     const termino = busquedaAreas.toLowerCase();
     return datosAreas.filter(item =>
-      (item.area || item.nombre).toLowerCase().includes(termino)
+      item.nombre.toLowerCase().includes(termino) ||
+      item.codigo.toLowerCase().includes(termino)
     );
   }, [datosAreas, busquedaAreas]);
 
@@ -58,53 +50,32 @@ const Areas: React.FC = () => {
     return areasFiltradas.slice(inicio, inicio + registrosPorPagina);
   }, [areasFiltradas, paginaAreas]);
 
-  const handleEliminarArea = (id: number, nombre: string) => {
-    setModalEliminar({ isOpen: true, id, nombre });
-  };
-
+  // ELIMINAR (MOCK)
   const confirmarEliminacion = async () => {
-    try {
-      if (modalEliminar.id) {
-        await deleteArea(modalEliminar.id);
-        setDatosAreas(datosAreas.filter(item => item.id !== modalEliminar.id));
-      }
-    } catch (error) {
-      console.error("Error al eliminar área:", error);
-      alert("Error al eliminar el registro");
-    } finally {
-      setModalEliminar({ isOpen: false, id: null, nombre: '' });
-    }
-  };
+    if (!modalEliminar.id) return;
 
-  const cancelarEliminacion = () => {
+    mockAreas = mockAreas.filter(area => area.id !== modalEliminar.id);
+    cargarAreas();
+    setPaginaAreas(1);
     setModalEliminar({ isOpen: false, id: null, nombre: '' });
   };
 
-  const handleAgregarArea = () => setModalAgregar({ isOpen: true });
-
+  // AGREGAR (MOCK)
   const confirmarAgregar = async (formData: { nombre: string; codigo: string; descripcion: string }) => {
-    try {
-      const nuevaArea = await createArea({
-        codigo: formData.codigo || 'AUTOGEN',
-        nombre: formData.nombre,
-        descripcion: formData.descripcion,
-      });
-      setDatosAreas([
-        ...datosAreas,
-        {
-          ...nuevaArea,
-          area: nuevaArea.nombre,
-        },
-      ]);
-    } catch (error) {
-      console.error("Error al agregar área:", error);
-      alert("Error al agregar el registro");
-    } finally {
-      setModalAgregar({ isOpen: false });
-    }
-  };
+    const nuevoId = Math.max(...mockAreas.map(a => a.id), 0) + 1;
+    const nuevoArea = {
+      id: nuevoId,
+      nombre: formData.nombre,
+      codigo: formData.codigo.trim() || "SIN_CODIGO",
+      descripcion: formData.descripcion.trim() || "Sin descripción",
+      estado: true
+    };
 
-  const cerrarModalAgregar = () => setModalAgregar({ isOpen: false });
+    mockAreas.push(nuevoArea);
+    cargarAreas();
+    setPaginaAreas(1);
+    setModalAgregar(false);
+  };
 
   return (
     <div className="p-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -120,11 +91,14 @@ const Areas: React.FC = () => {
             <div className="flex-1 max-w-md">
               <BarraBusquedaAreas
                 terminoBusqueda={busquedaAreas}
-                onBuscarChange={(termino) => { setBusquedaAreas(termino); setPaginaAreas(1); }}
+                onBuscarChange={(termino) => {
+                  setBusquedaAreas(termino);
+                  setPaginaAreas(1);
+                }}
               />
             </div>
             <button
-              onClick={handleAgregarArea}
+              onClick={() => setModalAgregar(true)}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6]"
             >
               Agregar Área
@@ -134,10 +108,11 @@ const Areas: React.FC = () => {
 
         <TablaAreas
           datos={areasPaginadas}
-          onEliminarFila={handleEliminarArea}
+          onEliminarFila={(id, nombre) => setModalEliminar({ isOpen: true, id, nombre })}
           paginaActual={paginaAreas}
           registrosPorPagina={registrosPorPagina}
         />
+
         <Paginacion
           paginaActual={paginaAreas}
           totalPaginas={Math.ceil(areasFiltradas.length / registrosPorPagina)}
@@ -149,16 +124,17 @@ const Areas: React.FC = () => {
 
       <EliminarFilaModal
         isOpen={modalEliminar.isOpen}
-        onClose={cancelarEliminacion}
+        onClose={() => setModalEliminar({ isOpen: false, id: null, nombre: '' })}
         onConfirm={confirmarEliminacion}
-        tipo="Area" // Cambiado de "Área" a "Area"
+        tipo="Area"
         nombre={modalEliminar.nombre}
       />
+
       <AgregarModal
-        isOpen={modalAgregar.isOpen}
-        onClose={cerrarModalAgregar}
+        isOpen={modalAgregar}
+        onClose={() => setModalAgregar(false)}
         onConfirm={confirmarAgregar}
-        tipo="Area" // Cambiado de "Área" a "Area"
+        tipo="Area"
       />
     </div>
   );
