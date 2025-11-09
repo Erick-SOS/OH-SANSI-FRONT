@@ -20,147 +20,152 @@ const CantidadDeMedallas: React.FC = () => {
     { id: 3, areaCompetencia: "Física", nivel: "Secundaria", medallasOro: "20", medallasPlata: "20", medallasBronce: "20" },
     { id: 4, areaCompetencia: "Química", nivel: "Secundaria", medallasOro: "20", medallasPlata: "20", medallasBronce: "20" },
     { id: 5, areaCompetencia: "Matemáticas", nivel: "Primaria", medallasOro: "20", medallasPlata: "20", medallasBronce: "20" },
-    ]);
+  ]);
 
   const [valoresEditados, setValoresEditados] = useState<Record<number, Partial<MedallaItem>>>({});
   const [valoresGuardados, setValoresGuardados] = useState<Record<number, Partial<MedallaItem>>>({});
+  const [errores, setErrores] = useState<Record<number, Partial<Record<keyof MedallaItem, string>>>>({});
 
   const manejarCambioValor = (id: number, campo: keyof MedallaItem, valor: string) => {
-    setValoresEditados(prev => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        [campo]: valor
+    if (/^\d*$/.test(valor)) { // Solo números
+      const numero = parseInt(valor, 10);
+
+      // ⚠️ Validación con mensaje de error
+      if (numero > 100) {
+        setErrores(prev => ({
+          ...prev,
+          [id]: {
+            ...prev[id],
+            [campo]: 'El valor máximo permitido es 100.'
+          }
+        }));
+        return; // Bloquea escribir más allá de 100
       }
-    }));
+
+      // Si está dentro del rango permitido
+      setErrores(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          [campo]: ''
+        }
+      }));
+
+      setValoresEditados(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          [campo]: valor
+        }
+      }));
+    }
   };
 
   const manejarGuardar = (id: number) => {
+    const erroresFila = errores[id];
+    if (erroresFila && Object.values(erroresFila).some(msg => msg)) return;
+
     if (valoresEditados[id]) {
-        // 🔹 Actualizar la fila dentro de datosCompletos
-        setDatosCompletos(prev =>
+      setDatosCompletos(prev =>
         prev.map(item =>
-            item.id === id ? { ...item, ...valoresEditados[id] } : item
+          item.id === id ? { ...item, ...valoresEditados[id] } : item
         )
-        );
-        // 🔹 Marcar como guardado
-        setValoresGuardados(prev => ({
+      );
+      setValoresGuardados(prev => ({
         ...prev,
         [id]: valoresEditados[id]
-        }));
-        // 🔹 Limpiar edición
-        setValoresEditados(prev => {
+      }));
+      setValoresEditados(prev => {
         const nuevos = { ...prev };
         delete nuevos[id];
         return nuevos;
-        });
+      });
     }
-    };
+  };
+
+  const renderInput = (fila: MedallaItem, campo: keyof MedallaItem, valor: string) => {
+    const errorCampo = errores[fila.id]?.[campo];
+    const valorMostrado = valoresEditados[fila.id]?.[campo] ?? valor;
+
+    const estaEditado = valoresEditados[fila.id]?.[campo] !== undefined &&
+      valoresEditados[fila.id]?.[campo] !== valor;
+    const estaGuardado = valoresGuardados[fila.id]?.[campo] !== undefined;
+
+    return (
+      <div className="flex flex-col items-center">
+        <input
+          type="number"
+          min={0}
+          max={100}
+          value={valorMostrado}
+          onChange={(e) => manejarCambioValor(fila.id, campo, e.target.value)}
+          className={`w-20 text-center border rounded px-2 py-1
+            ${errorCampo
+              ? 'border-red-500 bg-red-50'
+              : estaEditado
+              ? 'border-red-500 bg-red-50'
+              : estaGuardado
+              ? 'border-green-500 bg-green-50'
+              : 'border-gray-300'}
+          `}
+        />
+        {errorCampo && (
+          <span className="text-xs text-red-600 mt-1 text-center">
+            {errorCampo}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   const columnas = [
-    { 
-        clave: 'areaCompetencia', 
-        titulo: 'Área de Competencia', 
-        alineacion: 'izquierda' as const 
-    },
-    { 
-        clave: 'nivel', 
-        titulo: 'Nivel', 
-        alineacion: 'izquierda' as const 
+    { clave: 'areaCompetencia', titulo: 'Área de Competencia', alineacion: 'izquierda' as const },
+    { clave: 'nivel', titulo: 'Nivel', alineacion: 'izquierda' as const },
+    {
+      clave: 'medallasOro',
+      titulo: 'Medallas de Oro',
+      alineacion: 'centro' as const,
+      formatearCelda: (valor: string, fila: MedallaItem) => renderInput(fila, 'medallasOro', valor)
     },
     {
-    clave: 'medallasOro',
-    titulo: 'Medallas de Oro',
-    alineacion: 'centro' as const,
-    formatearCelda: (valor: string, fila: MedallaItem) => (
-        <input
-        type="text"
-        value={valoresEditados[fila.id]?.medallasOro ?? valor}
-        onChange={(e) => {
-            const nuevoValor = e.target.value;
-            if (/^\d*$/.test(nuevoValor)) { // ✅ solo números
-            manejarCambioValor(fila.id, 'medallasOro', nuevoValor);
-            }
-        }}
-        className={`w-20 text-center border rounded px-2 py-1
-            ${valoresEditados[fila.id]?.medallasOro !== undefined && valoresEditados[fila.id]?.medallasOro !== valor
-            ? 'border-red-500 bg-red-50'
-            : valoresGuardados[fila.id]?.medallasOro !== undefined
-            ? 'border-green-500 bg-green-50'
-            : 'border-gray-300'}
-        `}
-        />
-    )
+      clave: 'medallasPlata',
+      titulo: 'Medallas de Plata',
+      alineacion: 'centro' as const,
+      formatearCelda: (valor: string, fila: MedallaItem) => renderInput(fila, 'medallasPlata', valor)
     },
     {
-    clave: 'medallasPlata',
-    titulo: 'Medallas de Plata',
-    alineacion: 'centro' as const,
-    formatearCelda: (valor: string, fila: MedallaItem) => (
-        <input
-        type="text"
-        value={valoresEditados[fila.id]?.medallasPlata ?? valor}
-        onChange={(e) => {
-            const nuevoValor = e.target.value;
-            if (/^\d*$/.test(nuevoValor)) { // ✅ solo números
-            manejarCambioValor(fila.id, 'medallasPlata', nuevoValor);
-            }
-        }}
-        className={`w-20 text-center border rounded px-2 py-1
-            ${valoresEditados[fila.id]?.medallasPlata !== undefined && valoresEditados[fila.id]?.medallasPlata !== valor
-            ? 'border-red-500 bg-red-50'
-            : valoresGuardados[fila.id]?.medallasPlata !== undefined
-            ? 'border-green-500 bg-green-50'
-            : 'border-gray-300'}
-        `}
-        />
-    )
+      clave: 'medallasBronce',
+      titulo: 'Medallas de Bronce',
+      alineacion: 'centro' as const,
+      formatearCelda: (valor: string, fila: MedallaItem) => renderInput(fila, 'medallasBronce', valor)
     },
     {
-    clave: 'medallasBronce',
-    titulo: 'Medallas de Bronce',
-    alineacion: 'centro' as const,
-    formatearCelda: (valor: string, fila: MedallaItem) => (
-        <input
-        type="text"
-        value={valoresEditados[fila.id]?.medallasBronce ?? valor}
-        onChange={(e) => {
-            const nuevoValor = e.target.value;
-            if (/^\d*$/.test(nuevoValor)) { // ✅ solo números
-            manejarCambioValor(fila.id, 'medallasBronce', nuevoValor);
-            }
-        }}
-        className={`w-20 text-center border rounded px-2 py-1
-            ${valoresEditados[fila.id]?.medallasBronce !== undefined && valoresEditados[fila.id]?.medallasBronce !== valor
-            ? 'border-red-500 bg-red-50'
-            : valoresGuardados[fila.id]?.medallasBronce !== undefined
-            ? 'border-green-500 bg-green-50'
-            : 'border-gray-300'}
-        `}
-        />
-    )
-    },
-    {
-        clave: 'accion',
-        titulo: 'Acción',
-        alineacion: 'centro' as const,
-        formatearCelda: (_: any, fila: MedallaItem) => (
-        <button
+      clave: 'accion',
+      titulo: 'Acción',
+      alineacion: 'centro' as const,
+      formatearCelda: (_: any, fila: MedallaItem) => {
+        const erroresFila = errores[fila.id];
+        const tieneErrores = erroresFila && Object.values(erroresFila).some(msg => msg);
+        const puedeGuardar = !!valoresEditados[fila.id] && !tieneErrores;
+
+        return (
+          <button
             onClick={() => manejarGuardar(fila.id)}
-            disabled={!valoresEditados[fila.id]}
+            disabled={!puedeGuardar}
             className={`p-2 rounded-md border 
-            ${valoresEditados[fila.id] 
-                ? 'bg-blue-50 border-blue-400 hover:bg-blue-100' 
+              ${puedeGuardar
+                ? 'bg-blue-50 border-blue-400 hover:bg-blue-100'
                 : 'bg-gray-100 border-gray-300 cursor-not-allowed'}
             `}
-        >
-            <FiSave className={`w-5 h-5 ${valoresEditados[fila.id] ? 'text-blue-600' : 'text-gray-400'}`} />
-        </button>
-        )
+          >
+            <FiSave className={`w-5 h-5 ${puedeGuardar ? 'text-blue-600' : 'text-gray-400'}`} />
+          </button>
+        );
+      }
     }
-    ];
+  ];
 
-  // 🔎 Busqueda + Paginación
+  // 🔎 Búsqueda + Paginación
   const [paginaActual, setPaginaActual] = useState(1);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const registrosPorPagina = 7;
@@ -183,7 +188,9 @@ const CantidadDeMedallas: React.FC = () => {
     <div className="p-1">
       {/* Título y Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Configuración de la cantidad de Medallas Permitidas por Área y Nivel</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Configuración de la cantidad de Medallas Permitidas por Área y Nivel
+        </h1>
         <nav className="text-sm text-gray-600">
           <span>Inicio</span> <span className="mx-2">›</span> <span className="text-gray-800">Medallas</span>
         </nav>
@@ -195,7 +202,7 @@ const CantidadDeMedallas: React.FC = () => {
       </div>
 
       {/* Tabla */}
-      <TablaBase 
+      <TablaBase
         datos={datosPaginados}
         columnas={columnas}
         conOrdenamiento={false}
