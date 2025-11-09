@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 
 // Estados (mockups)
@@ -49,6 +50,15 @@ const FasesDeCompetencia: React.FC = () => {
   const handleCerrarFase = () => alert('Fase cerrada (simulado)');
   const handlePublicarResultados = () => alert('Resultados publicados (simulado)');
 
+  // Configuración de columnas para la tabla
+  const columnas = [
+    { clave: 'accion', titulo: 'Acción', alineacion: 'izquierda' as 'izquierda' },
+    { clave: 'fechaHora', titulo: 'Fecha y Hora', alineacion: 'izquierda' as 'izquierda' },
+    { clave: 'administrador', titulo: 'Administrador', alineacion: 'izquierda' as 'izquierda' },
+    { clave: 'fase', titulo: 'Fase', alineacion: 'izquierda' as 'izquierda' },
+    { clave: 'estado', titulo: 'Estado', alineacion: 'izquierda' as 'izquierda' },
+  ];
+
   // Paginación
   const inicio = (paginaActual - 1) * registrosPorPagina;
   const historialPaginado = historial.slice(inicio, inicio + registrosPorPagina);
@@ -86,9 +96,7 @@ const FasesDeCompetencia: React.FC = () => {
                 onChange={() => handleEstadoChange(estado.id)}
                 className="sr-only"
               />
-              <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                estadoActualId === estado.id ? 'border-green-500' : 'border-gray-300'
-              }`}>
+              <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${estadoActualId === estado.id ? 'border-green-500' : 'border-gray-300'}`}>
                 {estadoActualId === estado.id && (
                   <div className="w-2 h-2 bg-green-500 rounded-full" />
                 )}
@@ -106,9 +114,6 @@ const FasesDeCompetencia: React.FC = () => {
             onClick={handleAbrirFase}
             className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg transition-colors bg-green-500 hover:bg-green-600"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
             Abrir fase
           </button>
 
@@ -116,9 +121,6 @@ const FasesDeCompetencia: React.FC = () => {
             onClick={handleCerrarFase}
             className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg transition-colors bg-red-500 hover:bg-red-600"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
             Cerrar fase
           </button>
 
@@ -126,9 +128,6 @@ const FasesDeCompetencia: React.FC = () => {
             onClick={handlePublicarResultados}
             className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg transition-colors bg-blue-500 hover:bg-blue-600"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
             Publicar resultados
           </button>
         </div>
@@ -140,49 +139,16 @@ const FasesDeCompetencia: React.FC = () => {
           Historial de Cambios de Fase
         </h2>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N°</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">FASE</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">FECHA Y HORA</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ADMINISTRADOR</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">FASE</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ESTADO</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-              {historialPaginado.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      item.accion === 'Iniciada' ? 'bg-blue-100 text-blue-800' :
-                      item.accion === 'Abierta' ? 'bg-green-100 text-green-800' :
-                      item.accion === 'Cerrada' ? 'bg-red-100 text-red-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}>
-                      {item.accion}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.numero}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.fechaHora}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.administrador}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.fase}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      {item.estado}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Usando TablaBase */}
+        <TablaBase
+          datos={historialPaginado}
+          columnas={columnas}
+          conOrdenamiento={false} // Si deseas habilitar la ordenación
+          conAcciones={false} // Si deseas agregar botones de acciones por fila
+          className="shadow-lg"
+        />
 
+        {/* Paginación */}
         <div className="mt-4 flex justify-between items-center">
           <p className="text-sm text-gray-500">
             Mostrando {inicio + 1} de {Math.min(inicio + registrosPorPagina, totalRegistros)} de {totalRegistros}
@@ -203,3 +169,5 @@ const FasesDeCompetencia: React.FC = () => {
 };
 
 export default FasesDeCompetencia;
+
+
