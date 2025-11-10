@@ -6,8 +6,8 @@ import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
 import AgregarModal from '../components/ui/modal/AgregarModal';
 import { Area, getAreas, createArea, deleteArea } from '../api/areas';
-import { Pencil, Trash2 } from 'lucide-react';
 
+// Interfaz para el estado de las áreas
 interface AreaEstado extends Area {
   area?: string;
 }
@@ -28,13 +28,21 @@ const Areas: React.FC = () => {
     nombre: string;
   }>({ isOpen: false, id: null, nombre: '' });
 
-  const [modalAgregar, setModalAgregar] = useState<{ isOpen: boolean }>({ isOpen: false });
+  const [modalAgregar, setModalAgregar] = useState<{
+    isOpen: boolean;
+  }>({ isOpen: false });
 
+  // Cargar datos desde API al iniciar
   useEffect(() => {
     const fetchDatos = async () => {
       try {
         const areas = await getAreas();
-        setDatosAreas(areas.map(area => ({ ...area, area: area.nombre })));
+        setDatosAreas(
+          areas.map(area => ({
+            ...area,
+            area: area.nombre,
+          }))
+        );
       } catch (error) {
         console.error("Error cargando áreas:", error);
       }
@@ -42,32 +50,11 @@ const Areas: React.FC = () => {
     fetchDatos();
   }, []);
 
-  // ORDENAMIENTO
-  const handleOrdenar = (columna: string, direccion: 'asc' | 'desc') => {
-    setOrdenColumna(columna);
-    setOrdenDireccion(direccion);
-
-    const sorted = [...datosAreas].sort((a, b) => {
-      const valA = a[columna as keyof typeof a];
-      const valB = b[columna as keyof typeof b];
-
-      if (typeof valA === 'string' && typeof valB === 'string') {
-        return direccion === 'asc'
-          ? valA.localeCompare(valB)
-          : valB.localeCompare(valA);
-      }
-      return 0;
-    });
-
-    setDatosAreas(sorted);
-  };
-
   const areasFiltradas = useMemo(() => {
     if (!busquedaAreas.trim()) return datosAreas;
     const termino = busquedaAreas.toLowerCase();
     return datosAreas.filter(item =>
-      item.nombre.toLowerCase().includes(termino) ||
-      item.codigo.toLowerCase().includes(termino)
+      (item.area || item.nombre).toLowerCase().includes(termino)
     );
   }, [datosAreas, busquedaAreas]);
 
@@ -84,7 +71,7 @@ const Areas: React.FC = () => {
     try {
       if (modalEliminar.id) {
         await deleteArea(modalEliminar.id);
-        setDatosAreas(prev => prev.filter(item => item.id !== modalEliminar.id));
+        setDatosAreas(datosAreas.filter(item => item.id !== modalEliminar.id));
       }
     } catch (error) {
       console.error("Error al eliminar área:", error);
@@ -92,6 +79,10 @@ const Areas: React.FC = () => {
     } finally {
       setModalEliminar({ isOpen: false, id: null, nombre: '' });
     }
+  };
+
+  const cancelarEliminacion = () => {
+    setModalEliminar({ isOpen: false, id: null, nombre: '' });
   };
 
   const handleAgregarArea = () => setModalAgregar({ isOpen: true });
@@ -103,7 +94,13 @@ const Areas: React.FC = () => {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
       });
-      setDatosAreas(prev => [...prev, { ...nuevaArea, area: nuevaArea.nombre }]);
+      setDatosAreas([
+        ...datosAreas,
+        {
+          ...nuevaArea,
+          area: nuevaArea.nombre,
+        },
+      ]);
     } catch (error) {
       console.error("Error al agregar área:", error);
       alert("Error al agregar el registro");
@@ -112,26 +109,7 @@ const Areas: React.FC = () => {
     }
   };
 
-  const columnas = [
-    { clave: 'nombre', titulo: 'Área', alineacion: 'izquierda' as const, ordenable: true },
-    { clave: 'codigo', titulo: 'Código de área', alineacion: 'centro' as const, ancho: 'w-32', ordenable: true },
-    { clave: 'descripcion', titulo: 'Descripción', alineacion: 'izquierda' as const, ordenable: true },
-  ];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderAcciones = (fila: any) => (
-    <div className="flex justify-cenAter gap-2">
-      <button className="text-blue-600 hover:text-blue-800">
-        <Pencil className="w-4 h-4" />
-      </button>
-      <button
-        onClick={() => handleEliminarArea(fila.id, fila.nombre)}
-        className="text-red-600 hover:text-red-800"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  );
+  const cerrarModalAgregar = () => setModalAgregar({ isOpen: false });
 
   return (
     <div className="p-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -161,14 +139,10 @@ const Areas: React.FC = () => {
 
         <TablaBase
           datos={areasPaginadas}
-          columnas={columnas}
-          conAcciones={true}
-          renderAcciones={renderAcciones}
-          conOrdenamiento={true}
-          onOrdenar={handleOrdenar}
-          className="mt-4"
+          onEliminarFila={handleEliminarArea}
+          paginaActual={paginaAreas}
+          registrosPorPagina={registrosPorPagina}
         />
-
         <Paginacion
           paginaActual={paginaAreas}
           totalPaginas={Math.ceil(areasFiltradas.length / registrosPorPagina)}
@@ -180,16 +154,16 @@ const Areas: React.FC = () => {
 
       <EliminarFilaModal
         isOpen={modalEliminar.isOpen}
-        onClose={() => setModalEliminar({ isOpen: false, id: null, nombre: '' })}
+        onClose={cancelarEliminacion}
         onConfirm={confirmarEliminacion}
-        tipo="Area"
+        tipo="Area" // Cambiado de "Área" a "Area"
         nombre={modalEliminar.nombre}
       />
       <AgregarModal
         isOpen={modalAgregar.isOpen}
-        onClose={() => setModalAgregar({ isOpen: false })}
+        onClose={cerrarModalAgregar}
         onConfirm={confirmarAgregar}
-        tipo="Area"
+        tipo="Area" // Cambiado de "Área" a "Area"
       />
     </div>
   );

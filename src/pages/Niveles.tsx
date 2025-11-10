@@ -6,8 +6,8 @@ import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
 import AgregarModal from '../components/ui/modal/AgregarModal';
 import { Nivel, getNiveles, createNivel, deleteNivel } from '../api/niveles';
-import { Pencil, Trash2 } from 'lucide-react';
 
+// Interfaz para el estado de los niveles
 interface NivelEstado extends Nivel {
   nivel?: string;
 }
@@ -28,14 +28,21 @@ const Niveles: React.FC = () => {
     nombre: string;
   }>({ isOpen: false, id: null, nombre: '' });
 
-  const [modalAgregar, setModalAgregar] = useState<{ isOpen: boolean }>({ isOpen: false });
+  const [modalAgregar, setModalAgregar] = useState<{
+    isOpen: boolean;
+  }>({ isOpen: false });
 
-  // CARGAR DATOS
+  // Cargar datos desde API al iniciar
   useEffect(() => {
     const fetchDatos = async () => {
       try {
         const niveles = await getNiveles();
-        setDatosNiveles(niveles.map(nivel => ({ ...nivel, nivel: nivel.nombre })));
+        setDatosNiveles(
+          niveles.map(nivel => ({
+            ...nivel,
+            nivel: nivel.nombre,
+          }))
+        );
       } catch (error) {
         console.error("Error cargando niveles:", error);
       }
@@ -68,8 +75,7 @@ const Niveles: React.FC = () => {
     if (!busquedaNiveles.trim()) return datosNiveles;
     const termino = busquedaNiveles.toLowerCase();
     return datosNiveles.filter(item =>
-      item.nombre.toLowerCase().includes(termino) ||
-      item.codigo.toLowerCase().includes(termino)
+      (item.nivel || item.nombre).toLowerCase().includes(termino)
     );
   }, [datosNiveles, busquedaNiveles]);
 
@@ -87,7 +93,7 @@ const Niveles: React.FC = () => {
     try {
       if (modalEliminar.id) {
         await deleteNivel(modalEliminar.id);
-        setDatosNiveles(prev => prev.filter(item => item.id !== modalEliminar.id));
+        setDatosNiveles(datosNiveles.filter(item => item.id !== modalEliminar.id));
       }
     } catch (error) {
       console.error("Error al eliminar nivel:", error);
@@ -95,6 +101,10 @@ const Niveles: React.FC = () => {
     } finally {
       setModalEliminar({ isOpen: false, id: null, nombre: '' });
     }
+  };
+
+  const cancelarEliminacion = () => {
+    setModalEliminar({ isOpen: false, id: null, nombre: '' });
   };
 
   const handleAgregarNivel = () => setModalAgregar({ isOpen: true });
@@ -106,7 +116,13 @@ const Niveles: React.FC = () => {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
       });
-      setDatosNiveles(prev => [...prev, { ...nuevoNivel, nivel: nuevoNivel.nombre }]);
+      setDatosNiveles([
+        ...datosNiveles,
+        {
+          ...nuevoNivel,
+          nivel: nuevoNivel.nombre,
+        },
+      ]);
     } catch (error) {
       console.error("Error al agregar nivel:", error);
       alert("Error al agregar el registro");
@@ -115,28 +131,7 @@ const Niveles: React.FC = () => {
     }
   };
 
-  // COLUMNAS CON ORDENAMIENTO
-  const columnas = [
-    { clave: 'nombre', titulo: 'Nivel', alineacion: 'izquierda' as const, ordenable: true },
-    { clave: 'codigo', titulo: 'Código de nivel', alineacion: 'centro' as const, ancho: 'w-32', ordenable: true },
-    { clave: 'descripcion', titulo: 'Descripción', alineacion: 'izquierda' as const, ordenable: true },
-  ];
-
-  // ACCIONES
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderAcciones = (fila: any) => (
-    <div className="flex justify-center gap-2">
-      <button className="text-blue-600 hover:text-blue-800">
-        <Pencil className="w-4 h-4" />
-      </button>
-      <button
-        onClick={() => handleEliminarNivel(fila.id, fila.nombre)}
-        className="text-red-600 hover:text-red-800"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  );
+  const cerrarModalAgregar = () => setModalAgregar({ isOpen: false });
 
   return (
     <div className="p-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -167,15 +162,10 @@ const Niveles: React.FC = () => {
         {/* TABLA CON ORDENAMIENTO */}
         <TablaBase
           datos={nivelesPaginados}
-          columnas={columnas}
-          conAcciones={true}
-          renderAcciones={renderAcciones}
-          conOrdenamiento={true}
-          onOrdenar={handleOrdenar}
-          className="mt-4"
+          onEliminarFila={handleEliminarNivel}
+          paginaActual={paginaNiveles}
+          registrosPorPagina={registrosPorPagina}
         />
-
-        {/* PAGINACIÓN */}
         <Paginacion
           paginaActual={paginaNiveles}
           totalPaginas={Math.ceil(nivelesFiltrados.length / registrosPorPagina)}
@@ -188,16 +178,16 @@ const Niveles: React.FC = () => {
       {/* MODALES */}
       <EliminarFilaModal
         isOpen={modalEliminar.isOpen}
-        onClose={() => setModalEliminar({ isOpen: false, id: null, nombre: '' })}
+        onClose={cancelarEliminacion}
         onConfirm={confirmarEliminacion}
-        tipo="Nivel"
+        tipo="Nivel" // Cambiado de "Nivel" a "Nivel" (sin tilde, ya correcto en interfaces)
         nombre={modalEliminar.nombre}
       />
       <AgregarModal
         isOpen={modalAgregar.isOpen}
-        onClose={() => setModalAgregar({ isOpen: false })}
+        onClose={cerrarModalAgregar}
         onConfirm={confirmarAgregar}
-        tipo="Nivel"
+        tipo="Nivel" // Cambiado de "Nivel" a "Nivel" (sin tilde, ya correcto en interfaces)
       />
     </div>
   );
