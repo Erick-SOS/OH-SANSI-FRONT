@@ -1,16 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface AgregarModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (formData: { nombre: string; codigo: string; descripcion: string }) => void;
-  tipo: 'Area' | 'Nivel';
-}
-
-interface Errores {
-  nombre?: string;
-  codigo?: string;
-  descripcion?: string;
+  tipo: 'Area' | 'Nivel' | '';
 }
 
 const AgregarModal: React.FC<AgregarModalProps> = ({
@@ -25,174 +19,178 @@ const AgregarModal: React.FC<AgregarModalProps> = ({
     descripcion: '',
   });
 
-  const [errores, setErrores] = useState<Errores>({});
-  const [touched, setTouched] = useState({
-    nombre: false,
-    codigo: false,
-    descripcion: false,
-  });
+  // === SOLO AGREGADO: Errores y límites ===
+  const [errors, setErrors] = useState<{
+    nombre?: string;
+    codigo?: string;
+    descripcion?: string;
+  }>({});
 
-  const resetForm = () => {
-    setFormData({ nombre: '', codigo: '', descripcion: '' });
-    setErrores({});
-    setTouched({ nombre: false, codigo: false, descripcion: false });
+  const maxLengths = {
+    nombre: tipo === 'Area' ? 150 : 100,
+    codigo: 50,
+    descripcion: 500,
   };
-
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
-
-  // Validación
-  useEffect(() => {
-    const nuevosErrores: Errores = {};
-    const nombreTrim = formData.nombre.trim();
-    const codigoTrim = formData.codigo.trim();
-    const descripcionTrim = formData.descripcion.trim();
-
-    if (touched.nombre) {
-      if (!nombreTrim) nuevosErrores.nombre = 'Este campo es obligatorio.';
-      else if (nombreTrim.length < 3) nuevosErrores.nombre = 'Mínimo 3 caracteres.';
-      else if (nombreTrim.length > (tipo === 'Area' ? 150 : 100))
-        nuevosErrores.nombre = `Máximo ${tipo === 'Area' ? 150 : 100} caracteres.`;
-      else if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-()]+$/.test(nombreTrim))
-        nuevosErrores.nombre = 'Solo letras, números, espacios, guiones y paréntesis.';
-    }
-
-    if (touched.codigo) {
-      if (!codigoTrim) nuevosErrores.codigo = 'Este campo es obligatorio.';
-      else if (codigoTrim.length > 50) nuevosErrores.codigo = 'Máximo 50 caracteres.';
-      else if (!/^[a-zA-Z0-9_-]+$/.test(codigoTrim))
-        nuevosErrores.codigo = 'Solo letras, números, guiones y guiones bajos.';
-    }
-
-    if (touched.descripcion) {
-      if (!descripcionTrim) nuevosErrores.descripcion = 'Este campo es obligatorio.';
-      else if (descripcionTrim.length > 500) nuevosErrores.descripcion = 'Máximo 500 caracteres.';
-    }
-
-    setErrores(nuevosErrores);
-  }, [formData, touched, tipo]);
-
-  const handleSubmit = () => {
-    setTouched({ nombre: true, codigo: true, descripcion: true });
-
-    const nombreTrim = formData.nombre.trim();
-    const codigoTrim = formData.codigo.trim();
-    const descripcionTrim = formData.descripcion.trim();
-
-    if (!nombreTrim || !codigoTrim || !descripcionTrim || errores.nombre || errores.codigo || errores.descripcion) {
-      return;
-    }
-
-    onConfirm({
-      nombre: nombreTrim,
-      codigo: codigoTrim,
-      descripcion: descripcionTrim,
-    });
-
-    handleClose();
-  };
+  
 
   if (!isOpen) return null;
 
-  const maxNombre = tipo === 'Area' ? 150 : 100;
-  const isFormInvalid =
-    !formData.nombre.trim() ||
-    !formData.codigo.trim() ||
-    !formData.descripcion.trim() ||
-    !!errores.nombre ||
-    !!errores.codigo ||
-    !!errores.descripcion;
+  const handleSubmit = () => {
+   
+    const newErrors: typeof errors = {};
+
+    if (!formData.nombre.trim()) newErrors.nombre = 'Obligatorio';
+    else if (formData.nombre.trim().length < 3) newErrors.nombre = 'Mínimo 3 caracteres';
+    else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(formData.nombre)) newErrors.nombre = 'Solo letras';
+
+    if (!formData.codigo.trim()) newErrors.codigo = 'Obligatorio';
+    else if (!/^[A-Z0-9-]+$/.test(formData.codigo)) newErrors.codigo = 'Formato inválido';
+
+    if (!formData.descripcion.trim()) newErrors.descripcion = 'Obligatoria';
+    else if (formData.descripcion.trim().length < 10) newErrors.descripcion = 'Mínimo 10 caracteres';
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    
+
+    
+    onConfirm(formData);
+    setFormData({ nombre: '', codigo: '', descripcion: '' });
+    setErrors({});
+  };
+
+  const handleClose = () => {
+    setFormData({ nombre: '', codigo: '', descripcion: '' });
+    setErrors({});
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
-        className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Título */}
-        <h3 className="mb-6 text-xl font-semibold text-gray-900">
+    <div
+      className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 99999,
+        position: 'fixed',
+        width: '100vw',
+        height: '100vh'
+      }}
+    >
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl" style={{ position: 'relative', zIndex: 100000 }}>
+        <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
           {tipo === 'Area' ? 'Agregar Nueva Área' : 'Agregar Nuevo Nivel'}
         </h3>
-
-        <div className="space-y-6">
-
-          {/* NOMBRE */}
+       
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
               {tipo === 'Area' ? 'Área' : 'Nivel'} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.nombre}
-              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              onBlur={() => setTouched({ ...touched, nombre: true })}
-              maxLength={maxNombre}
-              placeholder={`Ej: ${tipo === 'Area' ? 'Matemáticas' : 'Primaria'}`}
-              className={`w-full rounded-md border ${
-                errores.nombre ? 'border-red-500' : 'border-gray-300'
-              } px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ ...formData, nombre: value });
+                // === SOLO AGREGADO: Validar en tiempo real ===
+                const error = !value.trim() ? 'Obligatorio' :
+                              value.trim().length < 3 ? 'Mínimo 3 caracteres' :
+                              !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value) ? 'Solo letras' : '';
+                setErrors(prev => ({ ...prev, nombre: error }));
+                
+              }}
+              maxLength={maxLengths.nombre}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
+              placeholder={tipo === 'Area' ? 'Nombre del área' : 'Nombre del nivel'}
             />
-            {errores.nombre && <p className="mt-1 text-xs text-red-600">{errores.nombre}</p>}
+            {}
+            <div className="flex justify-between items-center mt-1">
+              {errors.nombre && <p className="text-xs text-red-600 dark:text-red-400">{errors.nombre}</p>}
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                {formData.nombre.length}/{maxLengths.nombre}
+              </span>
+            </div>
+            {}
           </div>
 
-          {/* CÓDIGO */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Código <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+              Código de {tipo === 'Area' ? 'Área' : 'Nivel'} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.codigo}
-              onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-              onBlur={() => setTouched({ ...touched, codigo: true })}
-              maxLength={50}
-              placeholder={`Ej: ${tipo === 'Area' ? 'MAT-001' : 'NIV-001'}`}
-              className={`w-full rounded-md border ${
-                errores.codigo ? 'border-red-500' : 'border-gray-300'
-              } px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+              onChange={(e) => {
+                const value = e.target.value.toUpperCase();
+                setFormData({ ...formData, codigo: value });
+               
+                const error = !value.trim() ? 'Obligatorio' :
+                              !/^[A-Z0-9-]+$/.test(value) ? 'Formato inválido' : '';
+                setErrors(prev => ({ ...prev, codigo: error }));
+                
+              }}
+              maxLength={maxLengths.codigo}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
+              placeholder={`Código de ${tipo === 'Area' ? 'área' : 'nivel'}`}
             />
-            {errores.codigo && <p className="mt-1 text-xs text-red-600">{errores.codigo}</p>}
+            {}
+            <div className="flex justify-between items-center mt-1">
+              {errors.codigo && <p className="text-xs text-red-600 dark:text-red-400">{errors.codigo}</p>}
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                {formData.codigo.length}/{maxLengths.codigo}
+              </span>
+            </div>
+            {}
           </div>
 
-          {/* DESCRIPCIÓN */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
               Descripción <span className="text-red-500">*</span>
             </label>
             <textarea
               value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              onBlur={() => setTouched({ ...touched, descripcion: true })}
-              maxLength={500}
-              rows={3}
-              placeholder="Descripción detallada del área o nivel"
-              className={`w-full resize-none rounded-md border ${
-                errores.descripcion ? 'border-red-500' : 'border-gray-300'
-              } px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ ...formData, descripcion: value });
+                
+                const error = !value.trim() ? 'Obligatoria' :
+                              value.trim().length < 10 ? 'Mínimo 10 caracteres' : '';
+                setErrors(prev => ({ ...prev, descripcion: error }));
+               
+              }}
+              maxLength={maxLengths.descripcion}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
+              placeholder="Descripción del área o nivel"
             />
-            <div className="mt-1 flex justify-end">
-              <span className={`text-xs ${errores.descripcion ? 'text-red-600' : 'text-gray-500'}`}>
-                {formData.descripcion.length}/500
+            {}
+            <div className="flex justify-between items-center mt-1">
+              {errors.descripcion && <p className="text-xs text-red-600 dark:text-red-400">{errors.descripcion}</p>}
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                {formData.descripcion.length}/{maxLengths.descripcion}
               </span>
             </div>
-            {errores.descripcion && <p className="mt-1 text-xs text-red-600">{errores.descripcion}</p>}
+            {}
           </div>
         </div>
 
-        {/* Botones */}
-        <div className="mt-8 flex justify-end gap-3">
+        <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={handleClose}
-            className="rounded-md border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isFormInvalid}
-            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={
+              !formData.nombre.trim() ||
+              !formData.codigo.trim() ||
+              !formData.descripcion.trim() ||
+              !!errors.nombre ||
+              !!errors.codigo ||
+              !!errors.descripcion
+            }
           >
             Agregar
           </button>
