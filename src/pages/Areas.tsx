@@ -1,22 +1,26 @@
+// src/pages/Areas.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import TablaAreas from '../components/tables/TablaAreas';
+import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
 import AgregarModal from '../components/ui/modal/AgregarModal';
+import { Area, getAreas, createArea, deleteArea } from '../api/areas';
+import { Pencil, Trash2 } from 'lucide-react';
 
-// MOCK: Datos falsos en memoria
-let mockAreas: { id: number; codigo: string; nombre: string; descripcion: string; estado?: boolean }[] = [
-  { id: 1, codigo: "A001", nombre: "Matemáticas", descripcion: "Área de matemáticas", estado: true },
-  { id: 2, codigo: "A002", nombre: "Ciencias", descripcion: "Área de ciencias naturales", estado: true },
-  { id: 3, codigo: "A003", nombre: "Lenguaje", descripcion: "Área de lenguaje", estado: true },
-];
+interface AreaEstado extends Area {
+  area?: string;
+}
 
 const Areas: React.FC = () => {
-  const [datosAreas, setDatosAreas] = useState(mockAreas);
+  const [datosAreas, setDatosAreas] = useState<AreaEstado[]>([]);
   const [busquedaAreas, setBusquedaAreas] = useState('');
   const [paginaAreas, setPaginaAreas] = useState(1);
   const registrosPorPagina = 7;
+
+  // ESTADOS PARA ORDENAMIENTO
+  const [, setOrdenColumna] = useState<string | null>(null);
+  const [, setOrdenDireccion] = useState<'asc' | 'desc'>('asc');
 
   const [modalEliminar, setModalEliminar] = useState<{
     isOpen: boolean;
@@ -24,18 +28,40 @@ const Areas: React.FC = () => {
     nombre: string;
   }>({ isOpen: false, id: null, nombre: '' });
 
-  const [modalAgregar, setModalAgregar] = useState(false);
-
-  // CARGAR DATOS (MOCK)
-  const cargarAreas = () => {
-    setDatosAreas([...mockAreas]);
-  };
+  const [modalAgregar, setModalAgregar] = useState<{ isOpen: boolean }>({ isOpen: false });
 
   useEffect(() => {
-    cargarAreas();
+    const fetchDatos = async () => {
+      try {
+        const areas = await getAreas();
+        setDatosAreas(areas.map(area => ({ ...area, area: area.nombre })));
+      } catch (error) {
+        console.error("Error cargando áreas:", error);
+      }
+    };
+    fetchDatos();
   }, []);
 
-  // FILTROS
+  // ORDENAMIENTO
+  const handleOrdenar = (columna: string, direccion: 'asc' | 'desc') => {
+    setOrdenColumna(columna);
+    setOrdenDireccion(direccion);
+
+    const sorted = [...datosAreas].sort((a, b) => {
+      const valA = a[columna as keyof typeof a];
+      const valB = b[columna as keyof typeof b];
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return direccion === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      return 0;
+    });
+
+    setDatosAreas(sorted);
+  };
+
   const areasFiltradas = useMemo(() => {
     if (!busquedaAreas.trim()) return datosAreas;
     const termino = busquedaAreas.toLowerCase();
@@ -50,32 +76,62 @@ const Areas: React.FC = () => {
     return areasFiltradas.slice(inicio, inicio + registrosPorPagina);
   }, [areasFiltradas, paginaAreas]);
 
-  // ELIMINAR (MOCK)
+  const handleEliminarArea = (id: number, nombre: string) => {
+    setModalEliminar({ isOpen: true, id, nombre });
+  };
+
   const confirmarEliminacion = async () => {
-    if (!modalEliminar.id) return;
-
-    mockAreas = mockAreas.filter(area => area.id !== modalEliminar.id);
-    cargarAreas();
-    setPaginaAreas(1);
-    setModalEliminar({ isOpen: false, id: null, nombre: '' });
+    try {
+      if (modalEliminar.id) {
+        await deleteArea(modalEliminar.id);
+        setDatosAreas(prev => prev.filter(item => item.id !== modalEliminar.id));
+      }
+    } catch (error) {
+      console.error("Error al eliminar área:", error);
+      alert("Error al eliminar el registro");
+    } finally {
+      setModalEliminar({ isOpen: false, id: null, nombre: '' });
+    }
   };
 
-  // AGREGAR (MOCK)
+  const handleAgregarArea = () => setModalAgregar({ isOpen: true });
+
   const confirmarAgregar = async (formData: { nombre: string; codigo: string; descripcion: string }) => {
-    const nuevoId = Math.max(...mockAreas.map(a => a.id), 0) + 1;
-    const nuevoArea = {
-      id: nuevoId,
-      nombre: formData.nombre,
-      codigo: formData.codigo.trim() || "SIN_CODIGO",
-      descripcion: formData.descripcion.trim() || "Sin descripción",
-      estado: true
-    };
-
-    mockAreas.push(nuevoArea);
-    cargarAreas();
-    setPaginaAreas(1);
-    setModalAgregar(false);
+    try {
+      const nuevaArea = await createArea({
+        codigo: formData.codigo || 'AUTOGEN',
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+      });
+      setDatosAreas(prev => [...prev, { ...nuevaArea, area: nuevaArea.nombre }]);
+    } catch (error) {
+      console.error("Error al agregar área:", error);
+      alert("Error al agregar el registro");
+    } finally {
+      setModalAgregar({ isOpen: false });
+    }
   };
+
+  const columnas = [
+    { clave: 'nombre', titulo: 'Área', alineacion: 'izquierda' as const, ordenable: true },
+    { clave: 'codigo', titulo: 'Código de área', alineacion: 'centro' as const, ancho: 'w-32', ordenable: true },
+    { clave: 'descripcion', titulo: 'Descripción', alineacion: 'izquierda' as const, ordenable: true },
+  ];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderAcciones = (fila: any) => (
+    <div className="flex justify-cenAter gap-2">
+      <button className="text-blue-600 hover:text-blue-800">
+        <Pencil className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => handleEliminarArea(fila.id, fila.nombre)}
+        className="text-red-600 hover:text-red-800"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
 
   return (
     <div className="p-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -91,14 +147,11 @@ const Areas: React.FC = () => {
             <div className="flex-1 max-w-md">
               <BarraBusquedaAreas
                 terminoBusqueda={busquedaAreas}
-                onBuscarChange={(termino) => {
-                  setBusquedaAreas(termino);
-                  setPaginaAreas(1);
-                }}
+                onBuscarChange={(termino) => { setBusquedaAreas(termino); setPaginaAreas(1); }}
               />
             </div>
             <button
-              onClick={() => setModalAgregar(true)}
+              onClick={handleAgregarArea}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6]"
             >
               Agregar Área
@@ -106,11 +159,14 @@ const Areas: React.FC = () => {
           </div>
         </div>
 
-        <TablaAreas
+        <TablaBase
           datos={areasPaginadas}
-          onEliminarFila={(id, nombre) => setModalEliminar({ isOpen: true, id, nombre })}
-          paginaActual={paginaAreas}
-          registrosPorPagina={registrosPorPagina}
+          columnas={columnas}
+          conAcciones={true}
+          renderAcciones={renderAcciones}
+          conOrdenamiento={true}
+          onOrdenar={handleOrdenar}
+          className="mt-4"
         />
 
         <Paginacion
@@ -129,10 +185,9 @@ const Areas: React.FC = () => {
         tipo="Area"
         nombre={modalEliminar.nombre}
       />
-
       <AgregarModal
-        isOpen={modalAgregar}
-        onClose={() => setModalAgregar(false)}
+        isOpen={modalAgregar.isOpen}
+        onClose={() => setModalAgregar({ isOpen: false })}
         onConfirm={confirmarAgregar}
         tipo="Area"
       />
