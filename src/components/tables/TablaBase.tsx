@@ -16,15 +16,18 @@ interface ColumnaConfig {
   alineacion?: TipoAlineacion;
   ancho?: string;
   ordenable?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formatearCelda?: (valor: any, fila: any) => React.ReactNode;
 }
 
 interface TablaBaseProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   datos: any[];
   columnas: ColumnaConfig[];
   conOrdenamiento?: boolean;
   onOrdenar?: (columna: string, direccion: 'asc' | 'desc') => void;
   conAcciones?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderAcciones?: (fila: any) => React.ReactNode; // ← NUEVA PROP
   className?: string;
 }
@@ -58,6 +61,7 @@ const TablaBase: React.FC<TablaBaseProps> = ({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderizarContenidoCelda = (columna: ColumnaConfig, fila: any, index: number) => {
     if (columna.clave === 'numero') return index + 1;
     if (columna.formatearCelda) return columna.formatearCelda(fila[columna.clave], fila);

@@ -32,6 +32,7 @@ const AgregarModal: React.FC<AgregarModalProps> = ({
     setFormData({ nombre: '', codigo: '', descripcion: '' });
     onClose();
   };
+  
 
   return (
     <div 

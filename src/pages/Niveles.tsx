@@ -1,5 +1,6 @@
+// src/pages/Niveles.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import TablaNiveles from '../components/tables/TablaNiveles';
+import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
@@ -16,6 +17,10 @@ const Niveles: React.FC = () => {
   const [busquedaNiveles, setBusquedaNiveles] = useState('');
   const [paginaNiveles, setPaginaNiveles] = useState(1);
   const registrosPorPagina = 7;
+
+  // ESTADOS PARA ORDENAMIENTO
+  const [, setOrdenColumna] = useState<string | null>(null);
+  const [, setOrdenDireccion] = useState<'asc' | 'desc'>('asc');
 
   const [modalEliminar, setModalEliminar] = useState<{
     isOpen: boolean;
@@ -45,6 +50,27 @@ const Niveles: React.FC = () => {
     fetchDatos();
   }, []);
 
+  // ORDENAMIENTO
+  const handleOrdenar = (columna: string, direccion: 'asc' | 'desc') => {
+    setOrdenColumna(columna);
+    setOrdenDireccion(direccion);
+
+    const sorted = [...datosNiveles].sort((a, b) => {
+      const valA = a[columna as keyof typeof a];
+      const valB = b[columna as keyof typeof b];
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return direccion === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      return 0;
+    });
+
+    setDatosNiveles(sorted);
+  };
+
+  // FILTRADO
   const nivelesFiltrados = useMemo(() => {
     if (!busquedaNiveles.trim()) return datosNiveles;
     const termino = busquedaNiveles.toLowerCase();
@@ -53,6 +79,7 @@ const Niveles: React.FC = () => {
     );
   }, [datosNiveles, busquedaNiveles]);
 
+  // PAGINACIÓN
   const nivelesPaginados = useMemo(() => {
     const inicio = (paginaNiveles - 1) * registrosPorPagina;
     return nivelesFiltrados.slice(inicio, inicio + registrosPorPagina);
@@ -108,7 +135,7 @@ const Niveles: React.FC = () => {
 
   return (
     <div className="p-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div>
+      <div className="mb-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
             Lista de Niveles
@@ -132,7 +159,8 @@ const Niveles: React.FC = () => {
           </div>
         </div>
 
-        <TablaNiveles
+        {/* TABLA CON ORDENAMIENTO */}
+        <TablaBase
           datos={nivelesPaginados}
           onEliminarFila={handleEliminarNivel}
           paginaActual={paginaNiveles}
@@ -147,6 +175,7 @@ const Niveles: React.FC = () => {
         />
       </div>
 
+      {/* MODALES */}
       <EliminarFilaModal
         isOpen={modalEliminar.isOpen}
         onClose={cancelarEliminacion}

@@ -1,5 +1,6 @@
+// src/pages/Areas.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import TablaAreas from '../components/tables/TablaAreas';
+import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import EliminarFilaModal from '../components/ui/modal/EliminarFilaModal';
@@ -16,6 +17,10 @@ const Areas: React.FC = () => {
   const [busquedaAreas, setBusquedaAreas] = useState('');
   const [paginaAreas, setPaginaAreas] = useState(1);
   const registrosPorPagina = 7;
+
+  // ESTADOS PARA ORDENAMIENTO
+  const [, setOrdenColumna] = useState<string | null>(null);
+  const [, setOrdenDireccion] = useState<'asc' | 'desc'>('asc');
 
   const [modalEliminar, setModalEliminar] = useState<{
     isOpen: boolean;
@@ -132,7 +137,7 @@ const Areas: React.FC = () => {
           </div>
         </div>
 
-        <TablaAreas
+        <TablaBase
           datos={areasPaginadas}
           onEliminarFila={handleEliminarArea}
           paginaActual={paginaAreas}
