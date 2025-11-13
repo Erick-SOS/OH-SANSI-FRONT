@@ -33,7 +33,7 @@ export default function UserDropdown() {
   }
 
   return (
-    <div className="relative -mr-20">
+    <div className="relative">
       <button
         onClick={toggleDropdown}
         className="flex items-center gap-2 rounded-lg px-0 py-0 text-gray-700 dark:text-gray-400"

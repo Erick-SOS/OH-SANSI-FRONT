@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -24,7 +23,6 @@ import GeneracionReportes from "./pages/GeneracionReportes";
 import Responsables from "./pages/Responsables.tsx";
 import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
-import ProtectedLayoutWithSidebar from "./layout/ProtectedLayoutWithSidebar";
 import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
 import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
@@ -32,6 +30,7 @@ import Reglamento from "./pages/PublicInfo/Reglamento";
 import { OlympiansListLocalprueba } from "./components/importarOlimpista/OlympiansListLocalprueba.tsx";
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
+import DashboardLayout from "./layout/DashboardLayout";
 
 export default function App() {
   return (
@@ -50,40 +49,25 @@ export default function App() {
             <Route path="/reglamento" element={<Reglamento />} />
           </Route>
 
-          {/* ================== LAYOUT PROTEGIDO (con Sidebar) ================== */}
-          <Route element={<ProtectedLayoutWithSidebar />}>
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardHome />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* ---- TODAS LAS RUTAS PROTEGIDAS ---- */}
-            <Route path="/profile" element={<ProtectedRoute><UserProfiles /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-            <Route path="/blank" element={<ProtectedRoute><Blank /></ProtectedRoute>} />
-            <Route path="/historial-de-cambios" element={<ProtectedRoute><HistorialDeCambios /></ProtectedRoute>} />
-            <Route path="/cantidad-de-medallas" element={<ProtectedRoute><CantidadDeMedallas /></ProtectedRoute>} />
-            <Route path="/lista-de-inscritos" element={<ProtectedRoute><OlympiansListLocalprueba /></ProtectedRoute>} />
-            <Route path="/lista-de-premiados" element={<ProtectedRoute><ListaDePremiados /></ProtectedRoute>} />
-            <Route path="/areas" element={<ProtectedRoute><Areas /></ProtectedRoute>} />
-            <Route path="/niveles" element={<ProtectedRoute><Niveles /></ProtectedRoute>} />
-            <Route path="/fases-de-competencia" element={<ProtectedRoute><FasesDeCompetencia /></ProtectedRoute>} />
-            <Route path="/reportes" element={<ProtectedRoute><GeneracionReportes /></ProtectedRoute>} />
-            <Route path="/olimpias-premios" element={<ProtectedRoute><OlimpiasPremios /></ProtectedRoute>} />
-            <Route path="/Responsables" element={<ProtectedRoute><Responsables /></ProtectedRoute>} />
-            <Route
-              path="/fases-de-evaluacion/individual"
-              element={<ProtectedRoute><FasesEvaluacionIndividual /></ProtectedRoute>}
-            />
-            <Route
-              path="/fases-de-evaluacion/grupal"
-              element={<ProtectedRoute><FasesEvaluacionGrupal /></ProtectedRoute>}
-            />
-
+          {/* ================== LAYOUT DASHBOARD (con sidebar) ================== */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardHome />} />
+            <Route path="/profile" element={<UserProfiles />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/blank" element={<Blank />} />
+            <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
+            <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
+            <Route path="/lista-de-inscritos" element={<OlympiansListLocalprueba />} />
+            <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
+            <Route path="/areas" element={<Areas />} />
+            <Route path="/niveles" element={<Niveles />} />
+            <Route path="/fases-de-competencia" element={<FasesDeCompetencia />} />
+            <Route path="/reportes" element={<GeneracionReportes />} />
+            <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
+            <Route path="/Responsables" element={<Responsables />} />
+            <Route path="/fases-de-evaluacion/individual" element={<FasesEvaluacionIndividual />} />
+            <Route path="/fases-de-evaluacion/grupal" element={<FasesEvaluacionGrupal />} />
+            {/* Agrega aquí: dashboard-admin, dashboard-responsable */}
           </Route>
 
           {/* ================== AUTH ================== */}
