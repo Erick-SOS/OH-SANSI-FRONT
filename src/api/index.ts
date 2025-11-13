@@ -1,10 +1,8 @@
-// api/index.ts
-import { authHeader, clearAuth, saveAuth, type AuthUser } from "./authStorage";
+// src/api/index.ts
+import { authHeader, clearAuth, isExpired } from "./authStorage";
 
-// Backend fijo y router montado en /api/auth
 export const API_ROOT = "https://back-oh-sansi.vercel.app";
 const BASE = `${API_ROOT.replace(/\/$/, "")}/api`;
-const AUTH = `${BASE}/auth`;
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -12,8 +10,8 @@ type Options = {
   method?: HttpMethod;
   body?: unknown;
   headers?: Record<string, string>;
-  token?: string;
-  timeoutMs?: number;
+  token?: string;       
+  timeoutMs?: number;   
 };
 
 function tryParseJson(text: string): unknown {
@@ -21,6 +19,12 @@ function tryParseJson(text: string): unknown {
 }
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
+  // Bloqueo proactivo si el token guardado ya venció (TTL 2h según backend)
+  if (!opts.token && isExpired()) {
+    clearAuth();
+    throw new Error("Sesión expirada. Inicie sesión nuevamente.");
+  }
+
   const controller = new AbortController();
   const to = setTimeout(() => controller.abort(), opts.timeoutMs ?? 15000);
 
@@ -50,10 +54,7 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   clearTimeout(to);
 
   const raw = await res.text();
-  const json = tryParseJson(raw) as
-    | { ok?: boolean; message?: string; error?: string }
-    | Record<string, unknown>
-    | null;
+  const json = tryParseJson(raw) as { ok?: boolean; message?: string; error?: string } | Record<string, unknown> | null;
 
   if (res.status === 401) {
     clearAuth();
@@ -67,13 +68,10 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
     throw new Error(msg);
   }
 
-  // Si el servidor no devolvió JSON válido, regresa null como unknown
   return (json as unknown as T) ?? (null as unknown as T);
 }
 
-/* =========================
-   Helpers HTTP genéricos
-   ========================= */
+/* ====== Atajos HTTP genéricos ====== */
 export const http = {
   get:  <T = unknown>(p: string, o?: Omit<Options, "method" | "body">) =>
     api<T>(p, { ...(o ?? {}), method: "GET" }),
@@ -86,43 +84,3 @@ export const http = {
   del:  <T = unknown>(p: string, o?: Omit<Options, "method" | "body">) =>
     api<T>(p, { ...(o ?? {}), method: "DELETE" }),
 };
-
-/* =========================
-   Auth según tu backend
-   ========================= */
-type LoginResponse = {
-  ok: true;
-  token: string;
-  expiresIn: number;
-  user: AuthUser; // { id, nombreCompleto, rol, correo }
-};
-
-type MeResponse = {
-  ok: true;
-  user: {
-    id: number;
-    jti: string;
-    nombreCompleto: string;
-    correo: string;
-    rol: AuthUser["rol"];
-  };
-};
-
-export async function login(correo: string, contrasena: string) {
-  const r = await http.post<LoginResponse>(`${AUTH}/login`, { correo, contrasena });
-  saveAuth(r.token, r.user);
-  return r.user;
-}
-
-export async function me() {
-  const r = await http.get<MeResponse>(`${AUTH}/me`);
-  return r.user;
-}
-
-export async function logout() {
-  try {
-    await http.post<{ ok: true; message: string }>(`${AUTH}/logout`, {});
-  } finally {
-    clearAuth();
-  }
-}
