@@ -19,7 +19,7 @@ function tryParseJson(text: string): unknown {
 }
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
-  // Bloqueo proactivo si el token guardado ya venció (TTL 2h según backend)
+
   if (!opts.token && isExpired()) {
     clearAuth();
     throw new Error("Sesión expirada. Inicie sesión nuevamente.");
