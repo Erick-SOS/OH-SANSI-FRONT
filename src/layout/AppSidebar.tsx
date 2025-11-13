@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState, useContext } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
 import {
   ChevronDownIcon,
   GridIcon,
@@ -92,8 +91,7 @@ const navItems: NavItem[] = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const { user } = useContext(AuthContext);
+  const { isExpanded, isMobileOpen, isHovered } = useSidebar();
   const location = useLocation();
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main";
@@ -102,13 +100,7 @@ const AppSidebar: React.FC = () => {
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const filteredNavItems = user
-    ? navItems
-    : navItems.filter(
-        (item) =>
-          item.name === "Dashboard" ||
-          item.name === "Resultados de Calificaciones"
-      );
+  const filteredNavItems = navItems;
 
   const isActive = useCallback(
     (path: string) => location.pathname === path,
@@ -284,22 +276,18 @@ const AppSidebar: React.FC = () => {
   );
 
   return (
-    <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200
-        ${
-          isExpanded || isMobileOpen
-            ? "w-[290px]"
-            : isHovered
-            ? "w-[290px]"
-            : "w-[90px]"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
-      onMouseEnter={() => !isExpanded && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <aside className={`
+      flex flex-col
+      bg-white dark:bg-gray-900
+      border-r border-gray-200 dark:border-gray-800
+      transition-all duration-300
+      h-full
+      overflow-hidden
+      ${isExpanded || isHovered ? "w-[290px]" : "w-[90px]"}
+      ${isMobileOpen ? "fixed inset-0 z-50" : "relative lg:translate-x-0"}
+    `}>
       
-        <div className={`py-8 flex ${
+        <div className={`py-8 flex px-5 ${
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}>
           <div className="flex items-center">
@@ -320,7 +308,7 @@ const AppSidebar: React.FC = () => {
         </div>
 
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        <nav className="mb-6">
+        <nav className="mb-6 px-5">
           <div className="flex flex-col gap-4">
             <div>
               <h2
