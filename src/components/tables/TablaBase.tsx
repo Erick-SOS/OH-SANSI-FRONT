@@ -16,15 +16,18 @@ interface ColumnaConfig {
   alineacion?: TipoAlineacion;
   ancho?: string;
   ordenable?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formatearCelda?: (valor: any, fila: any) => React.ReactNode;
 }
 
 interface TablaBaseProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   datos: any[];
   columnas: ColumnaConfig[];
   conOrdenamiento?: boolean;
   onOrdenar?: (columna: string, direccion: 'asc' | 'desc') => void;
   conAcciones?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderAcciones?: (fila: any) => React.ReactNode; // ← NUEVA PROP
   className?: string;
 }
@@ -58,6 +61,7 @@ const TablaBase: React.FC<TablaBaseProps> = ({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderizarContenidoCelda = (columna: ColumnaConfig, fila: any, index: number) => {
     if (columna.clave === 'numero') return index + 1;
     if (columna.formatearCelda) return columna.formatearCelda(fila[columna.clave], fila);
@@ -65,16 +69,16 @@ const TablaBase: React.FC<TablaBaseProps> = ({
   };
 
   return (
-    <div className={overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] ${className}}>
+    <div className={`overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] ${className}`}>
       <div className="max-w-full overflow-x-auto">
         <Table>
           <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
             <TableRow>
               {columnasConNumero.map((columna) => (
                 <TableCell key={columna.clave} isHeader
-                  className={px-5 py-3 font-medium text-gray-500 text-theme-base ${getAlineacionClase(columna.alineacion)} ${columna.ancho || ''}}
+                  className={`px-5 py-3 font-medium text-gray-500 text-theme-base ${getAlineacionClase(columna.alineacion)} ${columna.ancho || ''}`}
                 >
-                  <div className={flex items-center gap-1 ${columna.alineacion === 'centro' ? 'justify-center' : columna.alineacion === 'derecha' ? 'justify-end' : 'justify-start'}}>
+                  <div className={`flex items-center gap-1 ${columna.alineacion === 'centro' ? 'justify-center' : columna.alineacion === 'derecha' ? 'justify-end' : 'justify-start'}`}>
                     <span>{columna.titulo}</span>
                     {conOrdenamiento && columna.ordenable !== false && onOrdenar && (
                       <div className="flex flex-col">
@@ -91,10 +95,10 @@ const TablaBase: React.FC<TablaBaseProps> = ({
 
           <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
             {datos.map((fila, index) => (
-              <TableRow key={fila.id || index} className={hover:bg-gray-50 dark:hover:bg-white/[0.02] ${fila.__className || ''}}>
+              <TableRow key={fila.id || index} className={`hover:bg-gray-50 dark:hover:bg-white/[0.02] ${fila.__className || ''}`}>
                 {columnasConNumero.map((columna) => (
                   <TableCell key={columna.clave}
-                    className={px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90 ${getAlineacionClase(columna.alineacion)} ${columna.ancho || ''}}
+                    className={`px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90 ${getAlineacionClase(columna.alineacion)} ${columna.ancho || ''}`}
                   >
                     {renderizarContenidoCelda(columna, fila, index)}
                   </TableCell>
