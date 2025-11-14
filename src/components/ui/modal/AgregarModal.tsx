@@ -1,19 +1,21 @@
+// src/components/ui/modal/AgregarModal.tsx
 import React, { useState } from 'react';
 
 interface AgregarModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (formData: { nombre: string; codigo: string; descripcion: string }) => void;
-  tipo: 'Area' | 'Nivel' | '';
+  tipo: 'Área' | 'Nivel';
 }
 
-const AgregarModal: React.FC<AgregarModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  tipo
-}) => {
+const AgregarModal: React.FC<AgregarModalProps> = ({ isOpen, onClose, onConfirm, tipo }) => {
   const [formData, setFormData] = useState({
+    nombre: '',
+    codigo: '',
+    descripcion: '',
+  });
+
+  const [errores, setErrores] = useState({
     nombre: '',
     codigo: '',
     descripcion: '',
@@ -21,89 +23,142 @@ const AgregarModal: React.FC<AgregarModalProps> = ({
 
   if (!isOpen) return null;
 
+  const validar = () => {
+    const nuevosErrores = { nombre: '', codigo: '', descripcion: '' };
+
+    if (!formData.nombre.trim()) nuevosErrores.nombre = 'El nombre es obligatorio';
+    if (!formData.codigo.trim()) nuevosErrores.codigo = 'El código es obligatorio';
+    else if (!/^[A-Z0-9]{2,6}$/.test(formData.codigo)) nuevosErrores.codigo = 'Código: 2-6 caracteres (A-Z, 0-9)';
+    if (!formData.descripcion.trim()) nuevosErrores.descripcion = 'La descripción es obligatoria';
+
+    setErrores(nuevosErrores);
+    return Object.values(nuevosErrores).every(v => !v);
+  };
+
   const handleSubmit = () => {
-    if (formData.nombre.trim()) {
-      onConfirm(formData);
-      setFormData({ nombre: '', codigo: '', descripcion: '' });
+    if (validar()) {
+      onConfirm({
+        nombre: formData.nombre.trim(),
+        codigo: formData.codigo.trim().toUpperCase(),
+        descripcion: formData.descripcion.trim(),
+      });
+      handleClose();
     }
   };
 
   const handleClose = () => {
     setFormData({ nombre: '', codigo: '', descripcion: '' });
+    setErrores({ nombre: '', codigo: '', descripcion: '' });
     onClose();
   };
-  
 
   return (
-    <div 
-      className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center" 
-      style={{ 
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+    <div
+      className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 99999,
         position: 'fixed',
         width: '100vw',
-        height: '100vh'
+        height: '100vh',
       }}
+      onClick={handleClose}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl" style={{ position: 'relative', zIndex: 100000 }}>
-        <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
-          {tipo === 'Area' ? 'Agregar Nueva Área' : 'Agregar Nuevo Nivel'}
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-md dark:shadow-gray-900"
+        style={{ position: 'relative', zIndex: 100000 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          Agregar nuevo {tipo.toLowerCase()}
         </h3>
-        
-        <div className="space-y-4">
+
+        <div className="space-y-3">
+          {/* NOMBRE */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              {tipo === 'Area' ? 'Área' : 'Nivel'} <span className="text-red-500">*</span>
+            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+              {tipo} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.nombre}
-              onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-              maxLength={tipo === 'Area' ? 150 : 100}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
-              placeholder={tipo === 'Area' ? 'Nombre del área' : 'Nombre del nivel'}
+              onChange={(e) => {
+                setFormData({ ...formData, nombre: e.target.value });
+                setErrores({ ...errores, nombre: '' });
+              }}
+              className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                focus:outline-none focus:ring-2 transition-all
+                ${errores.nombre
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-400 focus:border-blue-400'
+                }`}
+              placeholder={`Nombre del ${tipo.toLowerCase()}`}
+              maxLength={100}
             />
+            {errores.nombre && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errores.nombre}</p>}
           </div>
 
+          {/* CÓDIGO */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              Código de {tipo === 'Area' ? 'Área' : 'Nivel'}
+            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+              Código de {tipo.toLowerCase()} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.codigo}
-              onChange={(e) => setFormData({...formData, codigo: e.target.value})}
-              maxLength={50}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
-              placeholder={`Código de ${tipo === 'Area' ? 'área' : 'nivel'}`}
+              onChange={(e) => {
+                const value = e.target.value.toUpperCase();
+                setFormData({ ...formData, codigo: value });
+                setErrores({ ...errores, codigo: '' });
+              }}
+              className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                focus:outline-none focus:ring-2 transition-all
+                ${errores.codigo
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-400 focus:border-blue-400'
+                }`}
+              placeholder={`Código de ${tipo.toLowerCase()}`}
+              maxLength={6}
             />
+            {errores.codigo && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errores.codigo}</p>}
           </div>
 
+          {/* DESCRIPCIÓN */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
               Descripción
             </label>
             <textarea
               value={formData.descripcion}
-              onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+              onChange={(e) => {
+                setFormData({ ...formData, descripcion: e.target.value });
+                setErrores({ ...errores, descripcion: '' });
+              }}
+              className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                focus:outline-none focus:ring-2 transition-all resize-none
+                ${errores.descripcion
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-400 focus:border-blue-400'
+                }`}
+              rows={3}
+              placeholder={`Descripción del ${tipo.toLowerCase()} de competencia`}
               maxLength={500}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none transition-all"
-              placeholder="Descripción del área o nivel"
             />
+            {errores.descripcion && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errores.descripcion}</p>}
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="flex justify-end gap-2 mt-5">
           <button
             onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!formData.nombre.trim()}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-md transition disabled:opacity-50"
+            disabled={!formData.nombre.trim() || !formData.codigo.trim() || !formData.descripcion.trim()}
           >
             Agregar
           </button>
