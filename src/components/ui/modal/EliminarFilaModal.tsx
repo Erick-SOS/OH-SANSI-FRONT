@@ -1,3 +1,4 @@
+// src/components/ui/modal/EliminarFilaModal.tsx
 import React from 'react';
 
 interface EliminarFilaModalProps {

@@ -26,6 +26,7 @@ export function toCSV(rows: Olympian[]): string {
     "TUTOR_AP_PAT", "TUTOR_AP_MAT", "TUTOR_TEL", "TUTOR_CORREO",
     "TUTOR_UNID_EDU", "TUTOR_PROF", "EQUIPO_NOMBRE", "ROL_EQUIPO"
   ];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const body = rows.map(r => headers.map(h => (r as any)[h] ?? ""));
   return [headers, ...body]
     .map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))
