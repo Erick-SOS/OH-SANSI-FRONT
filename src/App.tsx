@@ -31,6 +31,8 @@ import { OlympiansListLocalprueba } from "./components/importarOlimpista/Olympia
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
 import DashboardLayout from "./layout/DashboardLayout";
+import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
+import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
 
 export default function App() {
   return (
@@ -52,6 +54,8 @@ export default function App() {
           {/* ================== LAYOUT DASHBOARD (con sidebar) ================== */}
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardHome />} />
+            <Route path="/dashboard-admin" element={<DashboardAdmin />} />
+            <Route path="/dashboard-responsable" element={<DashboardResponsable />} />
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
