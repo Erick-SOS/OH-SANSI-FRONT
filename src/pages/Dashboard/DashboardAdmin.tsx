@@ -1,8 +1,8 @@
 //import { useContext } from "react";para la auth
 //import { AuthContext } from "../../context/AuthContext";para la auth
-import PageMeta from "../../components/common/PageMeta";
-import MetricCard from "../../components/dashboard/MetricCard";
-import DonutChartCard from "../../components/dashboard/DonutChartCard";
+import PageMeta from "../../components/common/PaginaMeta";
+import MetricCard from "../../components/dashboard/TarjetaMetrica";
+import DonutChartCard from "../../components/dashboard/TarjetaGraficoDona";
 
 const DashboardAdmin = () => {
   //const { user } = useContext(AuthContext); para la auth

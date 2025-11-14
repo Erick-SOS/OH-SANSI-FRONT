@@ -1,8 +1,8 @@
 //import { useContext } from "react"; para auth
 //import { AuthContext } from "../../context/AuthContext"; para auth
-import PageMeta from "../../components/common/PageMeta";
-import MetricCard from "../../components/dashboard/MetricCard";
-import DonutChartCard from "../../components/dashboard/DonutChartCard";
+import PageMeta from "../../components/common/PaginaMeta";
+import MetricCard from "../../components/dashboard/TarjetaMetrica";
+import DonutChartCard from "../../components/dashboard/TarjetaGraficoDona";
 
 const DashboardResponsable = () => {
   //const { user } = useContext(AuthContext); para auth
