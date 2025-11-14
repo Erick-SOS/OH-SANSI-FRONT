@@ -1,3 +1,4 @@
+// src/components/auth/SignInForm.tsx
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon } from "../../icons";
@@ -11,9 +12,9 @@ export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   type Campo = "correo" | "password";
   const [touched, setTouched] = useState<Record<Campo, boolean>>({
@@ -28,21 +29,19 @@ export default function SignInForm() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const name = e.target.name as Campo;
-  const raw = e.target.value;
-
-  if (name === "correo") {
-    const clean = raw.replace(/\s+/g, "").slice(0, 80);
-    setEmail(clean);
-  } else if (name === "password") {
-    const clean = raw.replace(/\s/g, "").slice(0, 30);
-    setPassword(clean);
-  }
-
-  setTouched(prev => ({ ...prev, [name]: true }));
-  setError("");
-  setSuccess("");
-};
+    const name = e.target.name as Campo;
+    const raw = e.target.value;
+    if (name === "correo") {
+      const clean = raw.replace(/\s+/g, "").slice(0, 80);
+      setEmail(clean);
+    } else if (name === "password") {
+      const clean = raw.replace(/\s/g, "").slice(0, 30);
+      setPassword(clean);
+    }
+    setTouched(prev => ({ ...prev, [name]: true }));
+    setError("");
+    setSuccess("");
+  };
 
   const fieldStatus = (
     name: "correo" | "password"
@@ -56,7 +55,7 @@ export default function SignInForm() {
       return {
         error: !ok,
         valid: ok,
-        message: ok ? undefined : "Ingrese el correo que uso para su registró con formato valido.",
+        message: ok ? undefined : "Ingrese un correo válido (ej: usuario@dominio.com).",
       };
     }
 
@@ -66,8 +65,8 @@ export default function SignInForm() {
     const ok = length && lower && upper;
     let message: string | undefined;
     if (!ok) {
-      if (!length) message = "Ingrese la contraseña que definió en su registro.";
-      else if (!lower || !upper) message = "Ingrese su contraseña con formato invalido";
+      if (!length) message = "La contraseña debe tener al menos 8 caracteres.";
+      else if (!lower || !upper) message = "Debe incluir mayúsculas y minúsculas.";
     }
     return { error: !ok, valid: ok, message };
   };
@@ -80,39 +79,38 @@ export default function SignInForm() {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setIsLoading(true);
 
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-    const passVal = password.trim();
-    const passOk =
-      passVal.length >= 8 && /[a-z]/.test(passVal) && /[A-Z]/.test(passVal);
+    const passOk = password.trim().length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password);
 
     if (!emailOk || !passOk) {
       setTouched({ correo: true, password: true });
       setSubmitAttempted(true);
-      setError(
-        "Por favor, complete los campos obligatorios"
-      );
+      setError("Por favor, completa todos los campos correctamente.");
+      setIsLoading(false);
       return;
     }
 
     try {
-      if (email === "admin@gmail.com" && password === "12345678La#") {
-        await login(email, password, { name: "Administrador", rol: "administrador" });
-        setSuccess("Inicio de sesión correcto. Redirigiendo…");
-        setTimeout(() => navigate("/dashboard"), 1200);
-      } else if (email === "evaluador@gmail.com" && password === "12345678La#") {
-        await login(email, password, { name: "Evaluador", rol: "EVALUADOR" });
-        setSuccess("Inicio de sesión correcto. Redirigiendo…");
-        setTimeout(() => navigate("/dashboard"), 1200);
-      } else if (email === "responsable@gmail.com" && password === "12345678La#") {
-        await login(email, password, { name: "Responsable", rol: "RESPONSABLE" });
-        setSuccess("Inicio de sesión correcto. Redirigiendo…");
-        setTimeout(() => navigate("/dashboard"), 1200);
-      } else {
-        setError("Correo o contraseña incorrectos");
-      }
-    } catch {
-      setError("Error al iniciar sesión. Por favor, intenta de nuevo.");
+      // SOLO FRONTEND: Simula login exitoso sin validar credenciales
+      // El backend real validará esto más adelante
+      const mockUser = {
+        name: "Usuario",
+        rol: "EVALUADOR", // Rol por defecto para pruebas
+        email: email.trim(),
+      };
+
+      await login(email.trim(), password, mockUser);
+      setSuccess("Inicio de sesión exitoso. Redirigiendo…");
+
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1200);
+    } catch (err) {
+      setError("Error interno. Intenta de nuevo.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -134,7 +132,7 @@ export default function SignInForm() {
             Inicia sesión
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            ¡Introduce tu correo y contraseña para iniciar sesión!
+            ¡Introduce tu correo y contraseña para continuar!
           </p>
 
           {/* BANNERS */}
@@ -158,6 +156,7 @@ export default function SignInForm() {
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+            {/* CORREO */}
             {(() => {
               const s = fieldStatus("correo");
               return (
@@ -181,6 +180,7 @@ export default function SignInForm() {
               );
             })()}
 
+            {/* CONTRASEÑA */}
             {(() => {
               const s = fieldStatus("password");
               return (
@@ -201,7 +201,6 @@ export default function SignInForm() {
                       hint={undefined}
                       className="pr-12 h-11"
                     />
-
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                       <button
                         type="button"
@@ -236,7 +235,6 @@ export default function SignInForm() {
               );
             })()}
 
-
             <div className="flex justify-end">
               <Link
                 to="/reset-password"
@@ -248,16 +246,31 @@ export default function SignInForm() {
 
             <button
               type="submit"
-              className="w-full px-4 py-3 text-sm font-medium text-white rounded-lg bg-brand-500 hover:bg-brand-600"
+              disabled={isLoading}
+              className={`w-full px-4 py-3 text-sm font-medium text-white rounded-lg transition-all
+                ${isLoading 
+                  ? 'bg-brand-400 cursor-not-allowed' 
+                  : 'bg-brand-500 hover:bg-brand-600'
+                }`}
             >
-              Iniciar sesión
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  Iniciando sesión...
+                </span>
+              ) : (
+                "Iniciar sesión"
+              )}
             </button>
           </form>
 
           <div className="mt-5 text-sm text-center text-gray-700 dark:text-gray-400">
             ¿No tienes una cuenta?{" "}
             <Link to="/signup" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">
-              Registrate
+              Regístrate
             </Link>
           </div>
         </div>
