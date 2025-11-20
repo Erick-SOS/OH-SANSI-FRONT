@@ -1,3 +1,4 @@
+// src/layout/AppSidebar.tsx
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -5,16 +6,17 @@ import {
   GridIcon,
   HorizontaLDots,
 } from "../icons";
-import { 
-  MdOutlineCategory, 
-  MdHistory, 
-  MdEmojiEvents, 
+import {
+  MdOutlineCategory,
+  MdHistory,
+  MdEmojiEvents,
   MdTimeline,
-  MdOutlineAssessment,  // ← ÍCONO NUEVO: REPORTES
-  MdAssignmentInd,    // Designar responsables
-  MdPeople,           // Lista de inscritos
-  MdChecklist,        // Fases de evaluación
+  MdOutlineAssessment,
+  MdAssignmentInd,
+  MdPeople,
+  MdChecklist,
   MdCardGiftcard,
+  MdFactCheck, // ÍCONO NUEVO: APROBACIÓN DE CALIFICACIONES
 } from "react-icons/md";
 import { useSidebar } from "../context/SidebarContext";
 import images from "../assets/images";
@@ -71,13 +73,18 @@ const navItems: NavItem[] = [
     path: "/fases-de-competencia",
   },
   {
-  icon: <MdChecklist size={20} />,
-  name: "Fases de Evaluación",
-  subItems: [
-    { name: "Individual", path: "/fases-de-evaluacion/individual" },
-    { name: "Grupal", path: "/fases-de-evaluacion/grupal" },
-  ],
-},
+    icon: <MdChecklist size={20} />,
+    name: "Fases de Evaluación",
+    subItems: [
+      { name: "Individual", path: "/fases-de-evaluacion/individual" },
+      { name: "Grupal", path: "/fases-de-evaluacion/grupal" },
+    ],
+  },
+  {
+    icon: <MdFactCheck size={22} />, // ÍCONO PERFECTO PARA APROBACIÓN
+    name: "Aprobación de Calificaciones",
+    path: "/aprobacion-calificaciones",
+  },
   {
     icon: <MdOutlineAssessment size={20} />,
     name: "Generación de Reportes",
@@ -99,7 +106,6 @@ const AppSidebar: React.FC = () => {
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
   const filteredNavItems = navItems;
 
   const isActive = useCallback(
@@ -286,27 +292,25 @@ const AppSidebar: React.FC = () => {
       ${isExpanded || isHovered ? "w-[290px]" : "w-[90px]"}
       ${isMobileOpen ? "fixed inset-0 z-50" : "relative lg:translate-x-0"}
     `}>
-      
-        <div className={`py-8 flex px-5 ${
-          !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-        }`}>
-          <div className="flex items-center">
-            {isExpanded || isHovered || isMobileOpen ? (
-              <img
-                src={images.logoUmss}
-                alt="UMSS - Oh! SanSí"
-                className="h-10 w-auto object-contain"
-              />
-            ) : (
-              <img
-                src={images.logoUmss}
-                alt="UMSS"
-                className="h-10 w-10 object-contain rounded-md"
-              />
-            )}
-          </div>
+      <div className={`py-8 flex px-5 ${
+        !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+      }`}>
+        <div className="flex items-center">
+          {isExpanded || isHovered || isMobileOpen ? (
+            <img
+              src={images.logoUmss}
+              alt="UMSS - Oh! SanSí"
+              className="h-10 w-auto object-contain"
+            />
+          ) : (
+            <img
+              src={images.logoUmss}
+              alt="UMSS"
+              className="h-10 w-10 object-contain rounded-md"
+            />
+          )}
         </div>
-
+      </div>
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6 px-5">
           <div className="flex flex-col gap-4">
