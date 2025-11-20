@@ -34,6 +34,8 @@ import DashboardLayout from "./layout/DashboardLayout";
 import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
 import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
 import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx"; 
+import AprobacionCalificaciones from "./pages/AprobacionCalificaciones.tsx";
+
 export default function App() {
   return (
     <Router>
@@ -72,6 +74,7 @@ export default function App() {
             <Route path="/Responsables" element={<Responsables />} />
             <Route path="/fases-de-evaluacion/individual" element={<FasesEvaluacionIndividual />} />
             <Route path="/fases-de-evaluacion/grupal" element={<FasesEvaluacionGrupal />} />
+            <Route path="/aprobacion-calificaciones" element={<AprobacionCalificaciones />} />
           </Route>
 
           {/* ================== AUTH ================== */}
