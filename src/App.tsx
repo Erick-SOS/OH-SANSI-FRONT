@@ -1,3 +1,4 @@
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import SignIn from "./pages/AuthPages/SignIn";
@@ -34,13 +35,15 @@ import DashboardLayout from "./layout/DashboardLayout";
 import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
 import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
 
+// NUEVA IMPORTACIÓN OFICIAL
+import AprobacionCalificaciones from "./pages/AprobacionCalificaciones";
+
 export default function App() {
   return (
     <Router>
       <AuthProvider>
         <ScrollToTop />
         <Routes>
-
           {/* ================== LAYOUT PÚBLICO ================== */}
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
@@ -71,7 +74,12 @@ export default function App() {
             <Route path="/Responsables" element={<Responsables />} />
             <Route path="/fases-de-evaluacion/individual" element={<FasesEvaluacionIndividual />} />
             <Route path="/fases-de-evaluacion/grupal" element={<FasesEvaluacionGrupal />} />
-            {/* Agrega aquí: dashboard-admin, dashboard-responsable */}
+
+            {/* NUEVA RUTA OFICIAL – APROBACIÓN DE CALIFICACIONES */}
+            <Route 
+              path="/aprobacion-calificaciones" 
+              element={<AprobacionCalificaciones />} 
+            />
           </Route>
 
           {/* ================== AUTH ================== */}

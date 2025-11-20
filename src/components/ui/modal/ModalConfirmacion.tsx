@@ -1,3 +1,4 @@
+// src/components/ui/modal/ModalConfirmacion.tsx
 import React from 'react';
 
 interface ModalConfirmacionProps {
@@ -18,8 +19,15 @@ const ModalConfirmacion: React.FC<ModalConfirmacionProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* BACKDROP CORREGIDO: Gris en claro, negro en oscuro */}
+      <div 
+        className="fixed inset-0 bg-gray-900/70 dark:bg-black/70 transition-colors"
+        onClick={onCancelar}
+      />
+      
+      {/* CONTENIDO DEL MODAL */}
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           {titulo}
         </h3>
@@ -35,7 +43,7 @@ const ModalConfirmacion: React.FC<ModalConfirmacionProps> = ({
           </button>
           <button
             onClick={onConfirmar}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors"
           >
             Aceptar
           </button>
@@ -45,4 +53,4 @@ const ModalConfirmacion: React.FC<ModalConfirmacionProps> = ({
   );
 };
 
-export default ModalConfirmacion; 
+export default ModalConfirmacion;
