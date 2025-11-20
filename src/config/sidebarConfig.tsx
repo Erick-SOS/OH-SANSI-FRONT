@@ -61,13 +61,5 @@ export const sidebarConfig: SidebarConfig = {
         { name: "Evaluación Grupal", path: "/fases-de-evaluacion/grupal" },
       ],
     },
-    {
-      icon: <MdChecklist className="w-5 h-5" />,
-      name: "Fases de Evaluación",
-      subItems: [
-        { name: "Individual", path: "/fases-de-evaluacion/individual" },
-        { name: "Grupal", path: "/fases-de-evaluacion/grupal" },
-      ],
-    },
   ],
 };
