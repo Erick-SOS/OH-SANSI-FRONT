@@ -17,7 +17,7 @@ interface EvaluacionItem {
 
 const FasesEvaluacionIndividual: React.FC = () => {
   const navigate = useNavigate();
-
+//Datos de ejemplo
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
     { id: 1, nombre: "Juan Pérez", areaCompetencia: "Ciencias", modalidad: "Individual", nivel: "Secundaria", nota: 0, observacion: "" },
     { id: 2, nombre: "María García", areaCompetencia: "Lenguaje", modalidad: "Individual", nivel: "Primaria", nota: 0, observacion: "" },
