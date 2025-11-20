@@ -1,8 +1,9 @@
-// src/pages/FasesEvaluacionGrupal.tsx
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface EvaluacionItem {
   id: number;
@@ -15,148 +16,146 @@ interface EvaluacionItem {
 }
 
 const FasesEvaluacionGrupal: React.FC = () => {
+  const navigate = useNavigate();
+
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
-    { id: 1, nombre: "Equipo Alfa", areaCompetencia: "Ciencias", modalidad: "Grupal", nivel: "Secundaria", nota: 85, observacion: "Buen desempeño" },
-    { id: 2, nombre: "Grupo Beta", areaCompetencia: "Lenguaje", modalidad: "Grupal", nivel: "Primaria", nota: 92, observacion: "Excelente trabajo" },
-    { id: 3, nombre: "Equipo Gamma", areaCompetencia: "Matemáticas", modalidad: "Grupal", nivel: "Secundaria", nota: 78, observacion: "Mejorar ritmo" },
-    { id: 4, nombre: "Grupo Delta", areaCompetencia: "Historia", modalidad: "Grupal", nivel: "Primaria", nota: 88, observacion: "Progreso notable" },
-    { id: 5, nombre: "Equipo Epsilon", areaCompetencia: "Física", modalidad: "Grupal", nivel: "Secundaria", nota: 75, observacion: "Revisar conceptos" },
-    { id: 6, nombre: "Grupo Zeta", areaCompetencia: "Geografía", modalidad: "Grupal", nivel: "Primaria", nota: 90, observacion: "Gran esfuerzo" },
-    { id: 7, nombre: "Equipo Eta", areaCompetencia: "Química", modalidad: "Grupal", nivel: "Secundaria", nota: 82, observacion: "Buen inicio" },
+    { id: 1, nombre: "Equipo Alfa", areaCompetencia: "Ciencias", modalidad: "Grupal", nivel: "Secundaria", nota: 0, observacion: "" },
+    { id: 2, nombre: "Grupo Beta", areaCompetencia: "Lenguaje", modalidad: "Grupal", nivel: "Primaria", nota: 0, observacion: "" },
+    { id: 3, nombre: "Equipo Gamma", areaCompetencia: "Matemáticas", modalidad: "Grupal", nivel: "Secundaria", nota: 0, observacion: "" },
   ]);
 
   const [edits, setEdits] = useState<Record<number, Partial<EvaluacionItem>>>({});
-  const [savedEdits, setSavedEdits] = useState<Record<number, Partial<EvaluacionItem>>>({});
-
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [intentosFallidos, setIntentosFallidos] = useState(false);
   const itemsPerPage = 7;
 
-  const handleValueChange = (id: number, field: keyof EvaluacionItem, value: string | number) => {
-    setEdits(prev => ({
-      ...prev,
-      [id]: { ...prev[id], [field]: value }
-    }));
+  const validarListaCompleta = (): { esValida: boolean; errores: string[] } => {
+    const errores: string[] = [];
+
+    evaluaciones.forEach(item => {
+      const notaActual = (edits[item.id]?.nota ?? item.nota) as number;
+      const obsActual = (edits[item.id]?.observacion ?? item.observacion) as string || '';
+
+      if (!notaActual || notaActual < 1 || notaActual > 100) {
+        errores.push(`"${item.nombre}" tiene una nota inválida o vacía`);
+      }
+      if (obsActual.trim() === "") {
+        errores.push(`"${item.nombre}" no tiene observación`);
+      }
+      if (obsActual.length > 100) {
+        errores.push(`La observación de "${item.nombre}" excede los 100 caracteres`);
+      }
+    });
+
+    return { esValida: errores.length === 0, errores };
   };
 
-  const handleSaveChanges = () => {
-    const updatedData = evaluaciones.map(item => {
-      const changes = edits[item.id] || {};
-      return { ...item, ...changes };
-    });
-    setEvaluaciones(updatedData);
-    setSavedEdits(prev => ({ ...prev, ...edits }));
+  const handleEnviarLista = () => {
+    const { esValida, errores } = validarListaCompleta();
+    if (!esValida) {
+      setIntentosFallidos(true);
+      errores.forEach(err => toast.error(err));
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const confirmarEnvio = () => {
+    const finalData = evaluaciones.map(item => ({ ...item, ...edits[item.id] }));
+    setEvaluaciones(finalData);
     setEdits({});
+    setIntentosFallidos(false);
+    toast.success("¡Calificaciones grupales enviadas con éxito!");
+    setShowConfirmModal(false);
+    setTimeout(() => navigate('/evaluador/dashboard'), 1500);
+  };
+
+  const handleValueChange = (id: number, field: keyof EvaluacionItem, value: string | number) => {
+    setEdits(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
   const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    const sortedData = [...evaluaciones].sort((a, b) => {
-      if (direction === 'asc') {
-        return a[column as keyof EvaluacionItem] > b[column as keyof EvaluacionItem] ? 1 : -1;
-      }
-      return a[column as keyof EvaluacionItem] < b[column as keyof EvaluacionItem] ? 1 : -1;
+    const sorted = [...evaluaciones].sort((a, b) => {
+      const aVal = a[column as keyof EvaluacionItem];
+      const bVal = b[column as keyof EvaluacionItem];
+      return direction === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
     });
-    setEvaluaciones(sortedData);
+    setEvaluaciones(sorted);
   };
 
   const columns = [
-  { clave: 'nombre', titulo: 'Nombre', alineacion: 'izquierda' as const, ordenable: true },
-  { clave: 'areaCompetencia', titulo: 'Área de Competencia', alineacion: 'izquierda' as const, ordenable: true },
-  { clave: 'nivel', titulo: 'Nivel', alineacion: 'izquierda' as const, ordenable: true },
-  {
-    clave: 'nota',
-    titulo: 'Nota',
-    alineacion: 'centro' as const,
-    formatearCelda: (valor: number, fila: EvaluacionItem) => {
-      const valorActual = edits[fila.id]?.nota ?? valor;
-      const esValido = valorActual <= 100;
+    { clave: 'nombre', titulo: 'Nombre del Equipo', alineacion: 'izquierda' as const, ordenable: true },
+    { clave: 'areaCompetencia', titulo: 'Área de Competencia', alineacion: 'izquierda' as const, ordenable: true },
+    { clave: 'nivel', titulo: 'Nivel', alineacion: 'izquierda' as const, ordenable: true },
+    {
+      clave: 'nota',
+      titulo: 'Nota',
+      alineacion: 'centro' as const,
+      formatearCelda: (_: number, fila: EvaluacionItem) => {
+        const valorActual = edits[fila.id]?.nota ?? fila.nota;
+        const esValido = valorActual >= 1 && valorActual <= 100;
+        const tieneError = intentosFallidos && (!esValido || valorActual === 0);
 
-      return (
-        <div className="relative">
+        return (
           <input
             type="text"
             inputMode="numeric"
-            pattern="[0-9]*"
             value={valorActual}
             onChange={(e) => {
               const input = e.target.value;
               if (input === '' || /^\d+$/.test(input)) {
                 const num = input === '' ? 0 : Number(input);
-                if (num <= 100) {
-                  handleValueChange(fila.id, 'nota', num);
-                }
+                if (num <= 100) handleValueChange(fila.id, 'nota', num);
               }
             }}
-            className={`w-20 text-center border rounded-xl px-2 py-1 transition-all
-              ${!esValido 
-                ? 'border-red-500 bg-red-50 animate-pulse' 
-                : edits[fila.id]?.nota !== undefined && edits[fila.id]?.nota !== valor
-                ? 'border-yellow-500 bg-yellow-50'
-                : savedEdits[fila.id]?.nota !== undefined
-                ? 'border-green-500 bg-green-50'
-                : 'border-gray-300'
-              }`}
-            placeholder="0-100"
+            className={`w-20 text-center border rounded-xl px-2 py-1 transition-all font-medium ${
+              tieneError
+                ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                : esValido && intentosFallidos
+                ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                : 'border-gray-300 dark:border-gray-600'
+            }`}
+            placeholder="Obligatorio"
           />
-          {!esValido && (
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs px-2 py-1 rounded whitespace-NOwrap">
-              Máximo 100 pts
-            </div>
-          )}
-        </div>
-      );
-    }
-  },
-  {
-    clave: 'observacion',
-    titulo: 'Observación',
-    alineacion: 'izquierda' as const,
-    formatearCelda: (valor: string, fila: EvaluacionItem) => {
-      const textoActual = edits[fila.id]?.observacion ?? valor;
-      const caracteresRestantes = 100 - (textoActual?.length || 0);
-      const excedido = caracteresRestantes < 0;
+        );
+      }
+    },
+    {
+      clave: 'observacion',
+      titulo: 'Observación',
+      alineacion: 'izquierda' as const,
+      formatearCelda: (_: string, fila: EvaluacionItem) => {
+        const texto = (edits[fila.id]?.observacion ?? fila.observacion) || '';
+        const esValido = texto.trim() !== '' && texto.length <= 100;
+        const tieneError = intentosFallidos && (!esValido || texto.trim() === '');
 
-      return (
-        <div className="relative">
-          <textarea
-            value={textoActual}
-            onChange={(e) => {
-              const texto = e.target.value;
-              if (texto.length <= 100) {
-                handleValueChange(fila.id, 'observacion', texto);
-              }
-            }}
-            placeholder="Máximo 100 caracteres..."
-            className={`w-full p-2 border rounded-xl resize-none transition-all
-              ${excedido 
-                ? 'border-red-500 bg-red-50 animate-pulse' 
-                : edits[fila.id]?.observacion !== undefined && edits[fila.id]?.observacion !== valor
-                ? 'border-yellow-500 bg-yellow-50'
-                : savedEdits[fila.id]?.observacion !== undefined
-                ? 'border-green-500 bg-green-50'
-                : 'border-gray-300'
+        return (
+          <div className="relative">
+            <textarea
+              value={texto}
+              onChange={(e) => handleValueChange(fila.id, 'observacion', e.target.value)}
+              className={`w-full p-2 border rounded-xl resize-none transition-all font-medium ${
+                tieneError
+                  ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                  : esValido && intentosFallidos
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
-            rows={2}
-          />
-          <div className={`absolute bottom-1 right-2 text-xs ${
-            excedido 
-              ? 'text-red-600 font-bold' 
-              : caracteresRestantes <= 20 
-              ? 'text-orange-600' 
-              : 'text-gray-500'
-          }`}>
-            {caracteresRestantes}
+              rows={2}
+              placeholder="Obligatorio (máx. 100 caracteres)"
+            />
+            <span className={`absolute bottom-1 right-2 text-xs font-medium ${
+              texto.length > 100 ? 'text-red-600' : texto.length > 80 ? 'text-orange-600' : 'text-gray-500 dark:text-gray-400'
+            }`}>
+              {texto.length}/100
+            </span>
           </div>
-          {excedido && (
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs px-2 py-1 rounded whitespace-NOwrap">
-              Límite: 100 caracteres
-            </div>
-          )}
-        </div>
-      );
-    }
-  },
-];
+        );
+      }
+    },
+  ];
 
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return evaluaciones;
@@ -174,66 +173,93 @@ const FasesEvaluacionGrupal: React.FC = () => {
   }, [filteredData, currentPage]);
 
   return (
-    <div className="p-1 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
-          Calificación Participantes Grupales
-        </h1>
-        <nav className="text-sm text-gray-600 dark:text-gray-400">
-          <span>Inicio</span> <span className="mx-2">›</span> 
-          <span className="text-gray-800 dark:text-white">Fases de Evaluación</span> <span className="mx-2">›</span> 
-          <span className="text-gray-800 dark:text-white">Grupal</span>
-        </nav>
-      </div>
+    <>
+      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Calificación Participantes Grupales
+            </h1>
+            <nav className="text-sm text-gray-600 dark:text-gray-400 mt-2 sm:mt-0">
+              Inicio › Fases de Evaluación › Grupal
+            </nav>
+          </div>
 
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex-1 max-w-md">
-            <BarraBusquedaAreas
-              terminoBusqueda={searchTerm}
-              onBuscarChange={(termino) => {
-                setSearchTerm(termino);
-                setCurrentPage(1);
-              }}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <BarraBusquedaAreas
+                terminoBusqueda={searchTerm}
+                onBuscarChange={(t) => {
+                  setSearchTerm(t);
+                  setCurrentPage(1);
+                }}
+              />
+              <button
+                onClick={handleEnviarLista}
+                className="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition shadow-sm"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Enviar calificaciones
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <TablaBase
+              datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
+              columnas={columns}
+              conOrdenamiento={true}
+              onOrdenar={handleSort}
+              conAcciones={false}
             />
           </div>
-          <button
-            onClick={handleSaveChanges}
-            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Guardar cambios
-          </button>
+
+          <div className="mt-6">
+            <Paginacion
+              paginaActual={currentPage}
+              totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
+              totalRegistros={filteredData.length}
+              registrosPorPagina={itemsPerPage}
+              onPaginaChange={setCurrentPage}
+            />
+          </div>
         </div>
       </div>
 
-      {searchTerm && (
-        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          {filteredData.length} resultados encontrados para "{searchTerm}"
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
+              Confirmar envío de calificaciones grupales
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
+              Una vez enviada la lista de calificaciones grupales,<br />
+              <strong className="text-gray-900 dark:text-white">no podrá modificarlas nuevamente</strong>.
+              <br /><br />
+              ¿Está completamente seguro de que desea enviar la lista final?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEnvio}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition shadow-md"
+              >
+                Sí, enviar lista
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="mb-1">
-        <TablaBase
-          datos={paginatedData.map((item, index) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + index + 1 }))}
-          columnas={columns}
-          conOrdenamiento={true}
-          onOrdenar={handleSort}
-          conAcciones={false}
-          className="w-full"
-        />
-      </div>
-
-      <Paginacion
-        paginaActual={currentPage}
-        totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
-        totalRegistros={filteredData.length}
-        registrosPorPagina={itemsPerPage}
-        onPaginaChange={setCurrentPage}
-      />
-    </div>
+      <Toaster position="top-right" />
+    </>
   );
 };
 
