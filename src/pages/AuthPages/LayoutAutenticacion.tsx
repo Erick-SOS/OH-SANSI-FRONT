@@ -1,6 +1,6 @@
 import React from "react";
 import GridShape from "../../components/common/FormaCuadricula";
-import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
+import ThemeTogglerTwo from "../../components/common/AlternadorTemaDos";
 
 export default function AuthLayout({
   children,

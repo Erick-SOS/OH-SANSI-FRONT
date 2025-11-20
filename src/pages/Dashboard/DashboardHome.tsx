@@ -1,11 +1,11 @@
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
-import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
-import StatisticsChart from "../../components/ecommerce/StatisticsChart";
-import MonthlyTarget from "../../components/ecommerce/MonthlyTarget";
-import RecentOrders from "../../components/ecommerce/RecentOrders";
-import DemographicCard from "../../components/ecommerce/DemographicCard";
+import EcommerceMetrics from "../../components/ecommerce/MetricasEcommerce";
+import MonthlySalesChart from "../../components/ecommerce/GraficoVentasMensuales";
+import StatisticsChart from "../../components/ecommerce/GraficoEstadisticas";
+import MonthlyTarget from "../../components/ecommerce/ObjetivoMensual";
+import RecentOrders from "../../components/ecommerce/OrdenesRecientes";
+import DemographicCard from "../../components/ecommerce/TarjetaDemografica";
 import PageMeta from "../../components/common/PaginaMeta";
 
 const DashboardHome = () => {

@@ -1,27 +1,25 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Calendar from "./pages/Calendar";
-import Blank from "./pages/Blank";
-import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./components/common/ScrollToTop";
+import SignIn from "./pages/AuthPages/IniciarSesion.tsx";
+import SignUp from "./pages/AuthPages/Registrarse.tsx";
+import NotFound from "./pages/PaginaExtra/PaginaNoEncontrada.tsx";
+import UserProfiles from "./pages/PerfilesDeUsuario.tsx";
+import AppLayout from "./Diseño/LayoutAplicacion.tsx";
+import { ScrollToTop } from "./components/common/DesplazarArriba.tsx";
 import Home from "./pages/Dashboard/Home";
 import HistorialDeCambios from "./pages/HistorialDeCambios";
 import CantidadDeMedallas from "./pages/CantidadDeMedallas";
 import ListaDePremiados from "./pages/ListaDePremiados";
-import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
-import ResetPasswordPage from "./pages/AuthPages/ResetPasswordPage";
-import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
-import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
+import ResultadosDeCalificaciones from "./pages/ConsultaDeCalificaciones.tsx";
+import ResetPasswordPage from "./pages/AuthPages/PaginaRestablecerContraseña.tsx";
+import VerifyCodePage from "./pages/AuthPages/PaginaVerificarCodigo.tsx";
+import NewPasswordPage from "./pages/AuthPages/PaginaNuevaContraseña.tsx";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
 import GeneracionReportes from "./pages/GeneracionReportes";
 import Responsables from "./pages/Responsables.tsx";
-import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
+import OlimpiasPremios from "./pages/Tablas/OlimpiasPremios.tsx";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
 import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
@@ -30,9 +28,10 @@ import Reglamento from "./pages/PublicInfo/Reglamento";
 import { OlympiansListLocalprueba } from "./components/importarOlimpista/OlympiansListLocalprueba.tsx";
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
-import DashboardLayout from "./layout/DashboardLayout";
+import DashboardLayout from "./Diseño/DiseñoDashboard.tsx";
 import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
 import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
+
 
 export default function App() {
   return (
@@ -57,8 +56,6 @@ export default function App() {
             <Route path="/dashboard-admin" element={<DashboardAdmin />} />
             <Route path="/dashboard-responsable" element={<DashboardResponsable />} />
             <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
             <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
             <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
             <Route path="/lista-de-inscritos" element={<OlympiansListLocalprueba />} />

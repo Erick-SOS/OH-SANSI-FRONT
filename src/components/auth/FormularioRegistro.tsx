@@ -6,7 +6,7 @@ import Label from "../form/Etiqueta";
 import Input from "../form/input/CampoEntrada";
 import Checkbox from "../form/input/Checkbox";
 import DocumentField from "../form/CampoDocumento";
-import PasswordField from "../form/PasswordField";
+import PasswordField from "../form/CampoContraseña";
 import ErrorAlert from "../form/alertas/ErrorAlert";
 import SubmitButton from "../ui/SubmitButton";
 import usePasswordValidation from "../../hooks/usePasswordValidation";

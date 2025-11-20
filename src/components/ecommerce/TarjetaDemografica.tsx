@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
-import CountryMap from "./CountryMap";
+import CountryMap from "./MapaPais";
 
 export default function DemographicCard() {
   const [isOpen, setIsOpen] = useState(false);
