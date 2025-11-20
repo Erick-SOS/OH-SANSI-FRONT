@@ -38,7 +38,7 @@ export default function SignInForm() {
       const clean = raw.replace(/\s/g, "").slice(0, 30);
       setPassword(clean);
     }
-    setTouched(prev => ({ ...prev, [name]: true }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
     setError("");
     setSuccess("");
   };
@@ -81,8 +81,12 @@ export default function SignInForm() {
     setSuccess("");
     setIsLoading(true);
 
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-    const passOk = password.trim().length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password);
+    const emailTrim = email.trim().toLowerCase();
+    const passwordTrim = password.trim();
+
+    // Validación de formato
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim);
+    const passOk = passwordTrim.length >= 8 && /[a-z]/.test(passwordTrim) && /[A-Z]/.test(passwordTrim);
 
     if (!emailOk || !passOk) {
       setTouched({ correo: true, password: true });
@@ -93,23 +97,42 @@ export default function SignInForm() {
     }
 
     try {
-      // SOLO FRONTEND: Simula login exitoso sin validar credenciales
-      // El backend real validará esto más adelante
-      const mockUser = {
-        name: "Usuario",
-        rol: "EVALUADOR", // Rol por defecto para pruebas
-        email: email.trim(),
-      };
+      // USUARIOS HARDCODEADOS CON REDIRECCIÓN SEGÚN ROL
+      if (emailTrim === "admin@gmail.com" && passwordTrim === "12345678La#") {
+        await login(emailTrim, passwordTrim, {
+          name: "Administrador",
+          rol: "administrador",
+        });
+        setSuccess("¡Bienvenido Administrador!");
+        setTimeout(() => navigate("/dashboard-admin"), 1200);
+        return;
+      }
 
-      await login(email.trim(), password, mockUser);
-      setSuccess("Inicio de sesión exitoso. Redirigiendo…");
+      if (emailTrim === "evaluador@gmail.com" && passwordTrim === "12345678La#") {
+        await login(emailTrim, passwordTrim, {
+          name: "Evaluador",
+          rol: "EVALUADOR",
+        });
+        setSuccess("¡Bienvenido Evaluador!");
+        setTimeout(() => navigate("/dashboard"), 1200); // Dashboard Evaluador
+        return;
+      }
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1200);
+      if (emailTrim === "responsable@gmail.com" && passwordTrim === "12345678La#") {
+        await login(emailTrim, passwordTrim, {
+          name: "Responsable",
+          rol: "RESPONSABLE",
+        });
+        setSuccess("¡Bienvenido Responsable!");
+        setTimeout(() => navigate("/dashboard-responsable"), 1200);
+        return;
+      }
+
+      // Si no coincide ninguno
+      setError("Correo o contraseña incorrectos");
+      setIsLoading(false);
     } catch (err) {
-      setError("Error interno. Intenta de nuevo.");
-    } finally {
+      setError("Error al iniciar sesión. Por favor, intenta de nuevo.");
       setIsLoading(false);
     }
   };
@@ -207,9 +230,7 @@ export default function SignInForm() {
                         aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => setShowPassword(!showPassword)}
-                        className="p-1.5 rounded-full border shadow-sm
-                                  bg-white text-gray-700 hover:text-gray-900
-                                  dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white"
+                        className="p-1.5 rounded-full border shadow-sm bg-white text-gray-700 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white"
                       >
                         {showPassword ? (
                           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -227,19 +248,14 @@ export default function SignInForm() {
                     </div>
                   </div>
                   {s.message && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {s.message}
-                    </p>
+                    <p className="mt-1 text-xs text-red-500">{s.message}</p>
                   )}
                 </div>
               );
             })()}
 
             <div className="flex justify-end">
-              <Link
-                to="/reset-password"
-                className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
-              >
+              <Link to="/reset-password" className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400">
                 ¿Has olvidado tu contraseña?
               </Link>
             </div>
@@ -247,17 +263,15 @@ export default function SignInForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full px-4 py-3 text-sm font-medium text-white rounded-lg transition-all
-                ${isLoading 
-                  ? 'bg-brand-400 cursor-not-allowed' 
-                  : 'bg-brand-500 hover:bg-brand-600'
-                }`}
+              className={`w-full px-4 py-3 text-sm font-medium text-white rounded-lg transition-all ${
+                isLoading ? "bg-brand-400 cursor-not-allowed" : "bg-brand-500 hover:bg-brand-600"
+              }`}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
                   Iniciando sesión...
                 </span>
