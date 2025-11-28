@@ -1,11 +1,12 @@
-//import { useContext } from "react";para la auth
-//import { AuthContext } from "../../context/AuthContext";para la auth
+// src/pages/Dashboard/DashboardAdmin.tsx
+//import { useContext } from "react"; // para la auth
+//import { AuthContext } from "../../context/AuthContext"; // para la auth
 import PageMeta from "../../components/common/PageMeta";
 import MetricCard from "../../components/dashboard/MetricCard";
 import DonutChartCard from "../../components/dashboard/DonutChartCard";
 
 const DashboardAdmin = () => {
-  //const { user } = useContext(AuthContext); para la auth
+  //const { user } = useContext(AuthContext); // para la auth
 
   // Mock de datos: reemplazables con lo que venga del backend
   const totalOlimpistas = 3394;
@@ -30,8 +31,11 @@ const DashboardAdmin = () => {
       />
 
       {/* Título principal */}
-      <div className="mb-6: mb-10">
-        <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+      <div className="mb-6 md:mb-10">
+        <h1
+          data-testid="admin-dashboard-title"  // 👈 PARA SELENIUM
+          className="text-lg font-semibold text-slate-800 dark:text-slate-200"
+        >
           Participación en las olimpiadas
         </h1>
       </div>
