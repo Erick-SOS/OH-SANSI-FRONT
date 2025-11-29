@@ -192,7 +192,7 @@ const AppSidebar: React.FC = () => {
           </nav>
 
           {/* Espacio seguro para la barra de navegación del móvil */}
-          <div className="h-20 lg:hidden" />
+          <div className="h-80 lg:hidden" />
         </div>
       </aside>
     </>
