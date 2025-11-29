@@ -10,8 +10,6 @@ import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
 
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
-import Calendar from "./pages/Calendar";
-import Blank from "./pages/Blank";
 
 import AppLayout from "./layout/AppLayout";
 import DashboardLayout from "./layout/DashboardLayout";
@@ -26,7 +24,6 @@ import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx";
 
 import HistorialDeCambios from "./pages/HistorialDeCambios";
 import CantidadDeMedallas from "./pages/CantidadDeMedallas";
-import ListaDePremiados from "./pages/ListaDePremiados";
 import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
 
 import Areas from "./pages/Areas";
@@ -90,8 +87,6 @@ export default function App() {
             />
 
             <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
 
             <Route
               path="/historial-de-cambios"
@@ -112,10 +107,6 @@ export default function App() {
               element={<ListaInscritosGrupal />}
             />
 
-            <Route
-              path="/lista-de-premiados"
-              element={<ListaDePremiados />}
-            />
             <Route path="/areas" element={<Areas />} />
             <Route path="/niveles" element={<Niveles />} />
             <Route
