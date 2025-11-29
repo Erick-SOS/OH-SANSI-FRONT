@@ -30,6 +30,7 @@ interface TablaBaseProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderAcciones?: (fila: any) => React.ReactNode; // ← NUEVA PROP
   className?: string;
+  tituloNumero?: string;
 }
 
 const TablaBase: React.FC<TablaBaseProps> = ({
@@ -39,13 +40,14 @@ const TablaBase: React.FC<TablaBaseProps> = ({
   onOrdenar,
   conAcciones = false,
   renderAcciones,
-  className = ""
+  className = "",
+  tituloNumero = "N°"
 }) => {
 
   const columnasConNumero: ColumnaConfig[] = [
     {
       clave: 'numero',
-      titulo: 'N°',
+      titulo: tituloNumero,
       alineacion: 'centro',
       ancho: 'w-16',
       ordenable: false

@@ -9,13 +9,13 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-3">
             {/* Logo más grande */}
-            <img 
-              src={images.logoUmss} 
-              alt="Logo UMSS - Oh! SanSí" 
-              className="h-60 w-60 object-contain transition-transform hover:scale-110" 
+            <img
+              src={images.logoUmss}
+              alt="Logo UMSS - Oh! SanSí"
+              className="h-60 w-60 object-contain transition-transform hover:scale-110"
             />
           </Link>
-          
+
           <nav className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-sky-700 hover:text-sky-900 dark:text-sky-200 dark:hover:text-white font-medium transition">
               Inicio
@@ -28,6 +28,9 @@ const Header = () => {
             </Link>
             <Link to="/resultados-de-calificaciones" className="text-sky-700 hover:text-sky-900 dark:text-sky-200 dark:hover:text-white font-medium transition">
               Consultar Resultados
+            </Link>
+            <Link to="/consulta-de-premiados" className="text-sky-700 hover:text-sky-900 dark:text-sky-200 dark:hover:text-white font-medium transition">
+              Premiados
             </Link>
             <Link to="/fases-evaluacion-publica" className="text-sky-700 hover:text-sky-900 dark:text-sky-200 dark:hover:text-white font-medium transition">
               Fases de Evaluación
