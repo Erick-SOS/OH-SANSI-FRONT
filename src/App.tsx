@@ -41,6 +41,7 @@ import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
 import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
 import Reglamento from "./pages/PublicInfo/Reglamento";
+import ConsultaDePremiados from "./pages/ConsultaDePremiados";
 
 import { OlympiansListLocalprueba } from "./components/importarOlimpista/OlympiansListLocalprueba.tsx";
 import ListaInscritosGrupal from "./pages/ListaInscritosGrupal";
@@ -72,6 +73,7 @@ export default function App() {
               element={<FasesEvaluacionPublica />}
             />
             <Route path="/reglamento" element={<Reglamento />} />
+            <Route path="/consulta-de-premiados" element={<ConsultaDePremiados />} />
           </Route>
 
           {/* ================== LAYOUT DASHBOARD (con sidebar) ================== */}
