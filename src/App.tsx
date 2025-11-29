@@ -1,3 +1,4 @@
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -42,11 +43,14 @@ import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
 import Reglamento from "./pages/PublicInfo/Reglamento";
 
 import { OlympiansListLocalprueba } from "./components/importarOlimpista/OlympiansListLocalprueba.tsx";
-import ListaInscritosGrupal from "./pages/ListaInscritosGrupal"; // 👈 NUEVO
+import ListaInscritosGrupal from "./pages/ListaInscritosGrupal";
 
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
 import AprobacionCalificaciones from "./pages/AprobacionCalificaciones.tsx";
+
+// 👇 IMPORT CORRECTO
+import GestionEvaluadorPage from "./pages/GestionEvaluadorPage.tsx";
 
 export default function App() {
   return (
@@ -96,7 +100,7 @@ export default function App() {
               element={<CantidadDeMedallas />}
             />
 
-            {/* 👇 INDIVIDUAL y GRUPAL */}
+            {/* INDIVIDUAL y GRUPAL */}
             <Route
               path="/lista-de-inscritos"
               element={<OlympiansListLocalprueba />}
@@ -132,6 +136,12 @@ export default function App() {
             <Route
               path="/aprobacion-calificaciones"
               element={<AprobacionCalificaciones />}
+            />
+
+            {/* 👇 NUEVA RUTA DE GESTIÓN DE EVALUADOR */}
+            <Route
+              path="/gestion-evaluador"
+              element={<GestionEvaluadorPage />}
             />
           </Route>
 
