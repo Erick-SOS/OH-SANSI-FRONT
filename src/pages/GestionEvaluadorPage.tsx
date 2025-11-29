@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://back-oh-sansi.vercel.app/api";
+  import.meta.env.VITE_API_URL || "https://back-oh-sansi.vercel.app";
 
 /** Tipo que viene del backend */
 type BackendEvaluador = {
@@ -27,7 +27,8 @@ const GestionEvaluadorPage: React.FC = () => {
         setCargando(true);
         setError(null);
 
-        const resp = await fetch(`${API_URL}/evaluadores`);
+        // 👇 Ahora apunta a /api/evaluadores en el backend
+        const resp = await fetch(`${API_URL}/api/evaluadores`);
         if (!resp.ok) throw new Error("Error al obtener evaluadores");
 
         const data = await resp.json();
@@ -66,11 +67,15 @@ const GestionEvaluadorPage: React.FC = () => {
     const nuevoEstado = !evaluador.habilitado;
 
     try {
-      const resp = await fetch(`${API_URL}/evaluadores/${evaluador.id}/estado`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ habilitado: nuevoEstado }),
-      });
+      // 👇 También con /api delante
+      const resp = await fetch(
+        `${API_URL}/api/evaluadores/${evaluador.id}/estado`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ habilitado: nuevoEstado }),
+        }
+      );
 
       if (!resp.ok) throw new Error("Error al actualizar estado");
 
