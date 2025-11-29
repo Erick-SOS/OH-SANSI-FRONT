@@ -109,10 +109,8 @@ export const OlympiansListLocalprueba: React.FC = () => {
             nombreCompleto: persona?.nombreCompleto ?? equipo?.nombre ?? "",
             unidadEducativa:
               persona?.unidadEducativa ?? equipo?.unidadEducativa ?? "",
-            modalidad:
-              i.modalidad === "INDIVIDUAL" ? "INDIVIDUAL" : "EQUIPO",
-            departamento:
-              persona?.departamento ?? equipo?.departamento ?? "",
+            modalidad: i.modalidad === "INDIVIDUAL" ? "INDIVIDUAL" : "EQUIPO",
+            departamento: persona?.departamento ?? equipo?.departamento ?? "",
             areaCompetencia: i.area.nombre,
             nivel: i.nivel.nombre,
             tutorLegal: i.tutorLegal?.nombreCompleto ?? "",
@@ -266,6 +264,13 @@ export const OlympiansListLocalprueba: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* LOADING */}
+        {loading && (
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+            Cargando inscritos...
+          </div>
+        )}
 
         {/* ERROR */}
         {errorMsg && (
