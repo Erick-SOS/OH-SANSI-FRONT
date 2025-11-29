@@ -26,6 +26,7 @@ import HistorialDeCambios from "./pages/HistorialDeCambios";
 import CantidadDeMedallas from "./pages/CantidadDeMedallas";
 import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
 
+import Inscripciones from "./pages/InscripcionesCSV.tsx";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
@@ -98,6 +99,10 @@ export default function App() {
             />
 
             {/* INDIVIDUAL y GRUPAL */}
+            <Route
+              path="/inscripciones-csv"
+              element={<Inscripciones />}
+            />
             <Route
               path="/lista-de-inscritos"
               element={<OlympiansListLocalprueba />}
