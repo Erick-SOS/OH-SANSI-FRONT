@@ -69,7 +69,14 @@ const AppSidebar: React.FC = () => {
           border-r border-gray-200 dark:border-gray-800
           transition-all duration-300
           overflow-hidden
-          ${isExpanded || isHovered ? "w-[340px]" : "w-[90px]"}
+      
+          /* Desktop: ancho normal (90px colapsado / 290px expandido) */
+          ${!isMobileOpen ? (isExpanded || isHovered ? "w-[290px]" : "w-[90px]") : ""}
+      
+          /* Móvil: ancho personalizado cuando está abierto */
+          ${isMobileOpen ? "w-full max-w-[380px]" : "translate-x-0"}  /* aquí controlamos el ancho en móvil */
+      
+          /* Animación de entrada/salida en móvil */
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
