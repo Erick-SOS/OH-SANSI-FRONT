@@ -1,5 +1,4 @@
 // src/components/modals/ConfirmModal.tsx
-import React from "react";
 import { AlertTriangle } from "lucide-react";
 
 export type ConfirmModalProps = {
