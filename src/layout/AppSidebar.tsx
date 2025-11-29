@@ -88,14 +88,14 @@ const AppSidebar: React.FC = () => {
                       w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all
                       ${openSubmenu === index
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                        : "text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                       }
                       ${!isExpanded && !isHovered && !isMobileOpen ? "lg:justify-center" : ""}
                     `}
                   >
                     <span className="flex-shrink-0">{nav.icon}</span>
                     {(isExpanded || isHovered || isMobileOpen) && (
-                      <span className="flex-1 text-left text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="flex-1 text-left text-sm font-medium">
                         {nav.name}
                       </span>
                     )}
@@ -110,7 +110,7 @@ const AppSidebar: React.FC = () => {
                       flex items-center gap-3 px-4 py-3 rounded-lg transition-all
                       ${isActive(nav.path!)
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                        : "text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                       }
                       ${!isExpanded && !isHovered && !isMobileOpen ? "lg:justify-center" : ""}
                     `}
