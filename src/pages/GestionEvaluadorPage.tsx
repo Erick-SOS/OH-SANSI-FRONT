@@ -1,15 +1,17 @@
 // src/pages/GestionEvaluadorPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://back-oh-sansi.vercel.app";
 
+/** Tipo que viene del backend */
 type BackendEvaluador = {
   id: number;
   numeroDocumento: string;
   nombreCompleto: string;
-  profesion: string;
-  institucion: string;
-  habilitado: boolean;
+  profesion: string | null;
+  institucion: string | null;
+  habilitado: boolean; // true = Habilitado, false = Inhabilitado
 };
 
 const GestionEvaluadorPage: React.FC = () => {
@@ -18,16 +20,19 @@ const GestionEvaluadorPage: React.FC = () => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Cargar lista de evaluadores */
   useEffect(() => {
     const fetchEvaluadores = async () => {
       try {
         setCargando(true);
         setError(null);
 
-        const resp = await fetch(`${API_URL}/evaluadores`);
+        // 👇 Ahora apunta a /api/evaluadores en el backend
+        const resp = await fetch(`${API_URL}/api/evaluadores`);
         if (!resp.ok) throw new Error("Error al obtener evaluadores");
 
         const data = await resp.json();
+        // { ok: true, data: [...] } o directamente [...]
         setEvaluadores(data.data ?? data);
       } catch (err) {
         console.error(err);
@@ -40,26 +45,37 @@ const GestionEvaluadorPage: React.FC = () => {
     fetchEvaluadores();
   }, []);
 
+  /** Filtro por búsqueda */
   const evaluadoresFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
     if (!texto) return evaluadores;
     return evaluadores.filter((ev) =>
-      [ev.numeroDocumento, ev.nombreCompleto, ev.profesion, ev.institucion]
+      [
+        ev.numeroDocumento,
+        ev.nombreCompleto,
+        ev.profesion ?? "",
+        ev.institucion ?? "",
+      ]
         .join(" ")
         .toLowerCase()
         .includes(texto)
     );
   }, [busqueda, evaluadores]);
 
+  /** Toggle de habilitado/inhabilitado */
   const handleToggleEstado = async (evaluador: BackendEvaluador) => {
     const nuevoEstado = !evaluador.habilitado;
 
     try {
-      const resp = await fetch(`${API_URL}/evaluadores/${evaluador.id}/estado`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ habilitado: nuevoEstado }),
-      });
+      // 👇 También con /api delante
+      const resp = await fetch(
+        `${API_URL}/api/evaluadores/${evaluador.id}/estado`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ habilitado: nuevoEstado }),
+        }
+      );
 
       if (!resp.ok) throw new Error("Error al actualizar estado");
 
@@ -106,7 +122,7 @@ const GestionEvaluadorPage: React.FC = () => {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50/80 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:border-gray-700 dark:bg-gray-900/50 dark:text-gray-400">
                   <th className="px-4 py-3 text-center">N°</th>
-                  <th className="px-mx-4 py-3">N° Documento</th>
+                  <th className="px-4 py-3">N° Documento</th>
                   <th className="px-4 py-3">Nombre Completo</th>
                   <th className="px-4 py-3">Profesión</th>
                   <th className="px-4 py-3">Institución</th>
@@ -114,18 +130,25 @@ const GestionEvaluadorPage: React.FC = () => {
                   <th className="px-4 py-3 text-center">Acción</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {cargando && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td
+                      colSpan={7}
+                      className="py-12 text-center text-gray-500 dark:text-gray-400"
+                    >
                       Cargando evaluadores...
                     </td>
                   </tr>
                 )}
 
-                {error && (
+                {error && !cargando && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-red-600 dark:text-red-400">
+                    <td
+                      colSpan={7}
+                      className="py-12 text-center text-red-600 dark:text-red-400"
+                    >
                       {error}
                     </td>
                   </tr>
@@ -133,7 +156,10 @@ const GestionEvaluadorPage: React.FC = () => {
 
                 {!cargando && !error && evaluadoresFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td
+                      colSpan={7}
+                      className="py-12 text-center text-gray-500 dark:text-gray-400"
+                    >
                       No se encontraron evaluadores.
                     </td>
                   </tr>
@@ -144,7 +170,7 @@ const GestionEvaluadorPage: React.FC = () => {
                   evaluadoresFiltrados.map((ev, index) => (
                     <tr
                       key={ev.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
                     >
                       <td className="px-4 py-4 text-center text-gray-700 dark:text-gray-300">
                         {index + 1}
@@ -156,17 +182,18 @@ const GestionEvaluadorPage: React.FC = () => {
                         {ev.nombreCompleto}
                       </td>
                       <td className="px-4 py-4 text-gray-700 dark:text-gray-300">
-                        {ev.profesion}
+                        {ev.profesion ?? "-"}
                       </td>
                       <td className="px-4 py-4 text-gray-700 dark:text-gray-300">
-                        {ev.institucion}
+                        {ev.institucion ?? "-"}
                       </td>
                       <td className="px-4 py-4 text-center">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${ev.habilitado
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                            ev.habilitado
                               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
                               : "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
-                            }`}
+                          }`}
                         >
                           {ev.habilitado ? "Habilitado" : "Inhabilitado"}
                         </span>
@@ -174,10 +201,11 @@ const GestionEvaluadorPage: React.FC = () => {
                       <td className="px-4 py-4 text-center">
                         <button
                           onClick={() => handleToggleEstado(ev)}
-                          className={`rounded-lg px-5 py-2 text-xs font-semibold text-white transition-all hover:scale-105 active:scale-95 ${ev.habilitado
+                          className={`rounded-lg px-5 py-2 text-xs font-semibold text-white transition-all hover:scale-105 active:scale-95 ${
+                            ev.habilitado
                               ? "bg-rose-600 hover:bg-rose-700"
                               : "bg-emerald-600 hover:bg-emerald-700"
-                            }`}
+                          }`}
                         >
                           {ev.habilitado ? "Inhabilitar" : "Habilitar"}
                         </button>
