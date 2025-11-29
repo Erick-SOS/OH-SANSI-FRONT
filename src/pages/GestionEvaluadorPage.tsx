@@ -1,15 +1,15 @@
 // src/pages/GestionEvaluadorPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
 
 /** Tipo que viene del backend */
 type BackendEvaluador = {
   id: number;
   numeroDocumento: string;
   nombreCompleto: string;
-  profesion: string;
-  institucion: string;
+  profesion: string | null;
+  institucion: string | null ;
   habilitado: boolean; // true = Habilitado, false = Inhabilitado
 };
 
@@ -164,8 +164,8 @@ const GestionEvaluadorPage: React.FC = () => {
                     <td className="py-3 px-4">{index + 1}</td>
                     <td className="py-3 px-4">{ev.numeroDocumento}</td>
                     <td className="py-3 px-4">{ev.nombreCompleto}</td>
-                    <td className="py-3 px-4">{ev.profesion}</td>
-                    <td className="py-3 px-4">{ev.institucion}</td>
+                    <td className="py-3 px-4">{ev.profesion ?? "-"}</td>
+                    <td className="py-3 px-4">{ev.institucion ?? "-"}</td>
                     <td className="py-3 px-4">
                       <span
                         className={
