@@ -122,21 +122,6 @@ const ConsultaDePremiados: React.FC = () => {
     };
 
     const columnas = [
-        {
-            clave: 'posicionOriginal',
-            titulo: 'Pos.',
-            alineacion: 'centro' as const,
-            ancho: 'w-16',
-            ordenable: true,
-            formatearCelda: (valor: number) => (
-                <span className="font-bold text-lg">
-                    {valor === 1 && '1st place'}
-                    {valor === 2 && '2nd place'}
-                    {valor === 3 && '3rd place'}
-                    {valor > 3 && valor}
-                </span>
-            )
-        },
         { clave: 'nombreCompleto', titulo: 'Nombre', ordenable: true },
         { clave: 'unidadEducativa', titulo: 'Unidad Educativa', ordenable: true },
         {

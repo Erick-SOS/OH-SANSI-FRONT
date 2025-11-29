@@ -1,6 +1,5 @@
 // src/components/ui/modals/ResultModal.tsx
 import { CheckCircle2, XCircle } from "lucide-react";
-import React from "react";
 
 const colorByType = {
   success: {
