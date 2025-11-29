@@ -58,6 +58,7 @@ export const sidebarConfig: SidebarConfig = {
     { icon: <MdHome className="w-5 h-5" />, name: "Dashboard Responsable", path: "/dashboard-responsable" },
     { icon: <MdCardGiftcard className="w-5 h-5" />, name: "Premiación y Certificados", path: "/olimpias-premios" },
     { icon: <MdFactCheck className="w-5 h-5" />, name: "Aprobación de Calificaciones", path: "/aprobacion-calificaciones" },
+    { icon: <MdFactCheck className="w-5 h-5" />, name: "Gestion de Evaluador", path: "/gestion-evaluador" },
   ],
 
   EVALUADOR: [
