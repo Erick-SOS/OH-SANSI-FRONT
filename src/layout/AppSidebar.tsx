@@ -62,22 +62,26 @@ const AppSidebar: React.FC = () => {
 
       <aside
         className={`
-          fixed inset-0 z-50
-          lg:static lg:inset-auto lg:top-0
+          /* MÓVIL: solo fixed cuando está abierto */
+          ${isMobileOpen 
+            ? "fixed inset-0 z-50 w-[90vw] max-w-[380px]" 
+            : "hidden"
+          }
+      
+          /* DESKTOP: comportamiento normal */
+          lg:static lg:block lg:inset-auto lg:top-0
+      
           flex flex-col
           bg-white dark:bg-gray-900
           border-r border-gray-200 dark:border-gray-800
           transition-all duration-300
           overflow-hidden
       
-          /* Desktop: ancho normal (90px colapsado / 290px expandido) */
-          ${!isMobileOpen ? (isExpanded || isHovered ? "w-[290px]" : "w-[90px]") : ""}
+          /* Desktop: ancho expandido/colapsado */
+          ${!isMobileOpen && (isExpanded || isHovered) ? "lg:w-[290px]" : "lg:w-[90px]"}
       
-          /* Móvil: ancho personalizado cuando está abierto */
-          ${isMobileOpen ? "w-full max-w-[380px]" : "translate-x-0"}  /* aquí controlamos el ancho en móvil */
-      
-          /* Animación de entrada/salida en móvil */
-          ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          /* Animación de entrada/salida solo en móvil */
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         <div className="flex flex-col h-full min-h-0">
