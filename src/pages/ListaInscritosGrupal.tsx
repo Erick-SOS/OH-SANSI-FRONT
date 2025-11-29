@@ -1,7 +1,8 @@
 // src/pages/ListaInscritosGrupal.tsx
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://back-oh-sansi.vercel.app";
 
 type TeamRow = {
   idParticipacion: number;
