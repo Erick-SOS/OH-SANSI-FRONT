@@ -6,7 +6,8 @@ import Paginacion from "../../components/ui/Paginacion";
 import BarraBusquedaAreas from "../../components/tables/BarraBusqueda";
 
 /** URL del backend */
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://back-oh-sansi.vercel.app";
 
 /* ------------------------- Tipos del backend ------------------------- */
 
