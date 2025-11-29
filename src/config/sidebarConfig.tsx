@@ -44,6 +44,7 @@ export const sidebarConfig: SidebarConfig = {
       icon: <MdPeople className="w-5 h-5" />,
       name: "Lista de Inscritos",
       subItems: [
+        { name: "Inscripciones", path: "/inscripciones-csv" },
         { name: "Individual", path: "/lista-de-inscritos" },
         { name: "Grupal", path: "/lista-de-inscritos-grupal" },
       ],
