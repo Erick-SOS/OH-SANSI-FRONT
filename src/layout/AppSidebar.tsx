@@ -69,7 +69,7 @@ const AppSidebar: React.FC = () => {
           border-r border-gray-200 dark:border-gray-800
           transition-all duration-300
           overflow-hidden
-          ${isExpanded || isHovered ? "w-[290px]" : "w-[90px]"}
+          ${isExpanded || isHovered ? "w-[340px]" : "w-[90px]"}
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
@@ -192,7 +192,7 @@ const AppSidebar: React.FC = () => {
           </nav>
 
           {/* Espacio seguro para la barra de navegación del móvil */}
-          <div className="h-80 lg:hidden" />
+          <div className="h-10 lg:hidden" />
         </div>
       </aside>
     </>
