@@ -45,15 +45,10 @@ import ListaInscritosGrupal from "./pages/ListaInscritosGrupal";
 
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
-import DashboardLayout from "./layout/DashboardLayout";
-import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
-import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
-import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx";
 
 // === IMPORTAMOS LAS DOS PÁGINAS NUEVAS ===
 import AprobacionCalificacionesLista from "./pages/AprobacionCalificacionesLista";
 import AprobacionCalificacionesDetalle from "./pages/AprobacionCalificacionesDetalle";
-import AprobacionCalificaciones from "./pages/AprobacionCalificaciones.tsx";
 
 // 👇 IMPORT CORRECTO
 import GestionEvaluadorPage from "./pages/GestionEvaluadorPage.tsx";
