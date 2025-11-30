@@ -46,7 +46,10 @@ import ListaInscritosGrupal from "./pages/ListaInscritosGrupal";
 
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
-import AprobacionCalificaciones from "./pages/AprobacionCalificaciones.tsx";
+
+// === IMPORTAMOS LAS DOS PÁGINAS NUEVAS ===
+import AprobacionCalificacionesLista from "./pages/AprobacionCalificacionesLista";
+import AprobacionCalificacionesDetalle from "./pages/AprobacionCalificacionesDetalle";
 
 // 👇 IMPORT CORRECTO
 import GestionEvaluadorPage from "./pages/GestionEvaluadorPage.tsx";
@@ -78,14 +81,8 @@ export default function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardHome />} />
             <Route path="/dashboard-admin" element={<DashboardAdmin />} />
-            <Route
-              path="/dashboard-responsable"
-              element={<DashboardResponsable />}
-            />
-            <Route
-              path="/evaluador/dashboard"
-              element={<DashboardEvaluador />}
-            />
+            <Route path="/dashboard-responsable" element={<DashboardResponsable />} />
+            <Route path="/evaluador/dashboard" element={<DashboardEvaluador />} />
 
             <Route path="/profile" element={<UserProfiles />} />
 
@@ -121,22 +118,12 @@ export default function App() {
             <Route path="/reportes" element={<GeneracionReportes />} />
             <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
             <Route path="/Responsables" element={<Responsables />} />
+            <Route path="/fases-de-evaluacion/individual" element={<FasesEvaluacionIndividual />} />
+            <Route path="/fases-de-evaluacion/grupal" element={<FasesEvaluacionGrupal />} />
 
-            <Route
-              path="/fases-de-evaluacion/individual"
-              element={<FasesEvaluacionIndividual />}
-            />
-            <Route
-              path="/fases-de-evaluacion/grupal"
-              element={<FasesEvaluacionGrupal />}
-            />
-
-            <Route
-              path="/aprobacion-calificaciones"
-              element={<AprobacionCalificaciones />}
-            />
-
-            {/* 👇 NUEVA RUTA DE GESTIÓN DE EVALUADOR */}
+            {/* === RUTAS NUEVAS DE APROBACIÓN DE CALIFICACIONES === */}
+            <Route path="/aprobacion-calificaciones" element={<AprobacionCalificacionesLista />} />
+            <Route path="/aprobacion-calificaciones/:id" element={<AprobacionCalificacionesDetalle />} />
             <Route
               path="/gestion-evaluador"
               element={<GestionEvaluadorPage />}
