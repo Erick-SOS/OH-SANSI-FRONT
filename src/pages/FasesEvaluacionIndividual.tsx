@@ -5,23 +5,36 @@ import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import toast, { Toaster } from 'react-hot-toast';
 
+// Generar iniciales estables y correctas
+const generarIniciales = (nombreCompleto: string): string => {
+  const partes = nombreCompleto.trim().split(/\s+/).filter(p => p.length > 0);
+  if (partes.length === 0) return '??';
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+
+  const primerNombre = partes[0];
+  const apellido = partes.slice(1).find(p => !['DE', 'DEL', 'LA', 'LOS', 'LAS'].includes(p.toUpperCase())) || partes[partes.length - 1];
+
+  return (primerNombre[0] + apellido[0]).toUpperCase();
+};
+
 interface EvaluacionItem {
   id: number;
-  nombre: string;
-  areaCompetencia: string;
-  modalidad: string;
-  nivel: string;
+  nombreCompleto: string;
+  ci: string;
+  codigo: string;
   nota: number;
   observacion: string;
 }
 
 const FasesEvaluacionIndividual: React.FC = () => {
   const navigate = useNavigate();
-//Datos de ejemplo
+
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
-    { id: 1, nombre: "Juan Pérez", areaCompetencia: "Ciencias", modalidad: "Individual", nivel: "Secundaria", nota: 0, observacion: "" },
-    { id: 2, nombre: "María García", areaCompetencia: "Lenguaje", modalidad: "Individual", nivel: "Primaria", nota: 0, observacion: "" },
-    { id: 3, nombre: "Carlos López", areaCompetencia: "Matemáticas", modalidad: "Individual", nivel: "Secundaria", nota: 0, observacion: "" },
+    { id: 1, nombreCompleto: "Julian Daniel Alvarez", ci: "7372643", codigo: "100", nota: 78, observacion: "Buen desempeño general" },
+    { id: 2, nombreCompleto: "Maria Rojas Lopez", ci: "7458219", codigo: "107", nota: 51, observacion: "Falta reforzar conceptos básicos" },
+    { id: 3, nombreCompleto: "Luis Gamboa Torrez", ci: "8397075", codigo: "120", nota: 30, observacion: "Necesita apoyo adicional" },
+    { id: 4, nombreCompleto: "Ana Perez Vargas", ci: "7194630", codigo: "56", nota: 70, observacion: "Buen método, falta pulir detalles" },
+    { id: 5, nombreCompleto: "Jhoselyn Lopez Mamani", ci: "8855444", codigo: "33", nota: 95, observacion: "Excelente rendimiento" },
   ]);
 
   const [edits, setEdits] = useState<Record<number, Partial<EvaluacionItem>>>({});
@@ -33,22 +46,14 @@ const FasesEvaluacionIndividual: React.FC = () => {
 
   const validarListaCompleta = (): { esValida: boolean; errores: string[] } => {
     const errores: string[] = [];
-
     evaluaciones.forEach(item => {
-      const notaActual = (edits[item.id]?.nota ?? item.nota) as number;
-      const obsActual = (edits[item.id]?.observacion ?? item.observacion) as string || '';
+      const notaActual = (edits[item.id]?.nota ?? item.nota) ?? 0;
+      const obsActual = (edits[item.id]?.observacion ?? item.observacion) ?? '';
 
-      if (!notaActual || notaActual < 1 || notaActual > 100) {
-        errores.push(`"${item.nombre}" tiene una nota inválida o vacía`);
-      }
-      if (obsActual.trim() === "") {
-        errores.push(`"${item.nombre}" no tiene observación`);
-      }
-      if (obsActual.length > 100) {
-        errores.push(`La observación de "${item.nombre}" excede los 100 caracteres`);
-      }
+      if (notaActual < 1 || notaActual > 100) errores.push(`"${item.nombreCompleto}" tiene nota inválida`);
+      if (obsActual.trim() === "") errores.push(`"${item.nombreCompleto}" falta observación`);
+      if (obsActual.length > 100) errores.push(`Observación de "${item.nombreCompleto}" excede 100 caracteres`);
     });
-
     return { esValida: errores.length === 0, errores };
   };
 
@@ -67,93 +72,111 @@ const FasesEvaluacionIndividual: React.FC = () => {
     setEvaluaciones(finalData);
     setEdits({});
     setIntentosFallidos(false);
-    toast.success("¡Calificaciones individuales enviadas con éxito!");
+    toast.success("¡Calificaciones enviadas con éxito!");
     setShowConfirmModal(false);
     setTimeout(() => navigate('/evaluador/dashboard'), 1500);
   };
 
-  const handleValueChange = (id: number, field: keyof EvaluacionItem, value: string | number) => {
+  const handleValueChange = (id: number, field: 'nota' | 'observacion', value: string | number) => {
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
-  const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    const sorted = [...evaluaciones].sort((a, b) => {
-      const aVal = a[column as keyof EvaluacionItem];
-      const bVal = b[column as keyof EvaluacionItem];
-      return direction === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
-    });
-    setEvaluaciones(sorted);
-  };
-
   const columns = [
-    { clave: 'nombre', titulo: 'Nombre', alineacion: 'izquierda' as const, ordenable: true },
-    { clave: 'areaCompetencia', titulo: 'Área de Competencia', alineacion: 'izquierda' as const, ordenable: true },
-    { clave: 'nivel', titulo: 'Nivel', alineacion: 'izquierda' as const, ordenable: true },
+    {
+      clave: 'estudiante',
+      titulo: 'Nombre Completo',
+      alineacion: 'izquierda' as const,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatearCelda: (_: any, fila: EvaluacionItem & { numero: number }) => {
+        const iniciales = generarIniciales(fila.nombreCompleto);
+
+        return (
+          <div className="flex items-center gap-3 py-3 min-w-0">
+            <div className="relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full overflow-hidden shadow-md">
+              <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
+                {iniciales}
+              </span>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                {fila.nombreCompleto}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-2">
+                <span>CI: {fila.ci}</span>
+                <span className="hidden xs:inline">•</span>
+                <span className="truncate max-w-[120px]">Cód: {fila.codigo}</span>
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+    { clave: 'codigo', titulo: 'Código', alineacion: 'centro' as const },
+    {
+      clave: 'estado',
+      titulo: 'Estado',
+      alineacion: 'centro' as const,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatearCelda: (_: any, fila: EvaluacionItem) => {
+        const nota = (edits[fila.id]?.nota ?? fila.nota) ?? 0;
+        const clasificado = nota >= 60;
+        return (
+          <span className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${clasificado ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
+            {clasificado ? 'Clasificado' : 'No clasificado'}
+          </span>
+        );
+      },
+    },
     {
       clave: 'nota',
       titulo: 'Nota',
       alineacion: 'centro' as const,
       formatearCelda: (_: number, fila: EvaluacionItem) => {
-        const valorActual = edits[fila.id]?.nota ?? fila.nota;
-        const esValido = valorActual >= 1 && valorActual <= 100;
-        const tieneError = intentosFallidos && (!esValido || valorActual === 0);
+        const valor = (edits[fila.id]?.nota ?? fila.nota) ?? 0;
+        const error = intentosFallidos && (valor < 1 || valor > 100);
 
         return (
           <input
             type="text"
             inputMode="numeric"
-            value={valorActual}
+            value={valor || ''}
             onChange={(e) => {
-              const input = e.target.value;
-              if (input === '' || /^\d+$/.test(input)) {
-                const num = input === '' ? 0 : Number(input);
+              const v = e.target.value;
+              if (v === '' || /^\d+$/.test(v)) {
+                const num = v === '' ? 0 : Number(v);
                 if (num <= 100) handleValueChange(fila.id, 'nota', num);
               }
             }}
-            className={`w-20 text-center border rounded-xl px-2 py-1 transition-all font-medium ${
-              tieneError
-                ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                : esValido && intentosFallidos
-                ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                : 'border-gray-300 dark:border-gray-600'
-            }`}
-            placeholder="Obligatorio"
+            className={`w-20 sm:w-24 px-3 py-2 text-center rounded-xl font-medium text-sm border ${error ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'bg-gray-100 dark:bg-gray-700 border-transparent'}`}
+            placeholder="0-100"
           />
         );
-      }
+      },
     },
     {
       clave: 'observacion',
       titulo: 'Observación',
       alineacion: 'izquierda' as const,
       formatearCelda: (_: string, fila: EvaluacionItem) => {
-        const texto = (edits[fila.id]?.observacion ?? fila.observacion) || '';
-        const esValido = texto.trim() !== '' && texto.length <= 100;
-        const tieneError = intentosFallidos && (!esValido || texto.trim() === '');
+        const texto = (edits[fila.id]?.observacion ?? fila.observacion) ?? '';
+        const error = intentosFallidos && (texto.trim() === '' || texto.length > 100);
 
         return (
           <div className="relative">
             <textarea
               value={texto}
               onChange={(e) => handleValueChange(fila.id, 'observacion', e.target.value)}
-              className={`w-full p-2 border rounded-xl resize-none transition-all font-medium ${
-                tieneError
-                  ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                  : esValido && intentosFallidos
-                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                  : 'border-gray-300 dark:border-gray-600'
-              }`}
+              className={`w-full min-w-[200px] sm:min-w-[280px] p-3 rounded-xl text-sm resize-none border ${error ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-800 border-transparent'}`}
               rows={2}
               placeholder="Obligatorio (máx. 100 caracteres)"
             />
-            <span className={`absolute bottom-1 right-2-2 text-xs font-medium ${
-              texto.length > 100 ? 'text-red-600' : texto.length > 80 ? 'text-orange-600' : 'text-gray-500 dark:text-gray-400'
-            }`}>
+            <span className={`absolute bottom-2 right-3 text-xs ${texto.length > 100 ? 'text-red-600' : texto.length > 80 ? 'text-orange-600' : 'text-gray-500'}`}>
               {texto.length}/100
             </span>
           </div>
         );
-      }
+      },
     },
   ];
 
@@ -161,9 +184,9 @@ const FasesEvaluacionIndividual: React.FC = () => {
     if (!searchTerm.trim()) return evaluaciones;
     const term = searchTerm.toLowerCase();
     return evaluaciones.filter(item =>
-      item.nombre.toLowerCase().includes(term) ||
-      item.areaCompetencia.toLowerCase().includes(term) ||
-      item.nivel.toLowerCase().includes(term)
+      item.nombreCompleto.toLowerCase().includes(term) ||
+      item.ci.includes(term) ||
+      item.codigo.includes(term)
     );
   }, [evaluaciones, searchTerm]);
 
@@ -174,56 +197,52 @@ const FasesEvaluacionIndividual: React.FC = () => {
 
   return (
     <>
-      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
               Calificación Participantes Individuales
             </h1>
-            <nav className="text-sm text-gray-600 dark:text-gray-400 mt-2 sm:mt-0">
+            <nav className="text-sm text-gray-500 dark:text-gray-400">
               Inicio › Fases de Evaluación › Individual
             </nav>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <BarraBusquedaAreas
-                terminoBusqueda={searchTerm}
-                onBuscarChange={(t) => {
-                  setSearchTerm(t);
-                  setCurrentPage(1);
-                }}
-              />
-              <button
-                onClick={handleEnviarLista}
-                className="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition shadow-sm"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-5 mb-6 border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center text-sm">
+              <div><span className="font-medium">Área:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Matemáticas</span></div>
+              <div><span className="font-medium">Nivel:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Primaria</span></div>
+              <div><span className="font-medium">Modalidad:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Individual</span></div>
+              <div><span className="font-medium">Fase:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Clasificación</span></div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
+              <div className="flex-1">
+                <BarraBusquedaAreas terminoBusqueda={searchTerm} onBuscarChange={(t) => { setSearchTerm(t); setCurrentPage(1); }} />
+              </div>
+              <button onClick={handleEnviarLista} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition shadow-sm whitespace-nowrap">
                 Enviar calificaciones
               </button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <TablaBase
-              datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
-              columnas={columns}
-              conOrdenamiento={true}
-              onOrdenar={handleSort}
-              conAcciones={false}
-            />
+          {/* TABLA RESPONSIVE */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:borderNQ-gray-700 overflow-x-auto">
+            <div className="min-w-[800px]">
+              <TablaBase
+                datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
+                columnas={columns}
+                conOrdenamiento={false}
+                conAcciones={false}
+              />
+            </div>
           </div>
 
           <div className="mt-6">
-            <Paginacion
-              paginaActual={currentPage}
-              totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
-              totalRegistros={filteredData.length}
-              registrosPorPagina={itemsPerPage}
-              onPaginaChange={setCurrentPage}
-            />
+            <Paginacion paginaActual={currentPage} totalPaginas={Math.ceil(filteredData.length / itemsPerPage)} totalRegistros={filteredData.length} registrosPorPagina={itemsPerPage} onPaginaChange={setCurrentPage} />
           </div>
         </div>
       </div>
@@ -231,28 +250,11 @@ const FasesEvaluacionIndividual: React.FC = () => {
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
-              Confirmar envío de calificaciones
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
-              Una vez enviada la lista de calificaciones individuales,<br />
-              <strong className="text-gray-900 dark:text-white">no podrá modificarlas nuevamente</strong>.
-              <br /><br />
-              ¿Está completamente seguro de que desea enviar la lista final?
-            </p>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">Confirmar envío</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-8">Una vez enviada la lista,<br /><strong>no podrá modificarla nuevamente</strong>.</p>
             <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmarEnvio}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition shadow-md"
-              >
-                Sí, enviar lista
-              </button>
+              <button onClick={() => setShowConfirmModal(false)} className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancelar</button>
+              <button onClick={confirmarEnvio} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition">Sí, enviar</button>
             </div>
           </div>
         </div>

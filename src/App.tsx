@@ -1,33 +1,48 @@
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Calendar from "./pages/Calendar";
-import Blank from "./pages/Blank";
-import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
-import HistorialDeCambios from "./pages/HistorialDeCambios";
-import CantidadDeMedallas from "./pages/CantidadDeMedallas";
-import ListaDePremiados from "./pages/ListaDePremiados";
-import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
 import ResetPasswordPage from "./pages/AuthPages/ResetPasswordPage";
 import VerifyCodePage from "./pages/AuthPages/VerifyCodePage";
 import NewPasswordPage from "./pages/AuthPages/NewPasswordPage";
+
+import NotFound from "./pages/OtherPage/NotFound";
+import UserProfiles from "./pages/UserProfiles";
+
+import AppLayout from "./layout/AppLayout";
+import DashboardLayout from "./layout/DashboardLayout";
+
+import { ScrollToTop } from "./components/common/ScrollToTop";
+
+import Home from "./pages/Dashboard/Home";
+import DashboardHome from "./pages/Dashboard/DashboardHome";
+import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
+import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
+import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx";
+
+import HistorialDeCambios from "./pages/HistorialDeCambios";
+import CantidadDeMedallas from "./pages/CantidadDeMedallas";
+import ResultadosDeCalificaciones from "./pages/ResultadosDeCalificaciones";
+
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
 import GeneracionReportes from "./pages/GeneracionReportes";
 import Responsables from "./pages/Responsables.tsx";
+
 import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
-import DashboardHome from "./pages/Dashboard/DashboardHome";
+
 import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
 import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
 import Reglamento from "./pages/PublicInfo/Reglamento";
+import ConsultaDePremiados from "./pages/ConsultaDePremiados";
+
 import { OlympiansListLocalprueba } from "./components/importarOlimpista/OlympiansListLocalprueba.tsx";
+import ListaInscritosGrupal from "./pages/ListaInscritosGrupal";
+
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
 import DashboardLayout from "./layout/DashboardLayout";
@@ -38,6 +53,10 @@ import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx";
 // === IMPORTAMOS LAS DOS PÁGINAS NUEVAS ===
 import AprobacionCalificacionesLista from "./pages/AprobacionCalificacionesLista";
 import AprobacionCalificacionesDetalle from "./pages/AprobacionCalificacionesDetalle";
+import AprobacionCalificaciones from "./pages/AprobacionCalificaciones.tsx";
+
+// 👇 IMPORT CORRECTO
+import GestionEvaluadorPage from "./pages/GestionEvaluadorPage.tsx";
 
 export default function App() {
   return (
@@ -45,15 +64,21 @@ export default function App() {
       <AuthProvider>
         <ScrollToTop />
         <Routes>
-
           {/* ================== LAYOUT PÚBLICO ================== */}
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
-            <Route path="/resultados-de-calificaciones" element={<ResultadosDeCalificaciones />} />
+            <Route
+              path="/resultados-de-calificaciones"
+              element={<ResultadosDeCalificaciones />}
+            />
             <Route path="/sobre-el-proyecto" element={<SobreElProyecto />} />
             <Route path="/areas-publicas" element={<AreasPublicas />} />
-            <Route path="/fases-evaluacion-publica" element={<FasesEvaluacionPublica />} />
+            <Route
+              path="/fases-evaluacion-publica"
+              element={<FasesEvaluacionPublica />}
+            />
             <Route path="/reglamento" element={<Reglamento />} />
+            <Route path="/consulta-de-premiados" element={<ConsultaDePremiados />} />
           </Route>
 
           {/* ================== LAYOUT DASHBOARD (con sidebar) ================== */}
@@ -64,15 +89,32 @@ export default function App() {
             <Route path="/evaluador/dashboard" element={<DashboardEvaluador />} />
 
             <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
-            <Route path="/historial-de-cambios" element={<HistorialDeCambios />} />
-            <Route path="/cantidad-de-medallas" element={<CantidadDeMedallas />} />
-            <Route path="/lista-de-inscritos" element={<OlympiansListLocalprueba />} />
-            <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
+
+            <Route
+              path="/historial-de-cambios"
+              element={<HistorialDeCambios />}
+            />
+            <Route
+              path="/cantidad-de-medallas"
+              element={<CantidadDeMedallas />}
+            />
+
+            {/* INDIVIDUAL y GRUPAL */}
+            <Route
+              path="/lista-de-inscritos"
+              element={<OlympiansListLocalprueba />}
+            />
+            <Route
+              path="/lista-de-inscritos-grupal"
+              element={<ListaInscritosGrupal />}
+            />
+
             <Route path="/areas" element={<Areas />} />
             <Route path="/niveles" element={<Niveles />} />
-            <Route path="/fases-de-competencia" element={<FasesDeCompetencia />} />
+            <Route
+              path="/fases-de-competencia"
+              element={<FasesDeCompetencia />}
+            />
             <Route path="/reportes" element={<GeneracionReportes />} />
             <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
             <Route path="/Responsables" element={<Responsables />} />
@@ -82,6 +124,10 @@ export default function App() {
             {/* === RUTAS NUEVAS DE APROBACIÓN DE CALIFICACIONES === */}
             <Route path="/aprobacion-calificaciones" element={<AprobacionCalificacionesLista />} />
             <Route path="/aprobacion-calificaciones/:id" element={<AprobacionCalificacionesDetalle />} />
+            <Route
+              path="/gestion-evaluador"
+              element={<GestionEvaluadorPage />}
+            />
           </Route>
 
           {/* ================== AUTH ================== */}

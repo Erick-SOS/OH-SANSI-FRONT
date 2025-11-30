@@ -86,7 +86,10 @@ export default function SignInForm() {
 
     // Validación de formato
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim);
-    const passOk = passwordTrim.length >= 8 && /[a-z]/.test(passwordTrim) && /[A-Z]/.test(passwordTrim);
+    const passOk =
+      passwordTrim.length >= 8 &&
+      /[a-z]/.test(passwordTrim) &&
+      /[A-Z]/.test(passwordTrim);
 
     if (!emailOk || !passOk) {
       setTouched({ correo: true, password: true });
@@ -97,7 +100,7 @@ export default function SignInForm() {
     }
 
     try {
-      // USUARIOS HARDCODEADOS CON REDIRECCIÓN SEGÚN ROL
+      // USUARIOS HARDCODEADOS
       if (emailTrim === "admin@gmail.com" && passwordTrim === "12345678La#") {
         await login(emailTrim, passwordTrim, {
           name: "Administrador",
@@ -114,7 +117,7 @@ export default function SignInForm() {
           rol: "EVALUADOR",
         });
         setSuccess("¡Bienvenido Evaluador!");
-        setTimeout(() => navigate("/dashboard"), 1200); // Dashboard Evaluador
+        setTimeout(() => navigate("/dashboard"), 1200);
         return;
       }
 
@@ -128,10 +131,9 @@ export default function SignInForm() {
         return;
       }
 
-      // Si no coincide ninguno
       setError("Correo o contraseña incorrectos");
       setIsLoading(false);
-    } catch (err) {
+    } catch {
       setError("Error al iniciar sesión. Por favor, intenta de nuevo.");
       setIsLoading(false);
     }
@@ -158,12 +160,11 @@ export default function SignInForm() {
             ¡Introduce tu correo y contraseña para continuar!
           </p>
 
-          {/* BANNERS */}
+          {/* MENSAJES */}
           {error && (
             <div
               role="alert"
-              className="mt-3 mb-3 flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-500
-                         dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200"
+              className="mt-3 mb-3 flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-500"
             >
               {error}
             </div>
@@ -171,8 +172,7 @@ export default function SignInForm() {
           {success && (
             <div
               role="status"
-              className="mt-3 mb-3 flex items-center gap-2 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700
-                         dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-200"
+              className="mt-3 mb-3 flex items-center gap-2 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700"
             >
               {success}
             </div>
@@ -188,6 +188,7 @@ export default function SignInForm() {
                     Correo <span className="text-error-500">*</span>
                   </Label>
                   <Input
+                    data-testid="input-email"
                     type="email"
                     name="correo"
                     value={email}
@@ -213,6 +214,7 @@ export default function SignInForm() {
                   </Label>
                   <div className="relative h-11">
                     <Input
+                      data-testid="input-password"
                       type={showPassword ? "text" : "password"}
                       name="password"
                       value={password}
@@ -221,69 +223,49 @@ export default function SignInForm() {
                       onBlur={handleBlur}
                       error={s.error}
                       success={s.valid}
-                      hint={undefined}
                       className="pr-12 h-11"
                     />
+
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                       <button
                         type="button"
                         aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => setShowPassword(!showPassword)}
-                        className="p-1.5 rounded-full border shadow-sm bg-white text-gray-700 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white"
+                        className="p-1.5 rounded-full border shadow-sm bg-white text-gray-700"
                       >
-                        {showPassword ? (
-                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 3l18 18" />
-                            <path d="M10.58 10.58A3 3 0 0012 15a3 3 0 002.42-4.42M9.88 5.52A10.94 10.94 0 0112 5c7 0 11 7 11 7a17.1 17.1 0 01-4.38 4.62" />
-                            <path d="M6.62 6.62A17.1 17.1 0 001 12s4 7 11 7a10.94 10.94 0 004.48-.9" />
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        )}
+                        {/* Iconos */}
+                        {showPassword ? "🙈" : "👁️"}
                       </button>
                     </div>
                   </div>
-                  {s.message && (
-                    <p className="mt-1 text-xs text-red-500">{s.message}</p>
-                  )}
                 </div>
               );
             })()}
 
             <div className="flex justify-end">
-              <Link to="/reset-password" className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400">
+              <Link to="/reset-password" className="text-sm text-brand-500">
                 ¿Has olvidado tu contraseña?
               </Link>
             </div>
 
             <button
+              data-testid="btn-login"
               type="submit"
               disabled={isLoading}
               className={`w-full px-4 py-3 text-sm font-medium text-white rounded-lg transition-all ${
-                isLoading ? "bg-brand-400 cursor-not-allowed" : "bg-brand-500 hover:bg-brand-600"
+                isLoading
+                  ? "bg-brand-400 cursor-not-allowed"
+                  : "bg-brand-500 hover:bg-brand-600"
               }`}
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  Iniciando sesión...
-                </span>
-              ) : (
-                "Iniciar sesión"
-              )}
+              {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </button>
           </form>
 
-          <div className="mt-5 text-sm text-center text-gray-700 dark:text-gray-400">
+          <div className="mt-5 text-sm text-center text-gray-700">
             ¿No tienes una cuenta?{" "}
-            <Link to="/signup" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">
+            <Link to="/signup" className="text-brand-500 hover:text-brand-600">
               Regístrate
             </Link>
           </div>
