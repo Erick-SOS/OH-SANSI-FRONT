@@ -33,8 +33,11 @@ import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
 import DashboardLayout from "./layout/DashboardLayout";
 import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
 import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
-import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx"; 
-import AprobacionCalificaciones from "./pages/AprobacionCalificaciones.tsx";
+import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx";
+
+// === IMPORTAMOS LAS DOS PÁGINAS NUEVAS ===
+import AprobacionCalificacionesLista from "./pages/AprobacionCalificacionesLista";
+import AprobacionCalificacionesDetalle from "./pages/AprobacionCalificacionesDetalle";
 
 export default function App() {
   return (
@@ -58,7 +61,8 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardHome />} />
             <Route path="/dashboard-admin" element={<DashboardAdmin />} />
             <Route path="/dashboard-responsable" element={<DashboardResponsable />} />
-            <Route path="/evaluador/dashboard" element={<DashboardEvaluador />} /> {/* ← AQUÍ ESTÁ LA RUTA NUEVA */}
+            <Route path="/evaluador/dashboard" element={<DashboardEvaluador />} />
+
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
@@ -74,7 +78,10 @@ export default function App() {
             <Route path="/Responsables" element={<Responsables />} />
             <Route path="/fases-de-evaluacion/individual" element={<FasesEvaluacionIndividual />} />
             <Route path="/fases-de-evaluacion/grupal" element={<FasesEvaluacionGrupal />} />
-            <Route path="/aprobacion-calificaciones" element={<AprobacionCalificaciones />} />
+
+            {/* === RUTAS NUEVAS DE APROBACIÓN DE CALIFICACIONES === */}
+            <Route path="/aprobacion-calificaciones" element={<AprobacionCalificacionesLista />} />
+            <Route path="/aprobacion-calificaciones/:id" element={<AprobacionCalificacionesDetalle />} />
           </Route>
 
           {/* ================== AUTH ================== */}

@@ -6,7 +6,6 @@ import PageMeta from "../components/common/PageMeta";
 import BarraBusquedaAreas from "../components/tables/BarraBusqueda";
 import TablaBase from "../components/tables/TablaBase";
 import Paginacion from "../components/ui/Paginacion";
-import ModalConfirmacion from "../components/ui/modal/ModalConfirmacion";
 
 interface CalificacionItem {
   id: number;
@@ -34,8 +33,10 @@ const AprobacionCalificaciones: React.FC = () => {
     { id: 7, iniciales: "SR", nombre: "Soledad Ramos Guzmán", codigo: "81", estado: "Clasificado", nota: 60, observacion: "Mejorar tiempos de respuesta y justificación." },
   ]);
 
+  // Estados para modales
   const [modalRechazar, setModalRechazar] = useState(false);
   const [modalAprobar, setModalAprobar] = useState(false);
+  const [justificacion, setJustificacion] = useState("");
 
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return calificaciones;
@@ -52,8 +53,9 @@ const AprobacionCalificaciones: React.FC = () => {
     return filteredData.slice(start, start + itemsPerPage);
   }, [filteredData, currentPage]);
 
-  const handleRedirectToDashboard = () => {
-    navigate("/dashboard-admin");
+  // FUNCIÓN ÚNICA: vuelve a la lista de listas
+  const volverAListaDeListas = () => {
+    navigate("/aprobacion-calificaciones");
   };
 
   const columns = [
@@ -73,11 +75,7 @@ const AprobacionCalificaciones: React.FC = () => {
         </div>
       ),
     },
-    {
-      clave: 'codigo',
-      titulo: 'Código',
-      alineacion: 'centro' as const,
-    },
+    { clave: 'codigo', titulo: 'Código', alineacion: 'centro' as const },
     {
       clave: 'estado',
       titulo: 'Estado',
@@ -118,7 +116,7 @@ const AprobacionCalificaciones: React.FC = () => {
         title="Aprobación de Calificaciones | OH-SANSI"
         description="Revisión y aprobación de calificaciones enviadas por evaluadores"
       />
-      <PageBreadcrumb pageTitle="Aprobación de Calificaciones" />
+      <PageBreadcrumb pageTitle="Detalle de Calificaciones" />
 
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -171,30 +169,93 @@ const AprobacionCalificaciones: React.FC = () => {
         </div>
       </div>
 
-      {/* MODALES – AHORA 100% FUNCIONALES Y SIN ERRORES */}
-      <ModalConfirmacion
-        isOpen={modalRechazar}
-        titulo="Rechazar lista de calificaciones"
-        mensaje="¿Estás seguro de rechazar todas las calificaciones de este evaluador?"
-        onConfirmar={() => {
-          alert("Lista rechazada exitosamente");
-          setModalRechazar(false);
-          handleRedirectToDashboard();
-        }}
-        onCancelar={() => setModalRechazar(false)}
-      />
+      {/* MODAL DE RECHAZO CON JUSTIFICACIÓN */}
+      {modalRechazar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="fixed inset-0 bg-gray-900/70 dark:bg-black/70" 
+            onClick={() => {
+              setModalRechazar(false);
+              setJustificacion("");
+            }}
+          />
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Justifique por qué rechaza la lista
+            </h3>
+            <textarea
+              value={justificacion}
+              onChange={(e) => setJustificacion(e.target.value)}
+              placeholder="Ingrese su justificación"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              rows={5}
+              autoFocus
+            />
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => {
+                  setModalRechazar(false);
+                  setJustificacion("");
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (justificacion.trim() === "") {
+                    alert("Por favor, ingrese una justificación para rechazar la lista.");
+                    return;
+                  }
+                  alert(`Lista rechazada exitosamente.\nJustificación: "${justificacion}"`);
+                  setModalRechazar(false);
+                  setJustificacion("");
+                  volverAListaDeListas(); // ← REDIRECCIÓN AQUÍ
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <ModalConfirmacion
-        isOpen={modalAprobar}
-        titulo="Aprobar lista de calificaciones"
-        mensaje="¿Estás seguro de aprobar todas las calificaciones?"
-        onConfirmar={() => {
-          alert("Lista aprobada exitosamente");
-          setModalAprobar(false);
-          handleRedirectToDashboard();
-        }}
-        onCancelar={() => setModalAprobar(false)}
-      />
+      {/* MODAL DE APROBAR */}
+      {modalAprobar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="fixed inset-0 bg-gray-900/70 dark:bg-black/70" 
+            onClick={() => setModalAprobar(false)}
+          />
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              ¿Seguro que la lista es CORRECTA?
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+              Una vez apruebe esta lista se publicará los resultados en la página.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setModalAprobar(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  alert("Lista aprobada exitosamente");
+                  setModalAprobar(false);
+                  volverAListaDeListas(); // ← REDIRECCIÓN AQUÍ
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
