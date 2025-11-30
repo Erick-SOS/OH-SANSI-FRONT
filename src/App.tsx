@@ -33,7 +33,7 @@ import FasesDeCompetencia from "./pages/FasesDeCompetencia";
 import GeneracionReportes from "./pages/GeneracionReportes";
 import Responsables from "./pages/Responsables.tsx";
 
-import OlimpiasPremios from "./pages/Tables/OlimpiasPremios.tsx";
+import OlimpiasPremios from "./pages/ListaDePremiados.tsx";
 
 import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
