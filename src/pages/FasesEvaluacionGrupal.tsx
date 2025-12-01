@@ -1,16 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+// Asegúrate de que estas rutas de importación son correctas en tu proyecto
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
-import toast, { Toaster } from 'react-hot-toast';
-
-const generarInicialesEquipo = (nombreEquipo: string): string => {
-  const palabras = nombreEquipo.trim().split(/\s+/).filter(p => p.length > 0);
-  if (palabras.length === 0) return '??';
-  if (palabras.length === 1) return palabras[0].slice(0, 2).toUpperCase();
-  return palabras.slice(0, 2).map(p => p[0]).join('').toUpperCase();
-};
 
 interface EvaluacionItem {
   id: number;
@@ -19,16 +12,49 @@ interface EvaluacionItem {
   nivel: string;
   nota: number;
   observacion: string;
+  desclasificado?: boolean; 
+  motivo?: string; 
 }
+
+const FiltrosInfoCard: React.FC<{ area: string, nivel: string, modalidad: string, fase: string }> = ({ area, nivel, modalidad, fase }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-none border border-gray-200 dark:border-gray-700 p-4 mb-6">
+    <div className="flex flex-wrap justify-between items-center gap-4 text-left">
+      <div className="flex items-center space-x-2">
+        <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Área:</span>
+        <span className="text-gray-700 dark:text-gray-300 font-normal text-base">{area}</span>
+      </div>
+      <div className="flex items-center space-x-2">
+        <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Nivel:</span>
+        <span className="text-gray-700 dark:text-gray-300 font-normal text-base">{nivel}</span>
+      </div>
+      <div className="flex items-center space-x-2">
+        <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Modalidad:</span>
+        <span className="text-gray-700 dark:text-gray-300 font-normal text-base">{modalidad}</span>
+      </div>
+      <div className="flex items-center space-x-2">
+        <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Fase:</span>
+        <span className="text-gray-700 dark:text-gray-300 font-normal text-base">{fase}</span>
+      </div>
+    </div>
+  </div>
+);
+
+const generarInicialesEquipo = (nombreEquipo: string): string => {
+  const palabras = nombreEquipo.trim().split(/\s+/).filter(p => p.length > 0);
+  if (palabras.length === 0) return '??';
+  if (palabras.length === 1) return palabras[0].slice(0, 2).toUpperCase();
+  return palabras.slice(0, 2).map(p => p[0]).join('').toUpperCase();
+};
+
 
 const FasesEvaluacionGrupal: React.FC = () => {
   const navigate = useNavigate();
 
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
-    { id: 1, nombre: "Equipo Alfa", areaCompetencia: "Ciencias", nivel: "Secundaria", nota: 78, observacion: "Buen trabajo en equipo" },
-    { id: 2, nombre: "Los Genios", areaCompetencia: "Matemáticas", nivel: "Secundaria", nota: 95, observacion: "Excelente desempeño" },
-    { id: 3, nombre: "Águilas del Saber", areaCompetencia: "Lenguaje", nivel: "Primaria", nota: 88, observacion: "Muy creativos" },
-    { id: 4, nombre: "Fénix Dorado", areaCompetencia: "Ciencias", nivel: "Primaria", nota: 85, observacion: "Gran coordinación" },
+    { id: 1, nombre: "Equipo Alfa", areaCompetencia: "Ciencias", nivel: "Secundaria", nota: 0, observacion: "" },
+    { id: 2, nombre: "Los Genios", areaCompetencia: "Matemáticas", nivel: "Secundaria", nota: 0, observacion: "" },
+    { id: 3, nombre: "Águilas del Saber", areaCompetencia: "Lenguaje", nivel: "Primaria", nota: 0, observacion: "" },
+    { id: 4, nombre: "Fénix Dorado", areaCompetencia: "Ciencias", nivel: "Primaria", nota: 0, observacion: "" },
   ]);
 
   const [edits, setEdits] = useState<Record<number, Partial<EvaluacionItem>>>({});
@@ -36,25 +62,63 @@ const FasesEvaluacionGrupal: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [intentosFallidos, setIntentosFallidos] = useState(false);
+
+  
+  const [showDesclasificar, setShowDesclasificar] = useState(false);
+  const [itemSeleccionado, setItemSeleccionado] = useState<EvaluacionItem | null>(null);
+  const [motivo, setMotivo] = useState('');
+
   const itemsPerPage = 7;
 
-  const validarListaCompleta = (): { esValida: boolean; errores: string[] } => {
-    const errores: string[] = [];
-    evaluaciones.forEach(item => {
-      const notaActual = (edits[item.id]?.nota ?? item.nota) ?? 0;
-      const obsActual = (edits[item.id]?.observacion ?? item.observacion) ?? '';
-      if (notaActual < 1 || notaActual > 100) errores.push(`"${item.nombre}" tiene nota inválida`);
-      if (obsActual.trim() === "") errores.push(`"${item.nombre}" falta observación`);
-      if (obsActual.length > 100) errores.push(`Observación de "${item.nombre}" excede 100 caracteres`);
+  const infoArea = "Todas";
+  const infoNivel = "Mixto";
+  const infoModalidad = "Grupal";
+  const infoFase = "Clasificación";
+
+  const getEstado = (item: EvaluacionItem): string => {
+    if (item.desclasificado) return 'DESCLASIFICADO';
+    const nota = (edits[item.id]?.nota ?? item.nota) as number;
+    return nota >= 60 ? 'CLASIFICADO' : 'NO CLASIFICADO';
+  };
+
+  const abrirDesclasificar = (item: EvaluacionItem) => {
+    setItemSeleccionado(item);
+    setMotivo(item.motivo || '');
+    setShowDesclasificar(true);
+  };
+
+  const confirmarDesclasificar = () => {
+    if (!motivo.trim()) {
+      alert('El motivo es obligatorio'); 
+      return;
+    }
+    setEvaluaciones(prev =>
+      prev.map(i =>
+        i.id === itemSeleccionado?.id
+          ? { ...i, desclasificado: true, motivo: motivo.trim() }
+          : i
+      )
+    );
+    setShowDesclasificar(false);
+    setMotivo('');
+    setItemSeleccionado(null);
+  };
+
+  const validarListaCompleta = (): boolean => {
+    return evaluaciones.every(item => {
+      
+      if (item.desclasificado) return true;
+
+      const notaActual = (edits[item.id]?.nota ?? item.nota) as number;
+      const obsActual = (edits[item.id]?.observacion ?? item.observacion) as string || '';
+      return notaActual >= 1 && notaActual <= 100 && obsActual.trim().length > 0 && obsActual.length <= 100;
     });
-    return { esValida: errores.length === 0, errores };
   };
 
   const handleEnviarLista = () => {
-    const { esValida, errores } = validarListaCompleta();
-    if (!esValida) {
+    if (!validarListaCompleta()) {
       setIntentosFallidos(true);
-      errores.forEach(err => toast.error(err));
+      alert('Complete nota (1-100) y observación para todos los equipos no desclasificados');
       return;
     }
     setShowConfirmModal(true);
@@ -65,13 +129,27 @@ const FasesEvaluacionGrupal: React.FC = () => {
     setEvaluaciones(finalData);
     setEdits({});
     setIntentosFallidos(false);
-    toast.success("¡Calificaciones grupales enviadas con éxito!");
     setShowConfirmModal(false);
     setTimeout(() => navigate('/evaluador/dashboard'), 1500);
   };
 
-  const handleValueChange = (id: number, field: 'nota' | 'observacion', value: string | number) => {
+  const handleValueChange = (id: number, field: keyof EvaluacionItem, value: string | number) => {
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  };
+
+  const handleSort = (column: string, direction: 'asc' | 'desc') => {
+    const sorted = [...evaluaciones].sort((a, b) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const aVal = (a as any)[column];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bVal = (b as any)[column];
+      if (typeof aVal === 'string' && typeof bVal === 'string')
+        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      if (typeof aVal === 'number' && typeof bVal === 'number')
+        return direction === 'asc' ? aVal - bVal : bVal - aVal;
+      return 0;
+    });
+    setEvaluaciones(sorted);
   };
 
   const columns = [
@@ -79,10 +157,10 @@ const FasesEvaluacionGrupal: React.FC = () => {
       clave: 'equipo',
       titulo: 'Nombre del Equipo',
       alineacion: 'izquierda' as const,
+      ordenable: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatearCelda: (_: any, fila: EvaluacionItem & { numero: number }) => {
         const iniciales = generarInicialesEquipo(fila.nombre);
-
         return (
           <div className="flex items-center gap-3 py-3 min-w-0">
             <div className="relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full overflow-hidden shadow-md">
@@ -90,7 +168,6 @@ const FasesEvaluacionGrupal: React.FC = () => {
                 {iniciales}
               </span>
             </div>
-
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
                 {fila.nombre}
@@ -108,45 +185,41 @@ const FasesEvaluacionGrupal: React.FC = () => {
       titulo: 'Código',
       alineacion: 'centro' as const,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: EvaluacionItem) => `EQ${fila.id.toString().padStart(3, '0')}`,
-    },
-    {
-      clave: 'estado',
-      titulo: 'Estado',
-      alineacion: 'centro' as const,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: EvaluacionItem) => {
-        const nota = (edits[fila.id]?.nota ?? fila.nota) ?? 0;
-        const clasificado = nota >= 60;
-        return (
-          <span className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${clasificado ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
-            {clasificado ? 'Clasificado' : 'No clasificado'}
-          </span>
-        );
-      },
+      formatearCelda: (_: any, fila: EvaluacionItem) => <span className="text-gray-700 dark:text-gray-300">`EQ${fila.id.toString().padStart(3, '0')}`</span>,
     },
     {
       clave: 'nota',
       titulo: 'Nota',
       alineacion: 'centro' as const,
-      formatearCelda: (_: number, fila: EvaluacionItem) => {
-        const valor = (edits[fila.id]?.nota ?? fila.nota) ?? 0;
-        const error = intentosFallidos && (valor < 1 || valor > 100);
+      ordenable: true,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatearCelda: (_: any, fila: EvaluacionItem) => {
+        const valorActual = (edits[fila.id]?.nota ?? fila.nota) as number;
+        const tieneError = intentosFallidos && !fila.desclasificado && (valorActual < 1 || valorActual > 100);
+
+        
+        if (fila.desclasificado) {
+          return <span className="text-xl font-bold text-gray-400">—</span>;
+        }
 
         return (
           <input
             type="text"
             inputMode="numeric"
-            value={valor || ''}
+            value={valorActual === 0 ? '' : valorActual}
             onChange={(e) => {
-              const v = e.target.value;
-              if (v === '' || /^\d+$/.test(v)) {
-                const num = v === '' ? 0 : Number(v);
+              const val = e.target.value;
+              if (val === '' || /^\d+$/.test(val)) {
+                const num = val === '' ? 0 : parseInt(val);
                 if (num <= 100) handleValueChange(fila.id, 'nota', num);
               }
             }}
-            className={`w-20 sm:w-24 px-3 py-2 text-center rounded-xl font-medium text-sm border ${error ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'bg-gray-100 dark:bg-gray-700 border-transparent'}`}
-            placeholder="0-100"
+            className={`w-16 h-10 text-center font-bold text-sm rounded-full border-2 outline-none transition-all ${
+              tieneError
+                ? 'border-red-500 bg-red-50 text-red-700'
+                : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-700 dark:text-white hover:border-indigo-400 focus:border-indigo-500' // Ajustado para modo oscuro
+            }`}
+            placeholder="-"
           />
         );
       },
@@ -155,21 +228,63 @@ const FasesEvaluacionGrupal: React.FC = () => {
       clave: 'observacion',
       titulo: 'Observación',
       alineacion: 'izquierda' as const,
-      formatearCelda: (_: string, fila: EvaluacionItem) => {
-        const texto = (edits[fila.id]?.observacion ?? fila.observacion) ?? '';
-        const error = intentosFallidos && (texto.trim() === '' || texto.length > 100);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatearCelda: (_: any, fila: EvaluacionItem) => {
+        const texto = (edits[fila.id]?.observacion ?? fila.observacion) || '';
+        const tieneError = intentosFallidos && !fila.desclasificado && (!texto.trim() || texto.length > 100);
 
         return (
-          <div className="relative">
+          <div className="space-y-1">
             <textarea
               value={texto}
               onChange={(e) => handleValueChange(fila.id, 'observacion', e.target.value)}
-              className={`w-full min-w-[200px] sm:min-w-[280px] p-3 rounded-xl text-sm resize-none border ${error ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-800 border-transparent'}`}
+              className={`w-full p-2 text-sm border rounded-lg resize-none ${tieneError ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white'}`} // Ajustado para modo oscuro
               rows={2}
               placeholder="Obligatorio (máx. 100 caracteres)"
+              maxLength={100}
             />
-            <span className={`absolute bottom-2 right-3 text-xs ${texto.length > 100 ? 'text-red-600' : texto.length > 80 ? 'text-orange-600' : 'text-gray-500'}`}>
+            <div className={`text-xs text-right font-medium ${texto.length > 100 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`}>
               {texto.length}/100
+            </div>
+          </div>
+        );
+      },
+    },
+    
+    {
+      clave: 'estado',
+      titulo: 'Estado',
+      alineacion: 'centro' as const,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formatearCelda: (_: any, fila: EvaluacionItem) => {
+        const estado = getEstado(fila);
+
+        if (fila.desclasificado) {
+          return (
+            <div
+              onDoubleClick={() => abrirDesclasificar(fila)}
+              className="cursor-pointer"
+              title="Doble clic para ver/editar motivo"
+            >
+              <span className="inline-block px-5 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-600">
+                DESCLASIFICADO
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <div
+            onDoubleClick={() => abrirDesclasificar(fila)}
+            className="cursor-pointer"
+            title="Doble clic para desclasificar"
+          >
+            <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${
+              estado === 'CLASIFICADO'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' // Ajustado para modo oscuro
+                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' // Ajustado para modo oscuro
+            }`}>
+              {estado === 'CLASIFICADO' ? 'Clasificado' : 'No Clasificado'}
             </span>
           </div>
         );
@@ -194,69 +309,117 @@ const FasesEvaluacionGrupal: React.FC = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Igual que el individual pero con título grupal */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              Calificación Participantes Grupales
+      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Calificación de Participantes Grupales
             </h1>
-            <nav className="text-sm text-gray-500 dark:text-gray-400">
+            <nav className="text-sm text-gray-600 dark:text-gray-400 mt-2 sm:mt-0">
               Inicio › Fases de Evaluación › Grupal
             </nav>
           </div>
 
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-5 mb-6 border border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center text-sm">
-              <div><span className="font-medium">Área:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Todas</span></div>
-              <div><span className="font-medium">Nivel:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Mixto</span></div>
-              <div><span className="font-medium">Modalidad:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Grupal</span></div>
-              <div><span className="font-medium">Fase:</span> <span className="ml-2 text-gray-700 dark:text-gray-300">Clasificación</span></div>
-            </div>
-          </div>
+          <FiltrosInfoCard area={infoArea} nivel={infoNivel} modalidad={infoModalidad} fase={infoFase} />
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 mb-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
-              <div className="flex-1">
-                <BarraBusquedaAreas terminoBusqueda={searchTerm} onBuscarChange={(t) => { setSearchTerm(t); setCurrentPage(1); }} />
-              </div>
-              <button onClick={handleEnviarLista} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition shadow-sm whitespace-nowrap">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <BarraBusquedaAreas
+                terminoBusqueda={searchTerm}
+                onBuscarChange={(t) => { setSearchTerm(t); setCurrentPage(1); }}
+              />
+              <button
+                onClick={handleEnviarLista}
+                className="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition shadow-sm"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
                 Enviar calificaciones
               </button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
-            <div className="min-w-[800px]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="min-w-[800px] overflow-x-auto">
+              {/* Nota: Se recomienda añadir dark:text-white dark:bg-gray-700 a los encabezados de TablaBase si no está ya manejado internamente */}
               <TablaBase
                 datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
                 columnas={columns}
                 conOrdenamiento={true}
+                onOrdenar={handleSort}
                 conAcciones={false}
               />
             </div>
           </div>
 
           <div className="mt-6">
-            <Paginacion paginaActual={currentPage} totalPaginas={Math.ceil(filteredData.length / itemsPerPage)} totalRegistros={filteredData.length} registrosPorPagina={itemsPerPage} onPaginaChange={setCurrentPage} />
+            <Paginacion
+              paginaActual={currentPage}
+              totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
+              totalRegistros={filteredData.length}
+              registrosPorPagina={itemsPerPage}
+              onPaginaChange={setCurrentPage}
+            />
           </div>
         </div>
       </div>
 
+      {/* Modal de Confirmación de Envío */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">Confirmar envío grupal</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-8">Una vez enviada la lista,<br /><strong>no podrá modificarla nuevamente</strong>.</p>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
+              Confirmar envío de calificaciones grupales
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
+              Una vez enviada la lista, <strong>no podrá modificarla nuevamente</strong>.
+              <br /><br />¿Está seguro?
+            </p>
             <div className="flex justify-end gap-4">
-              <button onClick={() => setShowConfirmModal(false)} className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancelar</button>
-              <button onClick={confirmarEnvio} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition">Sí, enviar</button>
+              <button onClick={() => setShowConfirmModal(false)} className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium">
+                Cancelar
+              </button>
+              <button onClick={confirmarEnvio} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition shadow-md">
+                Sí, enviar lista
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      <Toaster position="top-right" />
+      {/* Modal de Desclasificación */}
+      {showDesclasificar && itemSeleccionado && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <h3 className="text-2xl font-bold text-red-600 mb-4">Desclasificar equipo</h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <strong>{itemSeleccionado.nombre}</strong>
+            </p>
+            <textarea
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Motivo obligatorio (copia, indisciplina, etc.)"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none dark:bg-gray-700 dark:text-white" // Ajustado para modo oscuro
+              rows={4}
+            />
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowDesclasificar(false); setMotivo(''); setItemSeleccionado(null); }}
+                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" // Ajustado para modo oscuro
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarDesclasificar}
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
+              >
+                Desclasificar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
