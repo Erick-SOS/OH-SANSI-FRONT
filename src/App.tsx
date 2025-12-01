@@ -29,6 +29,7 @@ import Inscripciones from "./pages/InscripcionesCSV.tsx";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
+import SeleccionarGestionPage from "./pages/SeleccionarGEstionPage.tsx";
 import GeneracionReportes from "./pages/GeneracionReportes";
 import Responsables from "./pages/Responsables.tsx";
 
@@ -110,9 +111,14 @@ export default function App() {
             <Route path="/areas" element={<Areas />} />
             <Route path="/niveles" element={<Niveles />} />
             <Route
-              path="/fases-de-competencia"
-              element={<FasesDeCompetencia />}
-            />
+             path="/fases-de-competencia"
+             element={<SeleccionarGestionPage />}
+             />
+
+            <Route
+             path="/fases/estado-olimpiada/:gestionId"
+             element={<FasesDeCompetencia />}
+  />
             <Route path="/reportes" element={<GeneracionReportes />} />
             <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
             <Route path="/Responsables" element={<Responsables />} />
