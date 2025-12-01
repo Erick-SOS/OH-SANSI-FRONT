@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Asegúrate de que estas rutas de importación son correctas en tu proyecto
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
@@ -12,8 +11,8 @@ interface EvaluacionItem {
   nivel: string;
   nota: number;
   observacion: string;
-  desclasificado?: boolean; 
-  motivo?: string; 
+  desclasificado?: boolean;   
+  motivo?: string;            
 }
 
 const FiltrosInfoCard: React.FC<{ area: string, nivel: string, modalidad: string, fase: string }> = ({ area, nivel, modalidad, fase }) => (
@@ -53,8 +52,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
     { id: 1, nombre: "Equipo Alfa", areaCompetencia: "Ciencias", nivel: "Secundaria", nota: 0, observacion: "" },
     { id: 2, nombre: "Los Genios", areaCompetencia: "Matemáticas", nivel: "Secundaria", nota: 0, observacion: "" },
-    { id: 3, nombre: "Águilas del Saber", areaCompetencia: "Lenguaje", nivel: "Primaria", nota: 0, observacion: "" },
-    { id: 4, nombre: "Fénix Dorado", areaCompetencia: "Ciencias", nivel: "Primaria", nota: 0, observacion: "" },
+    { id: 3, nombre: "Fénix Dorado", areaCompetencia: "Ciencias", nivel: "Primaria", nota: 0, observacion: "" },
   ]);
 
   const [edits, setEdits] = useState<Record<number, Partial<EvaluacionItem>>>({});
@@ -185,7 +183,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
       titulo: 'Código',
       alineacion: 'centro' as const,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: EvaluacionItem) => <span className="text-gray-700 dark:text-gray-300">`EQ${fila.id.toString().padStart(3, '0')}`</span>,
+      formatearCelda: (_: any, fila: EvaluacionItem) => `EQ${fila.id.toString().padStart(3, '0')}`,
     },
     {
       clave: 'nota',
@@ -217,7 +215,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
             className={`w-16 h-10 text-center font-bold text-sm rounded-full border-2 outline-none transition-all ${
               tieneError
                 ? 'border-red-500 bg-red-50 text-red-700'
-                : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-700 dark:text-white hover:border-indigo-400 focus:border-indigo-500' // Ajustado para modo oscuro
+                : 'border-gray-300 bg-white hover:border-indigo-400 focus:border-indigo-500'
             }`}
             placeholder="-"
           />
@@ -231,19 +229,19 @@ const FasesEvaluacionGrupal: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatearCelda: (_: any, fila: EvaluacionItem) => {
         const texto = (edits[fila.id]?.observacion ?? fila.observacion) || '';
-        const tieneError = intentosFallidos && !fila.desclasificado && (!texto.trim() || texto.length > 100);
+        const tieneError = intentosFallidos && !fila.desclasificado && !texto.trim();
 
         return (
           <div className="space-y-1">
             <textarea
               value={texto}
               onChange={(e) => handleValueChange(fila.id, 'observacion', e.target.value)}
-              className={`w-full p-2 text-sm border rounded-lg resize-none ${tieneError ? 'border-red-500 bg-red-50' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white'}`} // Ajustado para modo oscuro
+              className={`w-full p-2 text-sm border rounded-lg resize-none ${tieneError ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
               rows={2}
               placeholder="Obligatorio (máx. 100 caracteres)"
               maxLength={100}
             />
-            <div className={`text-xs text-right font-medium ${texto.length > 100 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`}>
+            <div className={`text-xs text-right font-medium ${texto.length > 100 ? 'text-red-600' : 'text-gray-500'}`}>
               {texto.length}/100
             </div>
           </div>
@@ -266,7 +264,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
               className="cursor-pointer"
               title="Doble clic para ver/editar motivo"
             >
-              <span className="inline-block px-5 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-600">
+              <span className="inline-block px-5 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-300">
                 DESCLASIFICADO
               </span>
             </div>
@@ -281,8 +279,8 @@ const FasesEvaluacionGrupal: React.FC = () => {
           >
             <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${
               estado === 'CLASIFICADO'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' // Ajustado para modo oscuro
-                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' // Ajustado para modo oscuro
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
             }`}>
               {estado === 'CLASIFICADO' ? 'Clasificado' : 'No Clasificado'}
             </span>
@@ -342,7 +340,6 @@ const FasesEvaluacionGrupal: React.FC = () => {
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="min-w-[800px] overflow-x-auto">
-              {/* Nota: Se recomienda añadir dark:text-white dark:bg-gray-700 a los encabezados de TablaBase si no está ya manejado internamente */}
               <TablaBase
                 datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
                 columnas={columns}
@@ -365,7 +362,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal de Confirmación de Envío */}
+      {}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
@@ -388,7 +385,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de Desclasificación */}
+      {}
       {showDesclasificar && itemSeleccionado && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
@@ -400,13 +397,13 @@ const FasesEvaluacionGrupal: React.FC = () => {
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               placeholder="Motivo obligatorio (copia, indisciplina, etc.)"
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none dark:bg-gray-700 dark:text-white" // Ajustado para modo oscuro
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none"
               rows={4}
             />
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => { setShowDesclasificar(false); setMotivo(''); setItemSeleccionado(null); }}
-                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" // Ajustado para modo oscuro
+                className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100"
               >
                 Cancelar
               </button>
