@@ -1,10 +1,10 @@
-import { createContext, useState, ReactNode, useContext} from "react";
+import { createContext, useState, ReactNode, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://back-oh-sansi.vercel.app";
-  
+
 interface AuthContextType {
   user: { name: string; email: string; rol: string } | null;
   login: (correo: string, password: string, simulatedData?: { name: string; rol: string }) => Promise<void>;
@@ -14,9 +14,9 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
-  login: async () => {},
-  register: async () => {},
-  logout: async () => {},
+  login: async () => { },
+  register: async () => { },
+  logout: async () => { },
 });
 
 interface AuthProviderProps {
@@ -41,13 +41,18 @@ export interface RegistroEvaluadorPayload {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<{ name: string; email: string; rol: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; rol: string } | null>(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const navigate = useNavigate(); // 👈 Importante
 
   const login = async (correo: string, password: string, simulatedData?: { name: string; rol: string }) => {
     try {
       if (simulatedData) {
-        setUser({ name: simulatedData.name, email: correo, rol: simulatedData.rol });
+        const userData = { name: simulatedData.name, email: correo, rol: simulatedData.rol };
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("token", "simulated-token");
       } else {
         const response = await axios.post(`${API_URL}/api/evaluadores/login`, {
@@ -55,7 +60,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           password,
         });
         const { name, email, rol, token } = response.data;
-        setUser({ name, email, rol });
+        const userData = { name, email, rol };
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("token", token);
       }
     } catch (error) {
@@ -68,7 +75,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await axios.post(`${API_URL}/api/evaluadores/registro`, payload);
       const { name, email, rol, token } = response.data;
-      setUser({ name, email, rol });
+      const userData = { name, email, rol };
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", token);
     } catch (error: any) {
       console.error("Error en registro:", error?.response?.data || error);
@@ -86,6 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setUser(null);
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
 
       // 👇 Redirige al inicio
       navigate("/");
@@ -93,6 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error("Error en logout:", error);
       setUser(null);
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       navigate("/"); // 👈 También redirige en caso de error
     }
   };

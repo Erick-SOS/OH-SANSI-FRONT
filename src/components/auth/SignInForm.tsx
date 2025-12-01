@@ -117,7 +117,7 @@ export default function SignInForm() {
           rol: "EVALUADOR",
         });
         setSuccess("¡Bienvenido Evaluador!");
-        setTimeout(() => navigate("/dashboard"), 1200);
+        setTimeout(() => navigate("/evaluador/dashboard"), 1200);
         return;
       }
 
@@ -253,11 +253,10 @@ export default function SignInForm() {
               data-testid="btn-login"
               type="submit"
               disabled={isLoading}
-              className={`w-full px-4 py-3 text-sm font-medium text-white rounded-lg transition-all ${
-                isLoading
-                  ? "bg-brand-400 cursor-not-allowed"
-                  : "bg-brand-500 hover:bg-brand-600"
-              }`}
+              className={`w-full px-4 py-3 text-sm font-medium text-white rounded-lg transition-all ${isLoading
+                ? "bg-brand-400 cursor-not-allowed"
+                : "bg-brand-500 hover:bg-brand-600"
+                }`}
             >
               {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </button>

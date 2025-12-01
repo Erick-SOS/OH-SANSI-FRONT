@@ -1,26 +1,39 @@
 // src/pages/Dashboard/DashboardAdmin.tsx
 //import { useContext } from "react"; // para la auth
 //import { AuthContext } from "../../context/AuthContext"; // para la auth
+// src/pages/Dashboard/DashboardAdmin.tsx
 import PageMeta from "../../components/common/PageMeta";
 import MetricCard from "../../components/dashboard/MetricCard";
 import DonutChartCard from "../../components/dashboard/DonutChartCard";
+import { useDashboardStats } from "../../hooks/useDashboardStats";
 
 const DashboardAdmin = () => {
-  //const { user } = useContext(AuthContext); // para la auth
+  const { data, loading, error } = useDashboardStats();
 
-  // Mock de datos: reemplazables con lo que venga del backend
-  const totalOlimpistas = 3394;
-  const totalResponsables = 10;
-  const totalEvaluadores = 36;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-lg text-slate-600">Cargando estadísticas...</div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-red-600">Error: {error || "No se pudieron cargar los datos"}</div>
+      </div>
+    );
+  }
 
   const nivelesData = {
-    labels: ["Primaria", "Único", "Secundaria"],
-    series: [1025, 844, 1525],
+    labels: data.porNivel.map((n) => n.nombre),
+    series: data.porNivel.map((n) => n.cantidad),
   };
 
   const areasData = {
-    labels: ["Robótica", "Inglés", "Física", "Matemáticas"],
-    series: [1255, 584, 150, 1405],
+    labels: data.porArea.map((a) => a.nombre),
+    series: data.porArea.map((a) => a.cantidad),
   };
 
   return (
@@ -30,12 +43,8 @@ const DashboardAdmin = () => {
         description="Participación general en las olimpiadas Oh! SanSí 2025"
       />
 
-      {/* Título principal */}
       <div className="mb-6 md:mb-10">
-        <h1
-          data-testid="admin-dashboard-title"  // 👈 PARA SELENIUM
-          className="text-lg font-semibold text-slate-800 dark:text-slate-200"
-        >
+        <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
           Participación en las olimpiadas
         </h1>
       </div>
@@ -47,7 +56,7 @@ const DashboardAdmin = () => {
             dotColor="bg-sky-700"
             title="Olimpistas"
             subtitle="Cantidad de olímpistas registrados"
-            total={totalOlimpistas}
+            total={data.olimpistas}
             badgeLabel="2025"
           />
         </div>
@@ -57,7 +66,7 @@ const DashboardAdmin = () => {
             dotColor="bg-indigo-500"
             title="Responsables"
             subtitle="Cantidad de responsables registrados"
-            total={totalResponsables}
+            total={data.responsables}
             badgeLabel="2025"
           />
         </div>
@@ -67,7 +76,7 @@ const DashboardAdmin = () => {
             dotColor="bg-rose-500"
             title="Evaluadores"
             subtitle="Cantidad de evaluadores registrados"
-            total={totalEvaluadores}
+            total={data.evaluadores}
             badgeLabel="2025"
           />
         </div>
@@ -75,8 +84,7 @@ const DashboardAdmin = () => {
 
       {/* Donuts */}
       <div className="grid grid-cols-12 gap-4 md:gap-6">
-        {/* Por niveles */}
-        <div className="col-span-12 lg:col-span-6 flex">
+        <div className="col-span-12 lg:col-span-6">
           <DonutChartCard
             title="Porcentaje de inscritos por niveles"
             labels={nivelesData.labels}
@@ -85,8 +93,7 @@ const DashboardAdmin = () => {
           />
         </div>
 
-        {/* Por áreas */}
-        <div className="col-span-12 lg:col-span-6 flex">
+        <div className="col-span-12 lg:col-span-6">
           <DonutChartCard
             title="Porcentaje de inscritos por áreas"
             labels={areasData.labels}

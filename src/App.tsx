@@ -17,7 +17,6 @@ import DashboardLayout from "./layout/DashboardLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 
 import Home from "./pages/Dashboard/Home";
-import DashboardHome from "./pages/Dashboard/DashboardHome";
 import DashboardAdmin from "./pages/Dashboard/DashboardAdmin.tsx";
 import DashboardResponsable from "./pages/Dashboard/DashboardResponsable.tsx";
 import DashboardEvaluador from "./pages/Dashboard/DashboardEvaluador.tsx";
@@ -79,7 +78,6 @@ export default function App() {
 
           {/* ================== LAYOUT DASHBOARD (con sidebar) ================== */}
           <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<DashboardHome />} />
             <Route path="/dashboard-admin" element={<DashboardAdmin />} />
             <Route path="/dashboard-responsable" element={<DashboardResponsable />} />
             <Route path="/evaluador/dashboard" element={<DashboardEvaluador />} />
