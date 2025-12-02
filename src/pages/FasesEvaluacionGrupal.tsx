@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
+import toast from 'react-hot-toast';
 
 interface EvaluacionItem {
   id: number;
@@ -45,10 +45,7 @@ const generarInicialesEquipo = (nombreEquipo: string): string => {
   return palabras.slice(0, 2).map(p => p[0]).join('').toUpperCase();
 };
 
-
 const FasesEvaluacionGrupal: React.FC = () => {
-  const navigate = useNavigate();
-
   const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
     { id: 1, nombre: "Equipo Alfa", areaCompetencia: "Ciencias", nivel: "Secundaria", nota: 0, observacion: "" },
     { id: 2, nombre: "Los Genios", areaCompetencia: "Matemáticas", nivel: "Secundaria", nota: 0, observacion: "" },
@@ -60,9 +57,8 @@ const FasesEvaluacionGrupal: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [intentosFallidos, setIntentosFallidos] = useState(false);
-
-  
   const [showDesclasificar, setShowDesclasificar] = useState(false);
+  const [showReclasificar, setShowReclasificar] = useState(false);
   const [itemSeleccionado, setItemSeleccionado] = useState<EvaluacionItem | null>(null);
   const [motivo, setMotivo] = useState('');
 
@@ -75,48 +71,120 @@ const FasesEvaluacionGrupal: React.FC = () => {
 
   const getEstado = (item: EvaluacionItem): string => {
     if (item.desclasificado) return 'DESCLASIFICADO';
+    
     const nota = (edits[item.id]?.nota ?? item.nota) as number;
+    
+    if (nota === 0 || nota === null || nota === undefined) {
+      return 'PENDIENTE';
+    }
+    
     return nota >= 60 ? 'CLASIFICADO' : 'NO CLASIFICADO';
   };
 
   const abrirDesclasificar = (item: EvaluacionItem) => {
     setItemSeleccionado(item);
-    setMotivo(item.motivo || '');
-    setShowDesclasificar(true);
+    
+    // Si ya está desclasificado, abro modal para re-clasificar
+    if (item.desclasificado) {
+      setShowReclasificar(true);
+    } else {
+      // Si no está desclasificado, abro modal para desclasificar
+      setMotivo(item.motivo || '');
+      setShowDesclasificar(true);
+    }
   };
 
   const confirmarDesclasificar = () => {
     if (!motivo.trim()) {
-      alert('El motivo es obligatorio'); 
+      toast.error('El motivo es obligatorio');
       return;
     }
-    setEvaluaciones(prev =>
-      prev.map(i =>
-        i.id === itemSeleccionado?.id
-          ? { ...i, desclasificado: true, motivo: motivo.trim() }
-          : i
-      )
-    );
+    
+    if (itemSeleccionado) {
+      // Actualizar en evaluaciones
+      setEvaluaciones(prev =>
+        prev.map(item =>
+          item.id === itemSeleccionado.id
+            ? { 
+                ...item, 
+                desclasificado: true, 
+                motivo: motivo.trim(),
+                observacion: `DESCLASIFICADO: ${motivo.trim()}` 
+              }
+            : item
+        )
+      );
+      
+      // Actualizar en edits también
+      setEdits(prev => ({
+        ...prev,
+        [itemSeleccionado.id]: {
+          ...prev[itemSeleccionado.id],
+          desclasificado: true,
+          motivo: motivo.trim(),
+          observacion: `DESCLASIFICADO: ${motivo.trim()}`
+        }
+      }));
+      
+      toast.success('Equipo desclasificado');
+    }
+    
     setShowDesclasificar(false);
     setMotivo('');
     setItemSeleccionado(null);
   };
 
+  const confirmarReclasificar = () => {
+    if (itemSeleccionado) {
+      // Actualizar en evaluaciones
+      setEvaluaciones(prev =>
+        prev.map(item =>
+          item.id === itemSeleccionado.id
+            ? { 
+                ...item, 
+                desclasificado: false, 
+                motivo: '',
+                observacion: '' // Limpiar observación al re-clasificar
+              }
+            : item
+        )
+      );
+      
+      // Actualizar en edits también
+      setEdits(prev => ({
+        ...prev,
+        [itemSeleccionado.id]: {
+          ...prev[itemSeleccionado.id],
+          desclasificado: false,
+          motivo: '',
+          observacion: ''
+        }
+      }));
+      
+      toast.success('Equipo re-clasificado');
+    }
+    
+    setShowReclasificar(false);
+    setItemSeleccionado(null);
+  };
+
   const validarListaCompleta = (): boolean => {
     return evaluaciones.every(item => {
-      
       if (item.desclasificado) return true;
-
+      
       const notaActual = (edits[item.id]?.nota ?? item.nota) as number;
-      const obsActual = (edits[item.id]?.observacion ?? item.observacion) as string || '';
-      return notaActual >= 1 && notaActual <= 100 && obsActual.trim().length > 0 && obsActual.length <= 100;
+      const obsActual = (edits[item.id]?.observacion ?? item.observacion) || '';
+      
+      // Validar que la nota esté entre 0.1 y 100 (inclusive)
+      // Permitir 0.1 como pendiente, pero para enviar debe ser >= 0.1
+      return notaActual >= 0.1 && notaActual <= 100 && obsActual.trim().length > 0;
     });
   };
 
   const handleEnviarLista = () => {
     if (!validarListaCompleta()) {
       setIntentosFallidos(true);
-      alert('Complete nota (1-100) y observación para todos los equipos no desclasificados');
+      toast.error('Complete nota (0.1-100) y observación para todos los equipos');
       return;
     }
     setShowConfirmModal(true);
@@ -127,12 +195,36 @@ const FasesEvaluacionGrupal: React.FC = () => {
     setEvaluaciones(finalData);
     setEdits({});
     setIntentosFallidos(false);
+    toast.success('Calificaciones enviadas correctamente');
     setShowConfirmModal(false);
-    setTimeout(() => navigate('/evaluador/dashboard'), 1500);
   };
 
   const handleValueChange = (id: number, field: keyof EvaluacionItem, value: string | number) => {
     setEdits(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  };
+
+  // Función para validar y formatear nota decimal
+  const validarYFormatearNota = (valor: string): number | null => {
+    if (valor === '') return 0;
+    
+    // Permitir números con un solo punto decimal
+    if (!/^\d*\.?\d*$/.test(valor)) {
+      return null;
+    }
+    
+    const num = parseFloat(valor);
+    
+    // Validar que sea un número válido
+    if (isNaN(num)) {
+      return null;
+    }
+    
+    // Validar rango 0-100
+    if (num < 0) return 0;
+    if (num > 100) return 100;
+    
+    // Redondear a 2 decimales
+    return Math.round(num * 100) / 100;
   };
 
   const handleSort = (column: string, direction: 'asc' | 'desc') => {
@@ -193,31 +285,48 @@ const FasesEvaluacionGrupal: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatearCelda: (_: any, fila: EvaluacionItem) => {
         const valorActual = (edits[fila.id]?.nota ?? fila.nota) as number;
-        const tieneError = intentosFallidos && !fila.desclasificado && (valorActual < 1 || valorActual > 100);
+        const tieneError = intentosFallidos && !fila.desclasificado && 
+          (valorActual < 0.1 || valorActual > 100);
 
-        
         if (fila.desclasificado) {
-          return <span className="text-xl font-bold text-gray-400">—</span>;
+          // Nota normal, sin negrita para desclasificados
+          return <span className="text-base text-gray-700 dark:text-gray-300">
+            {valorActual.toFixed(1)}
+          </span>;
         }
 
         return (
           <input
             type="text"
-            inputMode="numeric"
-            value={valorActual === 0 ? '' : valorActual}
+            value={valorActual === 0 ? '' : valorActual.toString()}
             onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || /^\d+$/.test(val)) {
-                const num = val === '' ? 0 : parseInt(val);
-                if (num <= 100) handleValueChange(fila.id, 'nota', num);
+              const valor = e.target.value;
+              const notaValidada = validarYFormatearNota(valor);
+              
+              if (notaValidada !== null) {
+                handleValueChange(fila.id, 'nota', notaValidada);
               }
             }}
-            className={`w-16 h-10 text-center font-bold text-sm rounded-full border-2 outline-none transition-all ${
+            onBlur={(e) => {
+              // Formatear a 1 decimal al perder foco
+              const valor = e.target.value;
+              if (valor !== '') {
+                const notaValidada = validarYFormatearNota(valor);
+                if (notaValidada !== null && notaValidada !== 0) {
+                  // Formatear a 1 decimal
+                  const formateada = Math.round(notaValidada * 10) / 10;
+                  handleValueChange(fila.id, 'nota', formateada);
+                }
+              }
+            }}
+            className={`w-24 h-10 text-center text-base rounded-full border-2 outline-none transition-all ${
               tieneError
                 ? 'border-red-500 bg-red-50 text-red-700'
-                : 'border-gray-300 bg-white hover:border-indigo-400 focus:border-indigo-500'
+                : 'border-gray-300 bg-white hover:border-indigo-400 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600'
             }`}
-            placeholder="-"
+            placeholder="0.0-100"
+            title="Ingrese nota de 0 a 100 (se permiten decimales, ej: 50.5, 60.1)"
+            pattern="[0-9]*\.?[0-9]*"
           />
         );
       },
@@ -236,10 +345,17 @@ const FasesEvaluacionGrupal: React.FC = () => {
             <textarea
               value={texto}
               onChange={(e) => handleValueChange(fila.id, 'observacion', e.target.value)}
-              className={`w-full p-2 text-sm border rounded-lg resize-none ${tieneError ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+              className={`w-full p-2 text-sm border rounded-lg resize-none ${
+                tieneError 
+                  ? 'border-red-500 bg-red-50' 
+                  : fila.desclasificado 
+                    ? 'border-red-200 bg-red-50' 
+                    : 'border-gray-300 dark:border-gray-600'
+              }`}
               rows={2}
-              placeholder="Obligatorio (máx. 100 caracteres)"
+              placeholder={fila.desclasificado ? "Motivo de desclasificación" : "Ingrese observación..."}
               maxLength={100}
+              readOnly={false}
             />
             <div className={`text-xs text-right font-medium ${texto.length > 100 ? 'text-red-600' : 'text-gray-500'}`}>
               {texto.length}/100
@@ -262,7 +378,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
             <div
               onDoubleClick={() => abrirDesclasificar(fila)}
               className="cursor-pointer"
-              title="Doble clic para ver/editar motivo"
+              title="Doble clic para re-clasificar"
             >
               <span className="inline-block px-5 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-300">
                 DESCLASIFICADO
@@ -280,9 +396,13 @@ const FasesEvaluacionGrupal: React.FC = () => {
             <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${
               estado === 'CLASIFICADO'
                 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                : estado === 'PENDIENTE'
+                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
                 : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
             }`}>
-              {estado === 'CLASIFICADO' ? 'Clasificado' : 'No Clasificado'}
+              {estado === 'CLASIFICADO' ? 'Clasificado' : 
+               estado === 'PENDIENTE' ? 'Pendiente' : 
+               'No Clasificado'}
             </span>
           </div>
         );
@@ -362,7 +482,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         </div>
       </div>
 
-      {}
+      {/* Modal de confirmación de envío */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
@@ -385,7 +505,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         </div>
       )}
 
-      {}
+      {/* Modal de desclasificar */}
       {showDesclasificar && itemSeleccionado && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
@@ -412,6 +532,42 @@ const FasesEvaluacionGrupal: React.FC = () => {
                 className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
               >
                 Desclasificar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de re-clasificar */}
+      {showReclasificar && itemSeleccionado && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <h3 className="text-2xl font-bold text-green-600 mb-4">Re-clasificar equipo</h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <strong>{itemSeleccionado.nombre}</strong>
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              ¿Desea re-clasificar a este equipo?
+              <br />
+              <span className="text-sm text-gray-500 dark:text-gray-500">
+                La observación actual se limpiará.
+              </span>
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button 
+                onClick={() => { 
+                  setShowReclasificar(false); 
+                  setItemSeleccionado(null); 
+                }} 
+                className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmarReclasificar} 
+                className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+              >
+                Sí, re-clasificar
               </button>
             </div>
           </div>
