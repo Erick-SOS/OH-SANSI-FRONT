@@ -1,168 +1,167 @@
 // src/components/ui/modal/AgregarModal.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
+
+type Modalidad = "Individual" | "Grupal";
+
+interface FormValues {
+  nombre: string;
+  codigo: string;
+  descripcion: string;
+  modalidad: Modalidad;
+}
 
 interface AgregarModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (formData: { nombre: string; codigo: string; descripcion: string }) => void;
-  tipo: 'Área' | 'Nivel';
+  onConfirm: (values: FormValues) => void;
+  tipo: string; // "Área"
+  modo: "agregar" | "editar";
+  initialData?: FormValues;
 }
 
-const AgregarModal: React.FC<AgregarModalProps> = ({ isOpen, onClose, onConfirm, tipo }) => {
-  const [formData, setFormData] = useState({
-    nombre: '',
-    codigo: '',
-    descripcion: '',
+const AgregarModal: React.FC<AgregarModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  tipo,
+  modo,
+  initialData,
+}) => {
+  const [form, setForm] = useState<FormValues>({
+    nombre: "",
+    codigo: "",
+    descripcion: "",
+    modalidad: "Individual",
   });
 
-  const [errores, setErrores] = useState({
-    nombre: '',
-    codigo: '',
-    descripcion: '',
-  });
+  // Cargar datos iniciales si se edita
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialData) {
+      setForm(initialData);
+    } else {
+      setForm({
+        nombre: "",
+        codigo: "",
+        descripcion: "",
+        modalidad: "Individual",
+      });
+    }
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
-  const validar = () => {
-    const nuevosErrores = { nombre: '', codigo: '', descripcion: '' };
-
-    if (!formData.nombre.trim()) nuevosErrores.nombre = 'El nombre es obligatorio';
-    if (!formData.codigo.trim()) nuevosErrores.codigo = 'El código es obligatorio';
-    else if (!/^[A-Z0-9]{2,6}$/.test(formData.codigo)) nuevosErrores.codigo = 'Código: 2-6 caracteres (A-Z, 0-9)';
-    if (!formData.descripcion.trim()) nuevosErrores.descripcion = 'La descripción es obligatoria';
-
-    setErrores(nuevosErrores);
-    return Object.values(nuevosErrores).every(v => !v);
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
-    if (validar()) {
-      onConfirm({
-        nombre: formData.nombre.trim(),
-        codigo: formData.codigo.trim().toUpperCase(),
-        descripcion: formData.descripcion.trim(),
-      });
-      handleClose();
-    }
-  };
+  const camposIncompletos =
+    !form.nombre.trim() || !form.codigo.trim() || !form.modalidad;
 
-  const handleClose = () => {
-    setFormData({ nombre: '', codigo: '', descripcion: '' });
-    setErrores({ nombre: '', codigo: '', descripcion: '' });
-    onClose();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (camposIncompletos) return; // seguridad extra
+    onConfirm(form);
   };
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center"
-      style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 99999,
-        position: 'fixed',
-        width: '100vw',
-        height: '100vh',
-      }}
-      onClick={handleClose}
+      className="fixed inset-0 flex items-center justify-center bg-black/40 z-[9999]"
+      onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-md dark:shadow-gray-900"
-        style={{ position: 'relative', zIndex: 100000 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-lg w-full mx-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-          Agregar nuevo {tipo.toLowerCase()}
-        </h3>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+          {modo === "editar" ? `Editar ${tipo}` : `Agregar ${tipo}`}
+        </h2>
 
-        <div className="space-y-3">
-          {/* NOMBRE */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* NOMBRE (OBLIGATORIO) */}
           <div>
-            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
-              {tipo} <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-100">
+              Nombre del área <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
-              value={formData.nombre}
-              onChange={(e) => {
-                setFormData({ ...formData, nombre: e.target.value });
-                setErrores({ ...errores, nombre: '' });
-              }}
-              className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                focus:outline-none focus:ring-2 transition-all
-                ${errores.nombre
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-400 focus:border-blue-400'
-                }`}
-              placeholder={`Nombre del ${tipo.toLowerCase()}`}
-              maxLength={100}
+              name="nombre"
+              value={form.nombre}
+              onChange={handleChange}
+              className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600"
             />
-            {errores.nombre && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errores.nombre}</p>}
           </div>
 
-          {/* CÓDIGO */}
+          {/* CÓDIGO (OBLIGATORIO) */}
           <div>
-            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
-              Código de {tipo.toLowerCase()} <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-100">
+              Código del área <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
-              value={formData.codigo}
-              onChange={(e) => {
-                const value = e.target.value.toUpperCase();
-                setFormData({ ...formData, codigo: value });
-                setErrores({ ...errores, codigo: '' });
-              }}
-              className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                focus:outline-none focus:ring-2 transition-all
-                ${errores.codigo
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-400 focus:border-blue-400'
-                }`}
-              placeholder={`Código de ${tipo.toLowerCase()}`}
-              maxLength={6}
+              name="codigo"
+              value={form.codigo}
+              onChange={handleChange}
+              className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600"
             />
-            {errores.codigo && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errores.codigo}</p>}
           </div>
 
-          {/* DESCRIPCIÓN */}
+          {/* DESCRIPCIÓN (OPCIONAL) */}
           <div>
-            <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-100">
               Descripción
             </label>
             <textarea
-              value={formData.descripcion}
-              onChange={(e) => {
-                setFormData({ ...formData, descripcion: e.target.value });
-                setErrores({ ...errores, descripcion: '' });
-              }}
-              className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                focus:outline-none focus:ring-2 transition-all resize-none
-                ${errores.descripcion
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-400 focus:border-blue-400'
-                }`}
+              name="descripcion"
+              value={form.descripcion}
+              onChange={handleChange}
               rows={3}
-              placeholder={`Descripción del ${tipo.toLowerCase()} de competencia`}
-              maxLength={500}
+              className="w-full border rounded-lg px-3 py-2 text-sm resize-none dark:bg-gray-700 dark:border-gray-600"
             />
-            {errores.descripcion && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errores.descripcion}</p>}
           </div>
-        </div>
 
-        <div className="flex justify-end gap-2 mt-5">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-md transition disabled:opacity-50"
-            disabled={!formData.nombre.trim() || !formData.codigo.trim() || !formData.descripcion.trim()}
-          >
-            Agregar
-          </button>
-        </div>
+          {/* MODALIDAD */}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-100">
+              Modalidad
+            </label>
+            <select
+              name="modalidad"
+              value={form.modalidad}
+              onChange={handleChange}
+              className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600"
+            >
+              <option value="Individual">Individual</option>
+              <option value="Grupal">Grupal</option>
+            </select>
+          </div>
+
+          {/* BOTONES */}
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={camposIncompletos}
+              className={`px-4 py-2 text-sm font-medium text-white rounded-lg ${
+                camposIncompletos
+                  ? "bg-blue-300 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {modo === "editar" ? "Guardar cambios" : "Crear"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

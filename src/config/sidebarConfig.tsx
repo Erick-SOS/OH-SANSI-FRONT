@@ -3,7 +3,6 @@ import {
   MdHistory,
   MdEmojiEvents,
   MdTimeline,
-  MdAssignmentInd,
   MdPeople,
   MdChecklist,
   MdCardGiftcard,
@@ -30,14 +29,13 @@ export const sidebarConfig: SidebarConfig = {
 
     {
       icon: <MdOutlineCategory className="w-5 h-5" />,
-      name: "Áreas y Niveles",
+      name: "Gestion de categorias",
       subItems: [
+        { name: "Categorias de competencia", path: "/gestionar-categorias" },
         { name: "Áreas", path: "/areas" },
         { name: "Niveles", path: "/niveles" },
       ],
     },
-
-    { icon: <MdAssignmentInd className="w-5 h-5" />, name: "Designar Responsables", path: "/Responsables" },
 
     {
       icon: <MdPeople className="w-5 h-5" />,

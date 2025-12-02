@@ -29,11 +29,11 @@ import Inscripciones from "./pages/InscripcionesCSV.tsx";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
-import SeleccionarGestionPage from "./pages/SeleccionarGEstionPage.tsx";
+import SeleccionarGestionPage from "./pages/SeleccionarGestionPage.tsx";
 import GeneracionReportes from "./pages/GeneracionReportes";
-import Responsables from "./pages/Responsables.tsx";
+import GestionarCategorias from "./pages/GestionDeCategorias.tsx";
 
-import OlimpiasPremios from "./pages/ListaDePremiados.tsx";
+import ListaDePremiados from "./pages/ListaDePremiados.tsx";
 
 import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
@@ -107,7 +107,7 @@ export default function App() {
               path="/lista-de-inscritos-grupal"
               element={<ListaInscritosGrupal />}
             />
-
+            <Route path="/gestionar-categorias" element={<GestionarCategorias />} />
             <Route path="/areas" element={<Areas />} />
             <Route path="/niveles" element={<Niveles />} />
             <Route
@@ -120,8 +120,7 @@ export default function App() {
              element={<FasesDeCompetencia />}
   />
             <Route path="/reportes" element={<GeneracionReportes />} />
-            <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
-            <Route path="/Responsables" element={<Responsables />} />
+            <Route path="/lista-de-premiados" element={<ListaDePremiados />} />
             <Route path="/fases-de-evaluacion/individual" element={<FasesEvaluacionIndividual />} />
             <Route path="/fases-de-evaluacion/grupal" element={<FasesEvaluacionGrupal />} />
 
