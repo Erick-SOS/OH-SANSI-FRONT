@@ -29,7 +29,7 @@ import Inscripciones from "./pages/InscripcionesCSV.tsx";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
-import SeleccionarGestionPage from "./pages/SeleccionarGEstionPage.tsx";
+import SeleccionarGestionPage from "./pages/SeleccionarGestionPage.tsx";
 import GeneracionReportes from "./pages/GeneracionReportes";
 import Responsables from "./pages/Responsables.tsx";
 
