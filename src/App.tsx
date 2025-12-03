@@ -29,9 +29,9 @@ import Inscripciones from "./pages/InscripcionesCSV.tsx";
 import Areas from "./pages/Areas";
 import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
-import SeleccionarGestionPage from "./pages/SeleccionarGEstionPage.tsx";
+import SeleccionarGestionPage from "./pages/SeleccionarGestionPage.tsx";
 import GeneracionReportes from "./pages/GeneracionReportes";
-import Responsables from "./pages/Responsables.tsx";
+import GestionDeCategorias from "./pages/GestionDeCategorias.tsx";
 
 import OlimpiasPremios from "./pages/ListaDePremiados.tsx";
 
@@ -120,8 +120,8 @@ export default function App() {
              element={<FasesDeCompetencia />}
   />
             <Route path="/reportes" element={<GeneracionReportes />} />
-            <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
-            <Route path="/Responsables" element={<Responsables />} />
+            <Route path="/lista-de-premiados" element={<OlimpiasPremios />} />
+            <Route path="/gestion-de-categorias" element={<GestionDeCategorias />} />
             <Route path="/fases-de-evaluacion/individual" element={<FasesEvaluacionIndividual />} />
             <Route path="/fases-de-evaluacion/grupal" element={<FasesEvaluacionGrupal />} />
 

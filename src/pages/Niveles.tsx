@@ -150,7 +150,7 @@ function NivelFormModal({
           {/* Código */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
-              Código
+              Código <span className="text-red-500">*</span>
             </label>
             <input
               name="codigo"

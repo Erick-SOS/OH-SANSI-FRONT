@@ -1,24 +1,28 @@
-import React from 'react';
+// src/components/ui/modal/ConfirmarModal.tsx
+import React from "react";
 
 interface ConfirmarModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
   titulo?: string;
-  mensaje?: React.ReactNode; // ← AQUÍ ESTABA EL ERROR
+  mensaje?: string;
+  onConfirmar: () => void;
+  onCancelar: () => void;
 }
 
 const ConfirmarModal: React.FC<ConfirmarModalProps> = ({
   isOpen,
-  onClose,
-  onConfirm,
   titulo = "¿Estás seguro?",
-  mensaje = "Esta acción no se puede deshacer."
+  mensaje = "Esta acción no se puede deshacer.",
+  onConfirmar,
+  onCancelar,
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[99999]" onClick={onClose}>
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/50 z-[99999]"
+      onClick={onCancelar}
+    >
       <div
         className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -33,15 +37,15 @@ const ConfirmarModal: React.FC<ConfirmarModalProps> = ({
 
         <div className="flex justify-end gap-3">
           <button
-            onClick={onClose}
+            onClick={onCancelar}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={() => {
-              onConfirm();
-              onClose();
+              onConfirmar();
+              onCancelar();
             }}
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
           >
