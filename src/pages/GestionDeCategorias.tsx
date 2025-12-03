@@ -1,4 +1,4 @@
-// src/pages/Responsables.tsx
+// src/pages/GestionDeCategorias.tsx
 import React, { useState, useMemo, useEffect } from "react";
 import TablaBase from "../components/tables/TablaBase";
 import Paginacion from "../components/ui/Paginacion";
@@ -270,7 +270,7 @@ const GestionDeCategorias: React.FC = () => {
       ns.delete(id);
       return ns;
     });
-    // aquí podrías llamar al back para persistir el responsable
+    // aquí podrías llamar al back para persistir el responsable en el futuro
   };
 
   /* ========= Crear categoría ========= */
@@ -377,14 +377,15 @@ const GestionDeCategorias: React.FC = () => {
         onPaginaChange={setPaginaActual}
       />
 
-      {/* MODAL ELIMINAR */}
+           {/* MODAL ELIMINAR */}
       <ConfirmarModal
         isOpen={!!modalEliminar}
         titulo="Eliminar categoría"
-        mensaje="¿Deseas eliminar esta categoría?"
+        mensaje="¿Desea eliminar esta categoría?"
         onCancelar={() => setModalEliminar(null)}
         onConfirmar={confirmarEliminar}
       />
+
 
       {/* MODAL CREAR */}
       {isModalOpen && (
@@ -465,7 +466,7 @@ const GestionDeCategorias: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full">
             <h3 className="text-lg font-semibold">Confirmar creación</h3>
             <p className="mt-2 text-gray-600">
-              ¿Deseas crear esta categoría con los datos seleccionados?
+              ¿Desea crear esta categoría con los datos seleccionados?
             </p>
 
             <div className="flex justify-end gap-3 mt-6">
