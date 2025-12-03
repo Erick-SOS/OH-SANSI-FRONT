@@ -31,7 +31,7 @@ import Niveles from "./pages/Niveles";
 import FasesDeCompetencia from "./pages/FasesDeCompetencia";
 import SeleccionarGestionPage from "./pages/SeleccionarGestionPage";
 import GeneracionReportes from "./pages/GeneracionReportes";
-import Responsables from "./pages/Responsables";
+
 
 import OlimpiasPremios from "./pages/ListaDePremiados";
 
@@ -53,6 +53,7 @@ import AprobacionCalificacionesDetalle from "./pages/AprobacionCalificacionesDet
 import GestionEvaluadorPage from "./pages/GestionEvaluadorPage";
 
 import RequireAuth from "./components/auth/RequireAuth";
+import GestionarCategorias from "./pages/GestionDeCategorias.tsx";
 
 export default function App() {
   return (
@@ -113,7 +114,10 @@ export default function App() {
                 path="/lista-de-inscritos-grupal"
                 element={<ListaInscritosGrupal />}
               />
-
+              <Route
+                path="/gestionar-categorias"
+                element={<GestionarCategorias />}
+              />
               <Route path="/areas" element={<Areas />} />
               <Route path="/niveles" element={<Niveles />} />
               <Route
@@ -127,7 +131,7 @@ export default function App() {
               />
               <Route path="/reportes" element={<GeneracionReportes />} />
               <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
-              <Route path="/Responsables" element={<Responsables />} />
+              
               <Route
                 path="/fases-de-evaluacion/individual"
                 element={<FasesEvaluacionIndividual />}
