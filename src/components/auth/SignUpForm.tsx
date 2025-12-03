@@ -1,7 +1,8 @@
-import { useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// src/components/auth/SignUpForm.tsx
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ChevronLeftIcon } from "../../icons";
-import { AuthContext, RegistroEvaluadorPayload } from "../../context/AuthContext";
+
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
@@ -18,8 +19,6 @@ export default function SignUpForm() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const { register } = useContext(AuthContext);
-  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -39,70 +38,100 @@ export default function SignUpForm() {
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleBlur = (
+    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
-  const { valid, match, passwordMessage, confirmMessage } = usePasswordValidation(
-    formData.password,
-    formData.confirmPassword
-  );
+  const { valid, match, passwordMessage, confirmMessage } =
+    usePasswordValidation(formData.password, formData.confirmPassword);
 
-  const fieldStatus = (name: string): { error: boolean; valid: boolean; message?: string } => {
+  const fieldStatus = (
+    name: string,
+  ): { error: boolean; valid: boolean; message?: string } => {
     const v = String((formData as any)[name] ?? "").trim();
     const wasTouched = !!touched[name] || submitAttempted;
     if (!wasTouched) return { error: false, valid: false };
 
     switch (name) {
       case "nombre": {
-        const valid = v.length >= 3;
-        return { error: !valid, valid, message: valid ? undefined : "Ingrese su nombre en el campo" };
+        const ok = v.length >= 3;
+        return {
+          error: !ok,
+          valid: ok,
+          message: ok ? undefined : "Ingrese su nombre en el campo",
+        };
       }
       case "ap_paterno": {
-        const valid = v.length >= 3;
-        return { error: !valid, valid, message: valid ? undefined : "Ingrese su apellido paterno" };
+        const ok = v.length >= 3;
+        return {
+          error: !ok,
+          valid: ok,
+          message: ok ? undefined : "Ingrese su apellido paterno",
+        };
       }
       case "ap_materno": {
-        const valid = v.length >= 3;
-        return { error: !valid, valid, message: valid ? undefined : "Ingrese su apellido materno" };
+        const ok = v.length >= 3;
+        return {
+          error: !ok,
+          valid: ok,
+          message: ok ? undefined : "Ingrese su apellido materno",
+        };
       }
       case "correo": {
-        const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-        return { error: !valid, valid, message: valid ? undefined : "Ingrese un correo válido." };
+        const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        return {
+          error: !ok,
+          valid: ok,
+          message: ok ? undefined : "Ingrese un correo válido.",
+        };
       }
       case "telefono": {
-        const valid = v.length >= 7;
+        const ok = v.length >= 7;
         return {
-          error: !valid,
-          valid,
-          message: valid ? undefined : "Ingrese un teléfono válido (mín. 7 dígitos).",
+          error: !ok,
+          valid: ok,
+          message: ok
+            ? undefined
+            : "Ingrese un teléfono válido (mín. 7 dígitos).",
         };
       }
       case "numero_documento": {
-        const valid = v.length > 0;
+        const ok = v.length > 0;
         return {
-          error: !valid,
-          valid,
-          message: valid ? undefined : "Ingrese la parte numerica de su documento de identidad",
+          error: !ok,
+          valid: ok,
+          message: ok
+            ? undefined
+            : "Ingrese la parte numérica de su documento de identidad",
         };
       }
       case "complemento_documento": {
         if (!v) return { error: false, valid: false };
         const ok = /^[A-Z0-9Ñ-]{1,3}$/.test(v) && (v.match(/-/g)?.length ?? 0) <= 1;
-        return { error: !ok, valid: ok, message: ok ? undefined : "Máx. 3 (A-Z/Ñ, 0-9, un guion)." };
+        return {
+          error: !ok,
+          valid: ok,
+          message: ok
+            ? undefined
+            : "Máx. 3 (A-Z/Ñ, 0-9, un guion).",
+        };
       }
-
       case "profesion":
       case "institucion":
       case "cargo": {
-        const valid = v.length > 0;
-        return { error: false, valid, message: undefined };
+        const ok = v.length > 0;
+        return { error: false, valid: ok, message: undefined };
       }
-
       default: {
-        const valid = v.length > 0;
-        return { error: !valid, valid, message: valid ? undefined : "Rellene los campos obligatorios." };
+        const ok = v.length > 0;
+        return {
+          error: !ok,
+          valid: ok,
+          message: ok ? undefined : "Rellene los campos obligatorios.",
+        };
       }
     }
   };
@@ -111,7 +140,9 @@ export default function SignUpForm() {
     if (e.key === " ") e.preventDefault();
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     let newValue = value;
 
@@ -123,7 +154,16 @@ export default function SignUpForm() {
       newValue = value.replace(/\s/g, "").slice(0, 30);
     }
 
-    if (["nombre", "ap_paterno", "ap_materno", "institucion", "profesion", "cargo"].includes(name)) {
+    if (
+      [
+        "nombre",
+        "ap_paterno",
+        "ap_materno",
+        "institucion",
+        "profesion",
+        "cargo",
+      ].includes(name)
+    ) {
       newValue = value
         .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")
         .replace(/\s{2,}/g, " ")
@@ -143,7 +183,9 @@ export default function SignUpForm() {
       let s = value.toUpperCase().replace(/[^A-Z0-9Ñ-]/g, "");
       const firstDash = s.indexOf("-");
       if (firstDash !== -1) {
-        s = s.slice(0, firstDash + 1) + s.slice(firstDash + 1).replace(/-/g, "");
+        s =
+          s.slice(0, firstDash + 1) +
+          s.slice(firstDash + 1).replace(/-/g, "");
       }
       newValue = s.slice(0, 3);
     }
@@ -154,12 +196,7 @@ export default function SignUpForm() {
     setSuccess("");
   };
 
-  const getErrorMessage = (err: unknown) => {
-    if (err instanceof Error) return err.message;
-    return String(err);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -194,8 +231,10 @@ export default function SignUpForm() {
 
     const hayErroresBasicos = requeridos.some((f) => fieldStatus(f).error);
 
-    if (hayErroresBasicos || !valid) {
-      setError("Por favor, completa los campos obligatorios y corrige los resaltados.");
+    if (hayErroresBasicos || !valid || !match) {
+      setError(
+        "Por favor, completa los campos obligatorios y corrige los resaltados.",
+      );
       return;
     }
 
@@ -204,17 +243,11 @@ export default function SignUpForm() {
       return;
     }
 
+    // Solo simulamos envío correcto, sin API ni AuthContext
     setLoading(true);
-    try {
-      const payload: RegistroEvaluadorPayload = {
-        ...formData,
-        aceptaTerminos: true,
-      };
-
-      await register(payload);
-
-      setSuccess("Registro exitoso. Redirigiendo al dashboard...");
-      setTimeout(() => navigate("/dashboard"), 2000);
+    setTimeout(() => {
+      setLoading(false);
+      setSuccess("Datos válidos (aquí iría el registro real).");
 
       setFormData({
         nombre: "",
@@ -233,13 +266,8 @@ export default function SignUpForm() {
       });
       setIsChecked(false);
       setTouched({});
-      setSubmitAttempted(false); // ← ESTA ES LA ÚNICA LÍNEA AÑADIDA
-
-    } catch (err: unknown) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
+      setSubmitAttempted(false);
+    }, 500);
   };
 
   return (
@@ -260,7 +288,8 @@ export default function SignUpForm() {
             Regístrate como Evaluador
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Ingresa tus datos para registrarte y espera a que un administrador te designe un área.
+            Ingresa tus datos para registrarte. Actualmente este formulario es
+            solo de prueba (solo valida los campos).
           </p>
         </div>
 
@@ -277,6 +306,7 @@ export default function SignUpForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          {/* Nombre */}
           {(() => {
             const s = fieldStatus("nombre");
             return (
@@ -299,6 +329,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Apellido paterno */}
           {(() => {
             const s = fieldStatus("ap_paterno");
             return (
@@ -321,6 +352,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Apellido materno */}
           {(() => {
             const s = fieldStatus("ap_materno");
             return (
@@ -343,6 +375,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Correo */}
           {(() => {
             const s = fieldStatus("correo");
             return (
@@ -366,6 +399,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Teléfono */}
           {(() => {
             const s = fieldStatus("telefono");
             return (
@@ -388,6 +422,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Documento */}
           {(() => {
             const s = fieldStatus("numero_documento");
             const sComp = fieldStatus("complemento_documento");
@@ -407,6 +442,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Profesión */}
           {(() => {
             const s = fieldStatus("profesion");
             return (
@@ -425,6 +461,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Institución */}
           {(() => {
             const s = fieldStatus("institucion");
             return (
@@ -443,6 +480,7 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Cargo */}
           {(() => {
             const s = fieldStatus("cargo");
             return (
@@ -461,20 +499,26 @@ export default function SignUpForm() {
             );
           })()}
 
+          {/* Contraseña + Confirmación */}
           <PasswordField
             password={formData.password}
             confirmPassword={formData.confirmPassword}
             onChange={handleChange}
             onBlur={handleBlur}
             blockSpaces
-            invalidPassword={!!touched.password && !match}
-            validPassword={!!touched.password && match}
-            invalidConfirm={!!touched.confirmPassword && (!match || !valid)}
+            invalidPassword={!!touched.password && (!match || !valid)}
+            validPassword={!!touched.password && match && valid}
+            invalidConfirm={
+              !!touched.confirmPassword && (!match || !valid)
+            }
             validConfirm={!!touched.confirmPassword && match && valid}
             passwordHint={touched.password ? passwordMessage : undefined}
-            confirmHint={touched.confirmPassword ? confirmMessage : undefined}
+            confirmHint={
+              touched.confirmPassword ? confirmMessage : undefined
+            }
           />
 
+          {/* Términos */}
           <div className="flex items-start gap-3">
             <Checkbox
               className="w-4 h-4 mt-1"
@@ -496,7 +540,7 @@ export default function SignUpForm() {
           <SubmitButton
             loading={loading}
             text="Registrarte"
-            loadingText="Registrando..."
+            loadingText="Validando..."
             disabled={!isChecked || loading}
           />
         </form>
@@ -504,7 +548,10 @@ export default function SignUpForm() {
         <div className="mt-5 text-center">
           <p className="text-sm text-gray-700 dark:text-gray-400">
             ¿Ya tienes una cuenta?{" "}
-            <Link to="/signin" className="text-blue-600 hover:text-blue-700">
+            <Link
+              to="/signin"
+              className="text-blue-600 hover:text-blue-700"
+            >
               Inicia Sesión
             </Link>
           </p>
