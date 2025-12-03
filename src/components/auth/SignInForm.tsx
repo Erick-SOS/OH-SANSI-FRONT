@@ -1,8 +1,7 @@
-// src/components/auth/SignInForm.tsx
+/*/ src/components/auth/SignInForm.tsx
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon } from "../../icons";
-import { AuthContext } from "../../context/AuthContext";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 
@@ -10,7 +9,6 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -160,7 +158,7 @@ export default function SignInForm() {
             ¡Introduce tu correo y contraseña para continuar!
           </p>
 
-          {/* MENSAJES */}
+          
           {error && (
             <div
               role="alert"
@@ -179,7 +177,7 @@ export default function SignInForm() {
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-            {/* CORREO */}
+            
             {(() => {
               const s = fieldStatus("correo");
               return (
@@ -204,7 +202,7 @@ export default function SignInForm() {
               );
             })()}
 
-            {/* CONTRASEÑA */}
+            
             {(() => {
               const s = fieldStatus("password");
               return (
@@ -234,7 +232,7 @@ export default function SignInForm() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="p-1.5 rounded-full border shadow-sm bg-white text-gray-700"
                       >
-                        {/* Iconos */}
+                        
                         {showPassword ? "🙈" : "👁️"}
                       </button>
                     </div>
@@ -273,3 +271,4 @@ export default function SignInForm() {
     </div>
   );
 }
+*/
