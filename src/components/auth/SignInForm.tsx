@@ -8,6 +8,7 @@ import ResultModal from "../modals/ResultModal";
 import { api } from "../../api";
 import { useAuth } from "../../context/AuthContext";
 import type { AuthUser, Rol } from "./authStorage";
+import { Eye, EyeOff } from "lucide-react";
 
 type Campo = "correo" | "password";
 
@@ -132,7 +133,7 @@ export default function SignInForm() {
 
     if (!emailOk || !passOk) {
       setTouched({ correo: true, password: true });
-      setError("Por favor, completa todos los campos correctamente.");
+      setError("Por favor, complete todos los campos correctamente.");
       return;
     }
 
@@ -228,7 +229,7 @@ export default function SignInForm() {
               Inicia sesión
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              ¡Introduce tu correo y contraseña para continuar!
+              Introduzca su correo y contraseña para continuar.
             </p>
 
             {error && (
@@ -281,7 +282,7 @@ export default function SignInForm() {
                         type={showPassword ? "text" : "password"}
                         name="password"
                         value={password}
-                        placeholder="Ingresa tu contraseña"
+                        placeholder="Ingrese su contraseña"
                         onChange={handleChange}
                         onBlur={handleBlur}
                         error={s.error}
@@ -300,10 +301,14 @@ export default function SignInForm() {
                           }
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => setShowPassword(!showPassword)}
-                          className="p-1.5 rounded-full border shadow-sm bg-white text-gray-700"
+                          className="p-1.5 rounded-full border shadow-sm bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                           disabled={isLoading}
                         >
-                          {showPassword ? "🙈" : "👁️"}
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -316,7 +321,7 @@ export default function SignInForm() {
                   to="/reset-password"
                   className="text-sm text-brand-500"
                 >
-                  ¿Has olvidado tu contraseña?
+                  ¿Ha olvidado su contraseña?
                 </Link>
               </div>
 
@@ -335,12 +340,12 @@ export default function SignInForm() {
             </form>
 
             <div className="mt-5 text-sm text-center text-gray-700">
-              ¿No tienes una cuenta?{" "}
+              ¿No tiene una cuenta?{" "}
               <Link
                 to="/signup"
                 className="text-brand-500 hover:text-brand-600"
               >
-                Regístrate
+                Regístrese
               </Link>
             </div>
           </div>
