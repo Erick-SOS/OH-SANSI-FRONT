@@ -13,9 +13,9 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": false,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
 
     "strict": true,
     "noUnusedLocals": true,
