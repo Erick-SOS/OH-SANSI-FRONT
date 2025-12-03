@@ -1,5 +1,4 @@
-import { useContext } from "react";
-import { AuthContext } from "../../context/AuthContext";
+// src/pages/Dashboard/DashboardHome.tsx
 import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
 import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
 import StatisticsChart from "../../components/ecommerce/StatisticsChart";
@@ -9,8 +8,6 @@ import DemographicCard from "../../components/ecommerce/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
 
 const DashboardHome = () => {
-  const { user } = useContext(AuthContext);
-
   return (
     <>
       <PageMeta
@@ -18,7 +15,7 @@ const DashboardHome = () => {
         description="Panel de administración - Olimpiadas Oh! SanSí 2025"
       />
 
-      {/* Dashboard de e-commerce (tu contenido original) */}
+      {/* Dashboard de e-commerce (contenido original) */}
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">
           <EcommerceMetrics />
@@ -42,16 +39,15 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Accesos rápidos según rol (opcional, debajo del dashboard) */}
-      {user?.rol && (
-        <div className="mt-8 p-6 bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900 dark:to-cyan-900 rounded-xl">
-          <h3 className="text-lg font-semibold text-sky-800 dark:text-sky-100 mb-4">
-            Accesos Rápidos
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          </div>
+      {/* Accesos rápidos estáticos (sin depender de user) */}
+      <div className="mt-8 p-6 bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900 dark:to-cyan-900 rounded-xl">
+        <h3 className="text-lg font-semibold text-sky-800 dark:text-sky-100 mb-4">
+          Accesos Rápidos
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Aquí si quieres luego metemos tarjetas con Links estáticos */}
         </div>
-      )}
+      </div>
     </>
   );
 };
