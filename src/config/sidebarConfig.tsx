@@ -31,13 +31,13 @@ export const sidebarConfig: SidebarConfig = {
 
     {
       icon: <MdOutlineCategory className="w-5 h-5" />,
-      name: "Áreas y Niveles",
+      name: "Gestión de Áreas",
       subItems: [
+        { name: "Categorías", path: "/gestionar-categorias" },
         { name: "Áreas", path: "/areas" },
         { name: "Niveles", path: "/niveles" },
       ],
     },
-
     {
       icon: <MdAssignmentInd className="w-5 h-5" />,
       name: "Designar Responsables",

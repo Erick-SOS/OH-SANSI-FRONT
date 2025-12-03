@@ -53,6 +53,7 @@ import AprobacionCalificacionesDetalle from "./pages/AprobacionCalificacionesDet
 import GestionEvaluadorPage from "./pages/GestionEvaluadorPage";
 
 import RequireAuth from "./components/auth/RequireAuth";
+import GestionarCategorias from "./pages/GestionDeCategorias.tsx";
 
 export default function App() {
   return (
@@ -113,7 +114,10 @@ export default function App() {
                 path="/lista-de-inscritos-grupal"
                 element={<ListaInscritosGrupal />}
               />
-
+              <Route
+                path="/gestionar-categorias"
+                element={<GestionarCategorias />}
+              />
               <Route path="/areas" element={<Areas />} />
               <Route path="/niveles" element={<Niveles />} />
               <Route
