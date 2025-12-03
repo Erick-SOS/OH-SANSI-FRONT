@@ -45,7 +45,13 @@ export async function api(path: string, opts: Options = {}) {
   }
 
   if (!res.ok || json?.ok === false) {
-    throw new Error(json?.message || "Ocurrió un error inesperado.");
+    const msg =
+      json?.message ||
+      json?.mensaje ||
+      json?.error ||
+      json?.err ||
+      "Ocurrió un error inesperado.";
+    throw new Error(msg);
   }
 
   return json;
