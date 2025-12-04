@@ -1,14 +1,14 @@
 // src/pages/Areas.tsx
-import React, { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Edit3, Trash2, Plus } from "lucide-react";
 import TablaBase from "../components/tables/TablaBase";
 import Paginacion from "../components/ui/Paginacion";
 import BarraBusquedaAreas from "../components/tables/BarraBusqueda";
-import EliminarFilaModal from "../components/ui/modal/EliminarFilaModal";
-import AgregarModal from "../components/ui/modal/AgregarModal";
+import ConfirmModal from "../components/modals/ConfirmModal";
 import ResultModal from "../components/modals/ResultModal";
 import { api } from "../api";
 
-/* ================= Tipos ================= */
+/* ------------ Tipos ------------ */
 
 export interface AreaDto {
   id: number;
@@ -16,32 +16,247 @@ export interface AreaDto {
   codigo: string | null;
   descripcion: string | null;
   estado: boolean;
-  modalidad: "Individual" | "Grupal" | string;
 }
 
-const REGISTROS_POR_PAGINA = 7;
+type AreaFormValues = {
+  nombre: string;
+  codigo: string;
+  descripcion: string;
+};
 
-/* ================= Componente ================= */
+/* ------------ Modal de formulario (crear / editar) ------------ */
 
-const Areas: React.FC = () => {
-  const [datosAreas, setDatosAreas] = useState<AreaDto[]>([]);
-  const [busquedaAreas, setBusquedaAreas] = useState("");
-  const [paginaAreas, setPaginaAreas] = useState(1);
+type AreaFormModalProps = {
+  visible: boolean;
+  mode: "create" | "edit";
+  initialData?: AreaDto | null;
+  loading?: boolean;
+  onClose: () => void;
+  onSubmit: (values: AreaFormValues) => Promise<void>;
+};
+
+function AreaFormModal({
+  visible,
+  mode,
+  initialData,
+  loading = false,
+  onClose,
+  onSubmit,
+}: AreaFormModalProps) {
+  const [form, setForm] = useState<AreaFormValues>({
+    nombre: "",
+    codigo: "",
+    descripcion: "",
+  });
+
+  const [errors, setErrors] = useState<{
+    nombre?: string;
+    codigo?: string;
+    descripcion?: string;
+  }>({});
+
+  useEffect(() => {
+    if (visible) {
+      setForm({
+        nombre: initialData?.nombre ?? "",
+        codigo: initialData?.codigo ?? "",
+        descripcion: initialData?.descripcion ?? "",
+      });
+      setErrors({});
+    }
+  }, [visible, initialData]);
+
+  if (!visible) return null;
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const validate = () => {
+    const next: typeof errors = {};
+
+    if (!form.nombre.trim()) {
+      next.nombre = 'El campo "Nombre" es obligatorio.';
+    } else if (form.nombre.trim().length > 150) {
+      next.nombre = "Máximo 150 caracteres.";
+    }
+
+    if (form.codigo && form.codigo.length > 50) {
+      next.codigo = "Máximo 50 caracteres.";
+    }
+
+    if (form.descripcion && form.descripcion.length > 255) {
+      next.descripcion = "Máximo 255 caracteres.";
+    }
+
+    setErrors(next);
+    return Object.values(next).every((v) => !v);
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+
+    await onSubmit({
+      nombre: form.nombre.trim(),
+      codigo: form.codigo.trim(),
+      descripcion: form.descripcion.trim(),
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      aria-modal="true"
+      role="dialog"
+    >
+      <div className="w-full max-w-lg rounded-2xl border border-gray-100 bg-white p-5 shadow-xl ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800 sm:p-6">
+        <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
+          {mode === "create" ? "Agregar área" : "Editar área"}
+        </h2>
+
+        <div className="space-y-4">
+          {/* Nombre */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Nombre del área <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="nombre"
+              value={form.nombre}
+              onChange={handleChange}
+              maxLength={150}
+              className={`w-full rounded-lg border px-3 py-2 text-sm shadow-sm outline-none transition
+                bg-white text-gray-900 placeholder:text-gray-400
+                dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500
+                ${
+                  errors.nombre
+                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-400"
+                    : "border-gray-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700"
+                }`}
+              placeholder="Ej: Matemática"
+            />
+            {errors.nombre && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {errors.nombre}
+              </p>
+            )}
+          </div>
+
+          {/* Código */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Código
+            </label>
+            <input
+              name="codigo"
+              value={form.codigo}
+              onChange={handleChange}
+              maxLength={50}
+              className={`w-full rounded-lg border px-3 py-2 text-sm shadow-sm outline-none transition
+                bg-white text-gray-900 placeholder:text-gray-400
+                dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500
+                ${
+                  errors.codigo
+                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-400"
+                    : "border-gray-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700"
+                }`}
+              placeholder="Ej: MAT-01"
+            />
+            {errors.codigo && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {errors.codigo}
+              </p>
+            )}
+          </div>
+
+          {/* Descripción */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Descripción
+            </label>
+            <textarea
+              name="descripcion"
+              value={form.descripcion}
+              onChange={handleChange}
+              rows={3}
+              maxLength={255}
+              className={`w-full resize-none rounded-lg border px-3 py-2 text-sm shadow-sm outline-none transition
+                bg-white text-gray-900 placeholder:text-gray-400
+                dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500
+                ${
+                  errors.descripcion
+                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-400"
+                    : "border-gray-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700"
+                }`}
+              placeholder="Descripción breve del área"
+            />
+            {errors.descripcion && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                {errors.descripcion}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-900 sm:w-auto"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="inline-flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-70 dark:bg-brand-500 dark:hover:bg-brand-400 dark:focus-visible:ring-offset-gray-900 sm:w-auto"
+          >
+            {loading
+              ? mode === "create"
+                ? "Guardando..."
+                : "Actualizando..."
+              : mode === "create"
+              ? "Guardar Área"
+              : "Guardar cambios"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------ Página principal ------------ */
+
+const REGISTROS_PAGINA = 7;
+
+export default function AreasPage() {
+  const [areas, setAreas] = useState<AreaDto[]>([]);
   const [loadingListado, setLoadingListado] = useState(false);
-
+  const [busqueda, setBusqueda] = useState("");
+  const [pagina, setPagina] = useState(1);
   const [, setOrdenColumna] = useState<string | null>(null);
   const [, setOrdenDireccion] = useState<"asc" | "desc">("asc");
 
-  const [modalEliminar, setModalEliminar] = useState<{
-    isOpen: boolean;
-    id: number | null;
-    nombre: string;
-  }>({ isOpen: false, id: null, nombre: "" });
+  // Modal form (crear / editar)
+  const [formVisible, setFormVisible] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [areaSeleccionada, setAreaSeleccionada] = useState<AreaDto | null>(
+    null
+  );
+  const [saving, setSaving] = useState(false);
 
-  const [modalAgregar, setModalAgregar] = useState(false);
-  const [areaEditando, setAreaEditando] = useState<AreaDto | null>(null);
+  // Modal confirmar eliminar
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [areaAEliminar, setAreaAEliminar] = useState<AreaDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Modal de resultado (éxito / error)
+  // Modal de resultado (success / error)
   const [resultModal, setResultModal] = useState<{
     visible: boolean;
     type: "success" | "error";
@@ -65,32 +280,13 @@ const Areas: React.FC = () => {
   const closeResult = () =>
     setResultModal((prev) => ({ ...prev, visible: false }));
 
-  /* ========= Cargar áreas desde el backend ========= */
+  /* ---- Cargar áreas desde el backend ---- */
 
   const cargarAreas = async () => {
     setLoadingListado(true);
     try {
-      const resp = (await api("/areas")) as any;
-
-      // Por si el back devuelve { items: [...] } o directamente el array
-      const data: any[] = resp.items ?? resp.data ?? resp ?? [];
-
-      const mapped: AreaDto[] = data.map((item: any) => ({
-        id: item.id,
-        nombre: item.nombre,
-        codigo: item.codigo ?? null,
-        descripcion: item.descripcion ?? null,
-        estado: item.estado ?? true,
-        // Normalizamos para mostrar siempre "Individual" / "Grupal"
-        modalidad:
-          item.modalidad === "GRUPAL" || item.modalidad === "Grupal"
-            ? "Grupal"
-            : item.modalidad === "INDIVIDUAL" || item.modalidad === "Individual"
-            ? "Individual"
-            : item.modalidad ?? "Individual",
-      }));
-
-      setDatosAreas(mapped);
+      const data = (await api("/areas")) as AreaDto[];
+      setAreas(data);
     } catch (err) {
       const msg =
         err instanceof Error
@@ -106,16 +302,17 @@ const Areas: React.FC = () => {
     void cargarAreas();
   }, []);
 
-  /* ========= Ordenamiento ========= */
+  /* ---- Ordenamiento ---- */
 
   const handleOrdenar = (columna: string, direccion: "asc" | "desc") => {
     setOrdenColumna(columna);
     setOrdenDireccion(direccion);
-    setDatosAreas((prev) => {
-      const sorted = [...prev];
-      sorted.sort((a, b) => {
+    setAreas((prev) => {
+      const copia = [...prev];
+      copia.sort((a, b) => {
         const valA = (a as any)[columna];
         const valB = (b as any)[columna];
+
         if (typeof valA === "string" && typeof valB === "string") {
           return direccion === "asc"
             ? valA.localeCompare(valB)
@@ -123,167 +320,114 @@ const Areas: React.FC = () => {
         }
         return 0;
       });
-      return sorted;
+      return copia;
     });
   };
 
-  /* ========= Búsqueda y paginación ========= */
+  /* ---- Búsqueda y paginación ---- */
 
   const areasFiltradas = useMemo(() => {
-    if (!busquedaAreas.trim()) return datosAreas;
-    const term = busquedaAreas.toLowerCase();
-    return datosAreas.filter((item) => {
-      const area = item.nombre?.toLowerCase() ?? "";
-      const codigo = item.codigo?.toLowerCase() ?? "";
-      const descripcion = item.descripcion?.toLowerCase() ?? "";
-      const modalidad = item.modalidad?.toString().toLowerCase() ?? "";
+    if (!busqueda.trim()) return areas;
+    const term = busqueda.toLowerCase();
+    return areas.filter((a) => {
+      const nombre = a.nombre?.toLowerCase() ?? "";
+      const codigo = a.codigo?.toLowerCase() ?? "";
+      const descripcion = a.descripcion?.toLowerCase() ?? "";
       return (
-        area.includes(term) ||
-        codigo.includes(term) ||
-        descripcion.includes(term) ||
-        modalidad.includes(term)
+        nombre.includes(term) || codigo.includes(term) || descripcion.includes(term)
       );
     });
-  }, [datosAreas, busquedaAreas]);
+  }, [areas, busqueda]);
 
   const areasPaginadas = useMemo(() => {
-    const inicio = (paginaAreas - 1) * REGISTROS_POR_PAGINA;
-    return areasFiltradas.slice(inicio, inicio + REGISTROS_POR_PAGINA);
-  }, [areasFiltradas, paginaAreas]);
+    const inicio = (pagina - 1) * REGISTROS_PAGINA;
+    return areasFiltradas.slice(inicio, inicio + REGISTROS_PAGINA);
+  }, [areasFiltradas, pagina]);
 
-  /* ========= Handlers de UI ========= */
+  /* ---- Handlers de UI ---- */
 
-  const handleEliminarArea = (id: number, nombre: string) => {
-    setModalEliminar({ isOpen: true, id, nombre });
+  const abrirCrear = () => {
+    setFormMode("create");
+    setAreaSeleccionada(null);
+    setFormVisible(true);
   };
 
-  const confirmarEliminacion = async () => {
-    if (modalEliminar.id === null) return;
+  const abrirEditar = (area: AreaDto) => {
+    setFormMode("edit");
+    setAreaSeleccionada(area);
+    setFormVisible(true);
+  };
 
+  const handleSubmitArea = async (values: AreaFormValues) => {
+    setSaving(true);
     try {
-      const resp = (await api(`/areas/${modalEliminar.id}`, {
+      if (formMode === "create") {
+        const creada = (await api("/areas", {
+          method: "POST",
+          body: values,
+        })) as AreaDto;
+        setAreas((prev) => [...prev, creada]);
+        showResult(
+          "success",
+          "Área creada",
+          `El área "${creada.nombre}" se creó correctamente.`
+        );
+      } else if (formMode === "edit" && areaSeleccionada) {
+        const actualizada = (await api(`/areas/${areaSeleccionada.id}`, {
+          method: "PUT",
+          body: values,
+        })) as AreaDto;
+        setAreas((prev) =>
+          prev.map((a) => (a.id === actualizada.id ? actualizada : a))
+        );
+        showResult(
+          "success",
+          "Área actualizada",
+          `El área "${actualizada.nombre}" se actualizó correctamente.`
+        );
+      }
+      setFormVisible(false);
+      setAreaSeleccionada(null);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "No se pudo guardar el área.";
+      showResult("error", "Error al guardar", msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const solicitarEliminar = (area: AreaDto) => {
+    setAreaAEliminar(area);
+    setConfirmVisible(true);
+  };
+
+  const confirmarEliminar = async () => {
+    if (!areaAEliminar) return;
+
+    setDeleting(true);
+    try {
+      const resp = (await api(`/areas/${areaAEliminar.id}`, {
         method: "DELETE",
       })) as { mensaje?: string };
-
-      setDatosAreas((prev) =>
-        prev.filter((item) => item.id !== modalEliminar.id)
+      setAreas((prev) =>
+        prev.filter((a) => a.id !== areaAEliminar.id)
       );
-
       showResult(
         "success",
         "Área eliminada",
-        resp.mensaje ||
-          `El área "${modalEliminar.nombre}" se eliminó correctamente.`
+        resp.mensaje || `El área "${areaAEliminar.nombre}" se eliminó correctamente.`
       );
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "No se pudo eliminar el área.";
       showResult("error", "Error al eliminar", msg);
     } finally {
-      setModalEliminar({ isOpen: false, id: null, nombre: "" });
+      setDeleting(false);
+      setConfirmVisible(false);
+      setAreaAEliminar(null);
     }
   };
-
-  const cancelarEliminacion = () => {
-    setModalEliminar({ isOpen: false, id: null, nombre: "" });
-  };
-
-  const abrirModal = () => {
-    setAreaEditando(null); // modo agregar
-    setModalAgregar(true);
-  };
-
-  const cerrarModal = () => {
-    setModalAgregar(false);
-    setAreaEditando(null);
-  };
-
-  const handleEditarArea = (fila: AreaDto) => {
-    setAreaEditando(fila);
-    setModalAgregar(true);
-  };
-
-  /* ========= Guardar (agregar / editar) ========= */
-
-  const confirmarAgregar = async (formData: {
-    nombre: string;
-    codigo: string;
-    descripcion: string;
-    modalidad: "Individual" | "Grupal";
-  }) => {
-    try {
-      if (areaEditando) {
-        // EDITAR
-        const actualizado = (await api(`/areas/${areaEditando.id}`, {
-          method: "PUT",
-          body: formData,
-        })) as any;
-
-        const normalizado: AreaDto = {
-          id: actualizado.id,
-          nombre: actualizado.nombre,
-          codigo: actualizado.codigo ?? null,
-          descripcion: actualizado.descripcion ?? null,
-          estado: actualizado.estado ?? true,
-          modalidad:
-            actualizado.modalidad === "GRUPAL" ||
-            actualizado.modalidad === "Grupal"
-              ? "Grupal"
-              : actualizado.modalidad === "INDIVIDUAL" ||
-                actualizado.modalidad === "Individual"
-              ? "Individual"
-              : actualizado.modalidad ?? "Individual",
-        };
-
-        setDatosAreas((prev) =>
-          prev.map((a) => (a.id === normalizado.id ? normalizado : a))
-        );
-
-        showResult(
-          "success",
-          "Área actualizada",
-          `El área "${normalizado.nombre}" se actualizó correctamente.`
-        );
-      } else {
-        // AGREGAR
-        const creado = (await api("/areas", {
-          method: "POST",
-          body: formData,
-        })) as any;
-
-        const normalizado: AreaDto = {
-          id: creado.id,
-          nombre: creado.nombre,
-          codigo: creado.codigo ?? null,
-          descripcion: creado.descripcion ?? null,
-          estado: creado.estado ?? true,
-          modalidad:
-            creado.modalidad === "GRUPAL" || creado.modalidad === "Grupal"
-              ? "Grupal"
-              : creado.modalidad === "INDIVIDUAL" ||
-                creado.modalidad === "Individual"
-              ? "Individual"
-              : creado.modalidad ?? "Individual",
-        };
-
-        setDatosAreas((prev) => [...prev, normalizado]);
-
-        showResult(
-          "success",
-          "Área creada",
-          `El área "${normalizado.nombre}" se creó correctamente.`
-        );
-      }
-
-      cerrarModal();
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "No se pudo guardar el área.";
-      showResult("error", "Error al guardar", msg);
-    }
-  };
-
-  /* ========= Columnas ========= */
 
   const columnas = [
     {
@@ -302,151 +446,144 @@ const Areas: React.FC = () => {
       clave: "descripcion" as const,
       titulo: "Descripción",
       alineacion: "izquierda" as const,
-      ordenable: true,
-    },
-    {
-      clave: "modalidad" as const,
-      titulo: "Modalidad",
-      alineacion: "centro" as const,
-      ordenable: true,
+      ordenable: false,
     },
   ];
 
   const renderAcciones = (fila: AreaDto) => (
     <div className="flex justify-center gap-2">
       <button
-        onClick={() => handleEditarArea(fila)}
-        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+        type="button"
+        onClick={() => abrirEditar(fila)}
+        className="inline-flex items-center justify-center rounded-full border border-transparent bg-blue-50 p-1.5 text-blue-600 shadow-sm transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+        aria-label="Editar área"
       >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-          />
-        </svg>
+        <Edit3 className="h-4 w-4" />
       </button>
       <button
-        onClick={() => handleEliminarArea(fila.id, fila.nombre)}
-        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+        type="button"
+        onClick={() => solicitarEliminar(fila)}
+        className="inline-flex items-center justify-center rounded-full border border-transparent bg-red-50 p-1.5 text-red-600 shadow-sm transition hover:bg-red-100 hover:text-red-700 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+        aria-label="Eliminar área"
       >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V5a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
+        <Trash2 className="h-4 w-4" />
       </button>
     </div>
   );
 
-  /* ========= Render ========= */
-
   return (
-    <div className="min-h-screen bg-gray-50 p-4 transition-colors dark:bg-gray-900">
-      <div className="mb-12">
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white sm:mb-0">
-            Lista de Áreas
-          </h1>
+    <div className="min-h-screen bg-gray-50 p-4 transition-colors dark:bg-gray-950 sm:p-6">
+      <div className="mx-auto w-full max-w-6xl">
+        {/* Header */}
+        <div className="mb-5 flex flex-col gap-3 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
+              Áreas de competencia
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Gestiona las áreas que se utilizarán en los diferentes niveles de
+              la Olimpiada.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={abrirCrear}
+            className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-brand-500 dark:hover:bg-brand-400 dark:focus-visible:ring-offset-gray-950"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Agregar área
+          </button>
         </div>
 
-        <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex-1 max-w-md">
-              <BarraBusquedaAreas
-                terminoBusqueda={busquedaAreas}
-                onBuscarChange={(t) => {
-                  setBusquedaAreas(t);
-                  setPaginaAreas(1);
-                }}
-              />
-            </div>
-            <div className="flex items-center gap-4">
+        {/* Card filtros + tabla */}
+        <div className="space-y-4">
+          {/* Filtros */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="w-full max-w-md">
+                <BarraBusquedaAreas
+                  terminoBusqueda={busqueda}
+                  onBuscarChange={(t: string) => {
+                    setBusqueda(t);
+                    setPagina(1);
+                  }}
+                />
+              </div>
               {loadingListado && (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Cargando áreas...
                 </p>
               )}
-              <button
-                onClick={abrirModal}
-                className="inline-flex items-center rounded-lg bg-[#465FFF] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a4fe6]"
-              >
-                Agregar Área
-              </button>
             </div>
           </div>
-        </div>
 
-        <div className="overflow-hidden rounded-lg bg-white shadow-sm dark:bg-gray-800 dark:shadow-gray-700">
-          <TablaBase
-            datos={areasPaginadas}
-            columnas={columnas}
-            conOrdenamiento
-            onOrdenar={handleOrdenar}
-            conAcciones
-            renderAcciones={renderAcciones}
-          />
-        </div>
+          {/* Tabla */}
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <TablaBase
+              datos={areasPaginadas}
+              columnas={columnas}
+              conOrdenamiento
+              onOrdenar={handleOrdenar}
+              conAcciones
+              renderAcciones={renderAcciones}
+            />
+          </div>
 
-        <div className="mt-4">
-          <Paginacion
-            paginaActual={paginaAreas}
-            totalPaginas={Math.max(
-              1,
-              Math.ceil(areasFiltradas.length / REGISTROS_POR_PAGINA)
-            )}
-            totalRegistros={areasFiltradas.length}
-            registrosPorPagina={REGISTROS_POR_PAGINA}
-            onPaginaChange={setPaginaAreas}
-          />
+          {/* Paginación */}
+          <div className="flex justify-end">
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={Math.max(
+                1,
+                Math.ceil(areasFiltradas.length / REGISTROS_PAGINA)
+              )}
+              totalRegistros={areasFiltradas.length}
+              registrosPorPagina={REGISTROS_PAGINA}
+              onPaginaChange={setPagina}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Modal eliminar */}
-      <EliminarFilaModal
-        isOpen={modalEliminar.isOpen}
-        onCancelar={cancelarEliminacion}
-        onConfirmar={confirmarEliminacion}
-        tipo="Area"
-        nombre={modalEliminar.nombre}
+      {/* Modal crear / editar */}
+      <AreaFormModal
+        visible={formVisible}
+        mode={formMode}
+        initialData={areaSeleccionada}
+        loading={saving}
+        onClose={() => {
+          if (!saving) {
+            setFormVisible(false);
+            setAreaSeleccionada(null);
+          }
+        }}
+        onSubmit={handleSubmitArea}
       />
 
-      {/* Modal agregar / editar */}
-      <AgregarModal
-        isOpen={modalAgregar}
-        onClose={cerrarModal}
-        onConfirm={confirmarAgregar}
-        tipo="Área"
-        modo={areaEditando ? "editar" : "agregar"}
-        initialData={
-          areaEditando
-            ? {
-                nombre: areaEditando.nombre,
-                codigo: areaEditando.codigo ?? "",
-                descripcion: areaEditando.descripcion ?? "",
-                modalidad:
-                  (areaEditando.modalidad as "Individual" | "Grupal") ??
-                  "Individual",
-              }
-            : undefined
+      {/* Modal confirmar eliminar */}
+      <ConfirmModal
+        visible={confirmVisible}
+        title="Eliminar área"
+        message={
+          areaAEliminar
+            ? `¿Estás seguro de que quieres eliminar el área "${areaAEliminar.nombre}"? Esta acción no se puede deshacer.`
+            : "¿Estás seguro de eliminar esta área?"
         }
+        onCancel={() => {
+          if (!deleting) {
+            setConfirmVisible(false);
+            setAreaAEliminar(null);
+          }
+        }}
+        onConfirm={confirmarEliminar}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger
+        loading={deleting}
       />
 
-      {/* Modal de resultado */}
+      {/* Modal de resultado (éxito / error) */}
       <ResultModal
         visible={resultModal.visible}
         type={resultModal.type}
@@ -456,6 +593,4 @@ const Areas: React.FC = () => {
       />
     </div>
   );
-};
-
-export default Areas;
+}
