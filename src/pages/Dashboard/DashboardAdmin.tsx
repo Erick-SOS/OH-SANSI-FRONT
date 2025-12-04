@@ -113,13 +113,6 @@ const DashboardAdmin = () => {
         <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
           Participación en las olimpiadas
         </h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Total de inscripciones registradas:{" "}
-          <span className="font-semibold text-slate-900 dark:text-slate-100">
-            {data.inscritosTotal}
-          </span>
-          . Las métricas y gráficos se calculan a partir de los registros actuales.
-        </p>
       </div>
 
       {/* Métricas principales */}
