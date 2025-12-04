@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import toast from 'react-hot-toast';
+
 
 interface EvaluacionItem {
   id: number;
@@ -61,15 +62,54 @@ const FiltrosInfoCard: React.FC<{ area: string; nivel: string; modalidad: string
 const FasesEvaluacionIndividual: React.FC = () => {
   const navigate = useNavigate();
 
-  const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
-    { id: 1, nombre: "Julian Daniel Alvarez", ci: 7329643, codigo: 100, areaCompetencia: "Matemáticas", nivel: "Primaria", nota: 100, observacion: "" },
-    { id: 2, nombre: "Maria Rojas Lopez", ci: 7458213, codigo: 107, areaCompetencia: "Matemáticas", nivel: "Primaria", nota: 100, observacion: "" },
-    { id: 3, nombre: "Luis Gamboa Torrez", ci: 8321975, codigo: 120, areaCompetencia: "Matemáticas", nivel: "Primaria", nota: 100, observacion: "" },
-    { id: 4, nombre: "Ana Perez Vargas", ci: 7194650, codigo: 56, areaCompetencia: "Matemáticas", nivel: "Primaria", nota: 100, observacion: "" },
-    { id: 5, nombre: "Jorge Mendoza Arce", ci: 7953174, codigo: 94, areaCompetencia: "Matemáticas", nivel: "Primaria", nota: 100, observacion: "" },
-    { id: 6, nombre: "Carla Quispe Condori", ci: 7842156, codigo: 78, areaCompetencia: "Matemáticas", nivel: "Primaria", nota: 100, observacion: "" },
-    { id: 7, nombre: "Soledad Ramos Guzman", ci: 7710339, codigo: 81, areaCompetencia: "Matemáticas", nivel: "Primaria", nota: 100, observacion: "" },
-  ]);
+  const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([]);
+
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('ohsansi/auth/token');
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
+
+        const response = await fetch('http://localhost:3000/api/evaluacion-individual/assigned', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: any[] = result.data;
+
+        // Filtrar solo individuales
+        const individuales = data.filter(d => d.tipo === 'INDIVIDUAL').map(d => ({
+          ...d,
+          // Asegurar tipos
+          nota: Number(d.nota),
+          observacion: d.observacion || '',
+          // ci y codigo vienen del back
+          ci: d.ci || 0,
+          codigo: d.codigo
+        }));
+        setEvaluaciones(individuales);
+      } catch (error) {
+        console.error("Error fetching data", error);
+        toast.error("Error al cargar los datos");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const [edits, setEdits] = useState<Record<number, Partial<EvaluacionItem>>>({});
   const [currentPage, setCurrentPage] = useState(1);
@@ -163,7 +203,7 @@ const FasesEvaluacionIndividual: React.FC = () => {
     setEvaluaciones(sorted);
   };
 
-  
+
   const columns = [
     {
       clave: 'participante',
@@ -229,11 +269,10 @@ const FasesEvaluacionIndividual: React.FC = () => {
                 if (num <= 100) handleValueChange(fila.id, 'nota', num);
               }
             }}
-            className={`w-16 h-10 text-center font-bold text-sm rounded-full border-2 outline-none transition-all ${
-              tieneError
-                ? 'border-red-500 bg-red-50 text-red-700'
-                : 'border-gray-300 bg-white hover:border-indigo-400 focus:border-indigo-500'
-            }`}
+            className={`w-16 h-10 text-center font-bold text-sm rounded-full border-2 outline-none transition-all ${tieneError
+              ? 'border-red-500 bg-red-50 text-red-700'
+              : 'border-gray-300 bg-white hover:border-indigo-400 focus:border-indigo-500'
+              }`}
             placeholder="-"
           />
         );
@@ -285,11 +324,10 @@ const FasesEvaluacionIndividual: React.FC = () => {
 
         return (
           <div onDoubleClick={() => abrirDesclasificar(fila)} className="cursor-pointer" title="Doble clic para desclasificar">
-            <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${
-              estado === 'CLASIFICADO'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-            }`}>
+            <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${estado === 'CLASIFICADO'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+              }`}>
               {estado === 'CLASIFICADO' ? 'Clasificado' : 'No Clasificado'}
             </span>
           </div>
@@ -370,7 +408,7 @@ const FasesEvaluacionIndividual: React.FC = () => {
         </div>
       </div>
 
-      {}
+      { }
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
@@ -393,7 +431,7 @@ const FasesEvaluacionIndividual: React.FC = () => {
         </div>
       )}
 
-      {}
+      { }
       {showDesclasificar && itemSeleccionado && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
