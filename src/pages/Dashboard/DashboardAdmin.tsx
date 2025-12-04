@@ -1,11 +1,79 @@
 // src/pages/Dashboard/DashboardAdmin.tsx
+import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import MetricCard from "../../components/dashboard/MetricCard";
 import DonutChartCard from "../../components/dashboard/DonutChartCard";
-import { useDashboardStats } from "../../hooks/useDashboardStats";
+import { api } from "../../api";
+
+// Tipos según el backend
+type NivelStat = {
+  nombre: string;
+  cantidad: number;
+  porcentaje: number;
+};
+
+type AreaStat = {
+  nombre: string;
+  cantidad: number;
+  porcentaje: number;
+};
+
+type DashboardStats = {
+  olimpistas: number;
+  responsables: number;
+  evaluadores: number;
+  inscritosTotal: number;
+  porNivel: NivelStat[];
+  porArea: AreaStat[];
+};
+
+type DashboardResponse = {
+  success: boolean;
+  data: DashboardStats;
+  cached?: boolean;
+};
 
 const DashboardAdmin = () => {
-  const { data, loading, error } = useDashboardStats();
+  const [data, setData] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const res = await api("/estadisticas/dashboard") as DashboardResponse;
+
+        if (!res.success || !res.data) {
+          throw new Error("No se recibieron estadísticas válidas desde el servidor.");
+        }
+
+        if (isMounted) {
+          setData(res.data);
+        }
+      } catch (err: unknown) {
+        if (!isMounted) return;
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Ocurrió un error al obtener las estadísticas del dashboard.";
+        setError(msg);
+        setData(null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -27,7 +95,6 @@ const DashboardAdmin = () => {
     );
   }
 
-  // Datos para los gráficos: usamos el porcentaje calculado por el backend
   const nivelesLabels = data.porNivel.map((n) => n.nombre);
   const nivelesSeries = data.porNivel.map((n) => n.porcentaje);
 
@@ -51,7 +118,7 @@ const DashboardAdmin = () => {
           <span className="font-semibold text-slate-900 dark:text-slate-100">
             {data.inscritosTotal}
           </span>
-          . Las métricas y gráficos se calculan a partir de estos registros.
+          . Las métricas y gráficos se calculan a partir de los registros actuales.
         </p>
       </div>
 
@@ -96,7 +163,6 @@ const DashboardAdmin = () => {
             autoColorSeed={0}
           />
 
-          {/* Resumen profesional con cantidad y porcentaje por nivel */}
           {data.porNivel.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs md:text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
               <p className="mb-2 font-medium text-slate-800 dark:text-slate-100">
@@ -128,7 +194,6 @@ const DashboardAdmin = () => {
             autoColorSeed={1}
           />
 
-          {/* Resumen profesional con cantidad y porcentaje por área */}
           {data.porArea.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs md:text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
               <p className="mb-2 font-medium text-slate-800 dark:text-slate-100">
