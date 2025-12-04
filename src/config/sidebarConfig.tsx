@@ -10,6 +10,7 @@ import {
   MdCardGiftcard,
   MdFactCheck,
   MdHome,
+  MdHowToReg, 
 } from "react-icons/md";
 
 export type NavItem = {
@@ -28,7 +29,6 @@ export const sidebarConfig: SidebarConfig = {
       name: "Dashboard Admin",
       path: "/dashboard-admin",
     },
-
     {
       icon: <MdOutlineCategory className="w-5 h-5" />,
       name: "Gestión de Áreas",
@@ -43,7 +43,6 @@ export const sidebarConfig: SidebarConfig = {
       name: "Designar Responsables",
       path: "/Responsables",
     },
-
     {
       icon: <MdPeople className="w-5 h-5" />,
       name: "Lista de Inscritos",
@@ -53,7 +52,6 @@ export const sidebarConfig: SidebarConfig = {
         { name: "Grupal", path: "/lista-de-inscritos-grupal" },
       ],
     },
-
     {
       icon: <MdHistory className="w-5 h-5" />,
       name: "Historial de Cambios",
@@ -64,7 +62,7 @@ export const sidebarConfig: SidebarConfig = {
       name: "Cantidad de Medallas",
       path: "/cantidad-de-medallas",
     },
-    {
+{
       icon: <MdTimeline className="w-5 h-5" />,
       name: "Fases de Competencia",
       path: "/fases-de-competencia",
@@ -87,10 +85,21 @@ export const sidebarConfig: SidebarConfig = {
       name: "Aprobación de Calificaciones",
       path: "/aprobacion-calificaciones",
     },
+   
     {
-      icon: <MdFactCheck className="w-5 h-5" />,
-      name: "Gestión de Evaluador",
-      path: "/gestion-evaluador",
+      icon: <MdHowToReg className="w-5 h-5" />, 
+      name: "Gestionar Evaluadores",
+      
+      subItems: [
+        {
+          name: "Habilitar Evaluador",
+          path: "/habilitar-evaluador", 
+        },
+        {
+          name: "Designar Evaluador",
+          path: "/designar-evaluador",  
+        },
+      ],
     },
   ],
 

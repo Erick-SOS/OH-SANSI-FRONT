@@ -32,7 +32,6 @@ import FasesDeCompetencia from "./pages/FasesDeCompetencia";
 import SeleccionarGestionPage from "./pages/SeleccionarGestionPage";
 import GeneracionReportes from "./pages/GeneracionReportes";
 
-
 import OlimpiasPremios from "./pages/ListaDePremiados";
 
 import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
@@ -51,6 +50,7 @@ import AprobacionCalificacionesLista from "./pages/AprobacionCalificacionesLista
 import AprobacionCalificacionesDetalle from "./pages/AprobacionCalificacionesDetalle";
 
 import GestionEvaluadorPage from "./pages/GestionEvaluadorPage";
+import DesignarEvaluadorPage from "./pages/DesignarEvaluadorPage";
 
 import RequireAuth from "./components/auth/RequireAuth";
 import GestionarCategorias from "./pages/GestionDeCategorias.tsx";
@@ -81,7 +81,7 @@ export default function App() {
             />
           </Route>
 
-          {/* ===== RUTAS PROTEGIDAS (requieren token válido) ===== */}
+          {/* ===== RUTAS PROTEGIDAS (requieren login) ===== */}
           <Route element={<RequireAuth />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard-admin" element={<DashboardAdmin />} />
@@ -124,14 +124,13 @@ export default function App() {
                 path="/fases-de-competencia"
                 element={<SeleccionarGestionPage />}
               />
-
               <Route
                 path="/fases/estado-olimpiada/:gestionId"
                 element={<FasesDeCompetencia />}
               />
               <Route path="/reportes" element={<GeneracionReportes />} />
               <Route path="/olimpias-premios" element={<OlimpiasPremios />} />
-              
+
               <Route
                 path="/fases-de-evaluacion/individual"
                 element={<FasesEvaluacionIndividual />}
@@ -149,9 +148,15 @@ export default function App() {
                 path="/aprobacion-calificaciones/:id"
                 element={<AprobacionCalificacionesDetalle />}
               />
+
+              {/* RUTAS CORREGIDAS Y FUNCIONANDO */}
               <Route
-                path="/gestion-evaluador"
+                path="/habilitar-evaluador"
                 element={<GestionEvaluadorPage />}
+              />
+              <Route
+                path="/designar-evaluador"
+                element={<DesignarEvaluadorPage />}
               />
             </Route>
           </Route>
