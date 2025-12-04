@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
+
 
 interface EvaluacionItem {
   id: number;
@@ -11,8 +12,8 @@ interface EvaluacionItem {
   nivel: string;
   nota: number;
   observacion: string;
-  desclasificado?: boolean;   
-  motivo?: string;            
+  desclasificado?: boolean;
+  motivo?: string;
 }
 
 const FiltrosInfoCard: React.FC<{ area: string, nivel: string, modalidad: string, fase: string }> = ({ area, nivel, modalidad, fase }) => (
@@ -49,11 +50,51 @@ const generarInicialesEquipo = (nombreEquipo: string): string => {
 const FasesEvaluacionGrupal: React.FC = () => {
   const navigate = useNavigate();
 
-  const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([
-    { id: 1, nombre: "Equipo Alfa", areaCompetencia: "Ciencias", nivel: "Secundaria", nota: 0, observacion: "" },
-    { id: 2, nombre: "Los Genios", areaCompetencia: "Matemáticas", nivel: "Secundaria", nota: 0, observacion: "" },
-    { id: 3, nombre: "Fénix Dorado", areaCompetencia: "Ciencias", nivel: "Primaria", nota: 0, observacion: "" },
-  ]);
+  const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([]);
+
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('ohsansi/auth/token');
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
+
+        const response = await fetch('https://back-oh-sansi.vercel.app/api/evaluacion-individual/assigned', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: any[] = result.data;
+
+        // Filtrar solo grupales
+        const grupales = data.filter(d => d.tipo === 'GRUPAL').map(d => ({
+          ...d,
+          // Asegurar tipos
+          nota: Number(d.nota),
+          observacion: d.observacion || ''
+        }));
+        setEvaluaciones(grupales);
+      } catch (error) {
+        console.error("Error fetching data", error);
+        alert("Error al cargar los datos");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const [edits, setEdits] = useState<Record<number, Partial<EvaluacionItem>>>({});
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +102,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [intentosFallidos, setIntentosFallidos] = useState(false);
 
-  
+
   const [showDesclasificar, setShowDesclasificar] = useState(false);
   const [itemSeleccionado, setItemSeleccionado] = useState<EvaluacionItem | null>(null);
   const [motivo, setMotivo] = useState('');
@@ -87,7 +128,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
 
   const confirmarDesclasificar = () => {
     if (!motivo.trim()) {
-      alert('El motivo es obligatorio'); 
+      alert('El motivo es obligatorio');
       return;
     }
     setEvaluaciones(prev =>
@@ -104,7 +145,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
 
   const validarListaCompleta = (): boolean => {
     return evaluaciones.every(item => {
-      
+
       if (item.desclasificado) return true;
 
       const notaActual = (edits[item.id]?.nota ?? item.nota) as number;
@@ -195,7 +236,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         const valorActual = (edits[fila.id]?.nota ?? fila.nota) as number;
         const tieneError = intentosFallidos && !fila.desclasificado && (valorActual < 1 || valorActual > 100);
 
-        
+
         if (fila.desclasificado) {
           return <span className="text-xl font-bold text-gray-400">—</span>;
         }
@@ -212,11 +253,10 @@ const FasesEvaluacionGrupal: React.FC = () => {
                 if (num <= 100) handleValueChange(fila.id, 'nota', num);
               }
             }}
-            className={`w-16 h-10 text-center font-bold text-sm rounded-full border-2 outline-none transition-all ${
-              tieneError
-                ? 'border-red-500 bg-red-50 text-red-700'
-                : 'border-gray-300 bg-white hover:border-indigo-400 focus:border-indigo-500'
-            }`}
+            className={`w-16 h-10 text-center font-bold text-sm rounded-full border-2 outline-none transition-all ${tieneError
+              ? 'border-red-500 bg-red-50 text-red-700'
+              : 'border-gray-300 bg-white hover:border-indigo-400 focus:border-indigo-500'
+              }`}
             placeholder="-"
           />
         );
@@ -248,7 +288,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         );
       },
     },
-    
+
     {
       clave: 'estado',
       titulo: 'Estado',
@@ -277,11 +317,10 @@ const FasesEvaluacionGrupal: React.FC = () => {
             className="cursor-pointer"
             title="Doble clic para desclasificar"
           >
-            <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${
-              estado === 'CLASIFICADO'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-            }`}>
+            <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${estado === 'CLASIFICADO'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+              }`}>
               {estado === 'CLASIFICADO' ? 'Clasificado' : 'No Clasificado'}
             </span>
           </div>
@@ -362,7 +401,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         </div>
       </div>
 
-      {}
+      { }
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
@@ -385,7 +424,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         </div>
       )}
 
-      {}
+      { }
       {showDesclasificar && itemSeleccionado && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
