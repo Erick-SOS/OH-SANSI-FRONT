@@ -64,7 +64,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
           return;
         }
 
-        const response = await fetch('http://localhost:3000/api/evaluacion-individual/assigned', {
+        const response = await fetch('https://back-oh-sansi.vercel.app/api/evaluacion-individual/assigned', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
