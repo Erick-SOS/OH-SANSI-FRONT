@@ -4,7 +4,6 @@ import {
   MdHistory,
   MdEmojiEvents,
   MdTimeline,
-  MdAssignmentInd,
   MdPeople,
   MdChecklist,
   MdCardGiftcard,
@@ -31,17 +30,12 @@ export const sidebarConfig: SidebarConfig = {
     },
     {
       icon: <MdOutlineCategory className="w-5 h-5" />,
-      name: "Gestión de Áreas",
+      name: "Gestión de Áreas y Niveles",
       subItems: [
         { name: "Categorías", path: "/gestionar-categorias" },
         { name: "Áreas", path: "/areas" },
         { name: "Niveles", path: "/niveles" },
       ],
-    },
-    {
-      icon: <MdAssignmentInd className="w-5 h-5" />,
-      name: "Designar Responsables",
-      path: "/Responsables",
     },
     {
       icon: <MdPeople className="w-5 h-5" />,
