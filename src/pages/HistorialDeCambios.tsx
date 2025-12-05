@@ -1,156 +1,195 @@
 import React, { useState, useMemo } from 'react';
-import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
-import { exportarComoPDF, exportarComoXLSX, ExportData } from '../utils/exportUtils'; // Ajustada la ruta
+import { exportarComoPDF, ExportData } from '../utils/exportUtils';
+
+type TipoCambio =
+  | 'Calificación'
+  | 'Parametrizacion'
+  | 'Fase'
+  | 'Asignacion'
+  | 'Inscripcion'
+  | 'Aprobacion';
 
 interface HistorialItem {
   id: number;
-  nombre: string;
+  numero: number;
+  usuario: string;
+  rol: string;
   fecha: string;
-  olimpistaOGrupo: string;
-  notaAnterior: string;
-  notaNueva: string;
+  tipoCambio: TipoCambio;
+  accion: string; 
 }
 
+type SortKey = keyof Pick<
+  HistorialItem,
+  'numero' | 'rol' | 'usuario' | 'fecha' | 'tipoCambio' | 'accion'
+>;
+
+const TIPOS_CAMBIO = [
+  { value: 'TODOS', label: 'Todos los tipos' },
+  { value: 'Calificación', label: 'Calificación' },
+  { value: 'Parametrizacion', label: 'Parametrizacion' },
+  { value: 'Fase', label: 'Fase' },
+  { value: 'Asignacion', label: 'Asignación' },
+  { value: 'Inscripcion', label: 'Inscripción' },
+  { value: 'Aprobacion', label: 'Aprobación' },
+];
+
+const SortIcon: React.FC<{ dir: 'asc' | 'desc' | null }> = ({ dir }) => {
+  if (!dir) return <span className="opacity-30">↕</span>;
+  return <span>{dir === 'asc' ? '↑' : '↓'}</span>;
+};
+
 const HistorialDeCambios: React.FC = () => {
-  const [datosCompletos] = useState<HistorialItem[]>([
+  // Datos estáticos de ejemplo
+  const [rows] = useState<HistorialItem[]>([
     {
       id: 1,
-      nombre: 'Unad Wilson',
+      numero: 1,
+      usuario: 'Unad Wilson',
+      rol: 'Evaluador',
       fecha: '20/03/2025 - 18:00 hrs',
-      olimpistaOGrupo: 'Abraham Espinosa',
-      notaAnterior: '20',
-      notaNueva: '20',
+      tipoCambio: 'Calificación',
+      accion: 'Lista enviada',
     },
     {
       id: 2,
-      nombre: 'Unad Wilson',
-      fecha: '20/03/2025 - 18:00 hrs',
-      olimpistaOGrupo: 'Abraham Espinosa',
-      notaAnterior: '20',
-      notaNueva: '20',
+      numero: 2,
+      usuario: 'María Rodríguez',
+      rol: 'Administrador',
+      fecha: '21/03/2025 - 14:30 hrs',
+      tipoCambio: 'Parametrizacion',
+      accion: 'Medallero/nota mínima actualizados',
     },
     {
       id: 3,
-      nombre: 'Unad Wilson',
-      fecha: '20/03/2025 - 18:00 hrs',
-      olimpistaOGrupo: 'Abraham Espinosa',
-      notaAnterior: '20',
-      notaNueva: '20',
+      numero: 3,
+      usuario: 'Juan Pérez',
+      rol: 'Administrador',
+      fecha: '22/03/2025 - 10:15 hrs',
+      tipoCambio: 'Fase',
+      accion: 'Apertura',
     },
     {
       id: 4,
-      nombre: 'Unad Wilson',
-      fecha: '20/03/2025 - 18:00 hrs',
-      olimpistaOGrupo: 'Abraham Espinosa',
-      notaAnterior: '20',
-      notaNueva: '20',
+      numero: 4,
+      usuario: 'Juan Pérez',
+      rol: 'Administrador',
+      fecha: '25/03/2025 - 18:30 hrs',
+      tipoCambio: 'Fase',
+      accion: 'Cierre',
     },
     {
       id: 5,
-      nombre: 'Maria Rodriguez',
-      fecha: '21/03/2025 - 14:30 hrs',
-      olimpistaOGrupo: 'Carlos Mendoza',
-      notaAnterior: '18',
-      notaNueva: '22',
+      numero: 5,
+      usuario: 'Ana Gutiérrez',
+      rol: 'Responsable de área',
+      fecha: '22/03/2025 - 11:00 hrs',
+      tipoCambio: 'Asignacion',
+      accion: 'Asignación de responsable de área',
     },
     {
       id: 6,
-      nombre: 'Juan Perez',
-      fecha: '22/03/2025 - 10:15 hrs',
-      olimpistaOGrupo: 'Ana Gutierrez',
-      notaAnterior: '15',
-      notaNueva: '19',
+      numero: 6,
+      usuario: 'Carlos Mendoza',
+      rol: 'Administrador',
+      fecha: '23/03/2025 - 09:10 hrs',
+      tipoCambio: 'Inscripcion',
+      accion: 'Importación de olimpistas (CSV)',
+    },
+    {
+      id: 7,
+      numero: 7,
+      usuario: 'Unad Wilson',
+      rol: 'Administrador',
+      fecha: '23/03/2025 - 16:45 hrs',
+      tipoCambio: 'Aprobacion',
+      accion: 'Lista aprobada',
     },
   ]);
-
-  // Configuración de columnas para TablaBase
-  const columnas = [
-    {
-      clave: 'nombre',
-      titulo: 'Nombre',
-      alineacion: 'izquierda' as const,
-    },
-    {
-      clave: 'fecha',
-      titulo: 'Fecha y Hora',
-      alineacion: 'izquierda' as const,
-    },
-    {
-      clave: 'olimpistaOGrupo',
-      titulo: 'Olimpista/Grupo Asignado',
-      alineacion: 'izquierda' as const,
-    },
-    {
-      clave: 'notaAnterior',
-      titulo: 'Nota Anterior',
-      alineacion: 'centro' as const,
-    },
-    {
-      clave: 'notaNueva',
-      titulo: 'Nueva Nota',
-      alineacion: 'centro' as const,
-    },
-  ];
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [exportando, setExportando] = useState(false);
+  const [tipoCambioFiltro, setTipoCambioFiltro] =
+    useState<'TODOS' | TipoCambio>('TODOS');
+  const [sortBy, setSortBy] = useState<SortKey>('numero');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
   const registrosPorPagina = 7;
 
-  // Filtrar datos basados en la búsqueda
-  const datosFiltrados = useMemo(() => {
-    if (!terminoBusqueda.trim()) {
-      return datosCompletos;
+  // Filtro general (texto + tipo de cambio)
+  const filtrados = useMemo(() => {
+    const termino = terminoBusqueda.trim().toLowerCase();
+
+    return rows.filter((item) => {
+      const coincideTipo =
+        tipoCambioFiltro === 'TODOS' || item.tipoCambio === tipoCambioFiltro;
+      if (!coincideTipo) return false;
+
+      if (!termino) return true;
+
+      const campos = [
+        item.numero,
+        item.rol,
+        item.usuario,
+        item.fecha,
+        item.tipoCambio,
+        item.accion,
+      ];
+
+      return campos
+        .map((campo) => String(campo).toLowerCase())
+        .some((campo) => campo.includes(termino));
+    });
+  }, [rows, terminoBusqueda, tipoCambioFiltro]);
+
+  // Ordenamiento
+  const ordenados = useMemo(() => {
+    const copia = [...filtrados];
+    copia.sort((a, b) => {
+      const va = a[sortBy];
+      const vb = b[sortBy];
+
+      const A = typeof va === 'number' ? va : String(va).toLowerCase();
+      const B = typeof vb === 'number' ? vb : String(vb).toLowerCase();
+
+      if (A < B) return sortDir === 'asc' ? -1 : 1;
+      if (A > B) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return copia;
+  }, [filtrados, sortBy, sortDir]);
+
+  // Paginación
+  const totalPaginas = Math.max(1, Math.ceil(ordenados.length / registrosPorPagina));
+  const paginaSegura = Math.min(paginaActual, totalPaginas);
+  const inicio = (paginaSegura - 1) * registrosPorPagina;
+  const pageRows = ordenados.slice(inicio, inicio + registrosPorPagina);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortBy === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(key);
+      setSortDir('asc');
     }
-
-    const termino = terminoBusqueda.toLowerCase();
-    return datosCompletos.filter(
-      (item) =>
-        item.nombre.toLowerCase().includes(termino) ||
-        item.fecha.toLowerCase().includes(termino) ||
-        item.olimpistaOGrupo.toLowerCase().includes(termino) ||
-        item.notaAnterior.toLowerCase().includes(termino) ||
-        item.notaNueva.toLowerCase().includes(termino)
-    );
-  }, [datosCompletos, terminoBusqueda]);
-
-  // Calcular datos paginados
-  const datosPaginados = useMemo(() => {
-    const inicio = (paginaActual - 1) * registrosPorPagina;
-    const fin = inicio + registrosPorPagina;
-    return datosFiltrados.slice(inicio, fin);
-  }, [datosFiltrados, paginaActual, registrosPorPagina]);
-
-  const totalPaginas = Math.ceil(datosFiltrados.length / registrosPorPagina);
-
-  const handleCambioPagina = (pagina: number) => {
-    setPaginaActual(pagina);
-  };
-
-  const handleBuscarChange = (termino: string) => {
-    setTerminoBusqueda(termino);
-    setPaginaActual(1);
   };
 
   const handleExportarComoPDF = async () => {
     setExportando(true);
     try {
-      await exportarComoPDF(datosFiltrados.map(({ id, ...rest }) => rest) as ExportData[], terminoBusqueda, 'historial-cambios');
-    } catch (error) {
-      alert((error as Error).message);
-    } finally {
-      setExportando(false);
-    }
-  };
+      const datosExport: ExportData[] = ordenados.map((item) => {
+        const { id, ...rest } = item;
+        return rest as unknown as ExportData;
+      });
 
-  const handleExportarComoXLSX = async () => {
-    setExportando(true);
-    try {
-      await exportarComoXLSX(datosFiltrados.map(({ id, ...rest }) => rest) as ExportData[], 'historial-cambios');
-    } catch (error) {
-      alert((error as Error).message);
+      await exportarComoPDF(
+        datosExport,
+        terminoBusqueda,
+        'historial-cambios'
+      );
     } finally {
       setExportando(false);
     }
@@ -158,157 +197,141 @@ const HistorialDeCambios: React.FC = () => {
 
   return (
     <div className="p-1">
-      {/* Primera fila: Título a la izquierda, Breadcrumb a la derecha */}
+      {/* Título */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-0">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Historial de Cambios
         </h1>
-        <nav className="text-sm text-gray-600 dark:text-gray-400">
-          <span>Inicio</span>
-          <span className="mx-2">›</span>
-          <span className="text-gray-800 dark:text-white">Historial de Cambios</span>
-        </nav>
       </div>
 
-      {/* Segunda fila: Barra de búsqueda a la izquierda, Botones de exportación a la derecha */}
+      {/* Filtros y exportación */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Barra de búsqueda */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Búsqueda */}
           <div className="flex-1 max-w-md">
             <BarraBusquedaAreas
               terminoBusqueda={terminoBusqueda}
-              onBuscarChange={handleBuscarChange}
+              onBuscarChange={(t) => {
+                setTerminoBusqueda(t);
+                setPaginaActual(1);
+              }}
             />
           </div>
 
-          {/* Botones de exportación */}
-          <div className="flex flex-col sm:flex-row gap-2">
+          {/* Select tipo + exportar */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">
+                Filtrar por tipo de cambio
+              </span>
+              <select
+                value={tipoCambioFiltro}
+                onChange={(e) => {
+                  setTipoCambioFiltro(e.target.value as 'TODOS' | TipoCambio);
+                  setPaginaActual(1);
+                }}
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#465FFF]"
+              >
+                {TIPOS_CAMBIO.map((op) => (
+                  <option key={op.value} value={op.value}>
+                    {op.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
               onClick={handleExportarComoPDF}
               disabled={exportando}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50"
             >
-              {exportando ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Exportando...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  Exportar historial como PDF
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleExportarComoXLSX}
-              disabled={exportando}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {exportando ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Exportando...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  Exportar historial como XLSX
-                </>
-              )}
+              {exportando ? 'Exportando...' : 'Exportar PDF'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Indicador de resultados de búsqueda */}
-      {terminoBusqueda && (
-        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          {datosFiltrados.length} resultados encontrados para "{terminoBusqueda}"
-        </div>
-      )}
+      {/* Tabla con ordenamiento */}
+      <div className="overflow-hidden rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 mb-1">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-700 dark:text-gray-200">
+            <tr>
+              {(
+                [
+                  ['numero', 'N°'],
+                  ['rol', 'Rol'],
+                  ['usuario', 'Nombre'],
+                  ['fecha', 'Fecha y Hora'],
+                  ['tipoCambio', 'Tipo de Cambio'],
+                  ['accion', 'Acción / Detalle'],
+                ] as [SortKey, string][]
+              ).map(([key, label]) => {
+                const dir = sortBy === key ? sortDir : null;
+                return (
+                  <th
+                    key={key}
+                    className="cursor-pointer select-none px-4 py-3"
+                    onClick={() => toggleSort(key)}
+                    title="Ordenar"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>{label}</span>
+                      <SortIcon dir={dir} />
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.length === 0 && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
+                >
+                  No hay resultados.
+                </td>
+              </tr>
+            )}
 
-      {/* Tabla usando TablaBase */}
-      <div className="mb-1">
-        <TablaBase
-          datos={datosPaginados}
-          columnas={columnas}
-          conOrdenamiento={false}
-          conAcciones={false}
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
-        />
+            {pageRows.map((item) => (
+              <tr
+                key={item.id}
+                className="border-t last:border-b border-gray-100 dark:border-gray-700"
+              >
+                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
+                  {item.numero}
+                </td>
+                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
+                  {item.rol}
+                </td>
+                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
+                  {item.usuario}
+                </td>
+                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
+                  {item.fecha}
+                </td>
+                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
+                  {item.tipoCambio}
+                </td>
+                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
+                  {item.accion}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Paginación */}
-      <div>
-        <Paginacion
-          paginaActual={paginaActual}
-          totalPaginas={totalPaginas}
-          totalRegistros={datosFiltrados.length}
-          registrosPorPagina={registrosPorPagina}
-          onPaginaChange={handleCambioPagina}
-        />
-      </div>
+      <Paginacion
+        paginaActual={paginaSegura}
+        totalPaginas={totalPaginas}
+        totalRegistros={ordenados.length}
+        registrosPorPagina={registrosPorPagina}
+        onPaginaChange={setPaginaActual}
+      />
     </div>
   );
 };
