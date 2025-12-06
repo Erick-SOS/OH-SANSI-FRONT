@@ -21,10 +21,6 @@ export interface InscritoIndividualDto {
   tutorLegal: string | null;
 }
 
-type InscritoIndividualRow = InscritoIndividualDto & {
-  numero: number;
-};
-
 const REGISTROS_PAGINA = 10;
 type ConfirmMode = "participacion" | "olimpista";
 
@@ -149,16 +145,11 @@ export default function InscritosIndividualesPage() {
     return lista;
   }, [inscritos, filtroArea, filtroNivel, busqueda]);
 
-  /* ---- Paginación + numeración ---- */
+  /* ---- Paginación ---- */
 
-  const inscritosPaginadosConNumero: InscritoIndividualRow[] = useMemo(() => {
+  const inscritosPaginados: InscritoIndividualDto[] = useMemo(() => {
     const inicio = (pagina - 1) * REGISTROS_PAGINA;
-    return inscritosFiltrados
-      .slice(inicio, inicio + REGISTROS_PAGINA)
-      .map((i, idx) => ({
-        ...i,
-        numero: inicio + idx + 1,
-      }));
+    return inscritosFiltrados.slice(inicio, inicio + REGISTROS_PAGINA);
   }, [inscritosFiltrados, pagina]);
 
   /* ---- Ordenamiento ---- */
@@ -251,15 +242,9 @@ export default function InscritosIndividualesPage() {
     }
   };
 
-  /* ---- Definición de columnas (sin IDs, solo numeración) ---- */
+  /* ---- Definición de columnas (sin N.º, TablaBase ya enumera) ---- */
 
   const columnas = [
-    {
-      clave: "numero" as const,
-      titulo: "N.º",
-      alineacion: "centro" as const,
-      ordenable: false,
-    },
     {
       clave: "ci" as const,
       titulo: "C.I.",
@@ -315,9 +300,9 @@ export default function InscritosIndividualesPage() {
     },
   ];
 
-  /* ---- Acciones con iconos (sin texto), como en Áreas/Niveles ---- */
+  /* ---- Acciones con iconos (sin texto) ---- */
 
-  const renderAcciones = (fila: InscritoIndividualRow) => (
+  const renderAcciones = (fila: InscritoIndividualDto) => (
     <div className="flex justify-center gap-2">
       {/* Baja de participación individual */}
       <button
@@ -466,7 +451,7 @@ export default function InscritosIndividualesPage() {
       )
       .join("");
 
-  const ventana = window.open("", "_blank");
+    const ventana = window.open("", "_blank");
     if (!ventana) return;
 
     ventana.document.write(`
@@ -598,7 +583,7 @@ export default function InscritosIndividualesPage() {
           {/* Tabla */}
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <TablaBase
-              datos={inscritosPaginadosConNumero}
+              datos={inscritosPaginados}
               columnas={columnas}
               conOrdenamiento
               onOrdenar={handleOrdenar}
