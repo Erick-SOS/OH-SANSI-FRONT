@@ -7,22 +7,21 @@ import {
   XCircle,
   AlertTriangle,
 } from "lucide-react";
+import InstruccionesImportarCSVModal from "../components/modals/InstruccionesImportarCSV";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import ResultModal from "../components/modals/ResultModal";
 import { API_ROOT } from "../api";
 
-// --- Cabeceras esperadas (mismas que en el backend) ---
+// --- Cabeceras esperadas (idénticas al backend) ---
 const HEADERS_ESPERADOS: readonly string[] = [
-  "TIPO_PART",
-  "AREA_COD",
-  "AREA_NOM",
-  "NIVEL_COD",
-  "NIVEL_NOM",
+  "MODALIDAD",
+  "AREA_NOMBRE",
+  "NIVEL_NOMBRE",
   "OLI_TDOC",
   "OLI_NRODOC",
   "OLI_NOMBRE",
-  "OLI_AP_PAT",
-  "OLI_AP_MAT",
+  "OLI_PRIMER_AP",
+  "OLI_SEGUNDO_AP",
   "OLI_UNID_EDU",
   "OLI_DEPTO",
   "OLI_GRADO",
@@ -32,8 +31,8 @@ const HEADERS_ESPERADOS: readonly string[] = [
   "TUTOR_TDOC",
   "TUTOR_NRODOC",
   "TUTOR_NOMBRE",
-  "TUTOR_AP_PAT",
-  "TUTOR_AP_MAT",
+  "TUTOR_PRIMER_AP",
+  "TUTOR_SEGUNDO_AP",
   "TUTOR_TEL",
   "TUTOR_CORREO",
   "TUTOR_UNID_EDU",
@@ -143,6 +142,7 @@ export default function ImportarInscritosPage() {
     title: "",
     message: "",
   });
+  const [instruccionesVisible, setInstruccionesVisible] = useState(false);
 
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null);
 
@@ -223,9 +223,9 @@ export default function ImportarInscritosPage() {
         body: formData,
       });
 
-      const json = (await res.json().catch(() => null)) as
-        | ImportApiResponse
-        | null;
+      const json = (await res
+        .json()
+        .catch(() => null)) as ImportApiResponse | null;
 
       // Si viene detalle completo de importación, lo mostramos SIEMPRE
       if (tieneDetalleImportacion(json)) {
@@ -331,9 +331,19 @@ export default function ImportarInscritosPage() {
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700 shadow-sm dark:border-blue-900/60 dark:bg-blue-900/20 dark:text-blue-200">
-            <FileSpreadsheet className="h-4 w-4" />
-            <span>Formatos admitidos: XLSX, XLS, CSV</span>
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700 shadow-sm dark:border-blue-900/60 dark:bg-blue-900/20 dark:text-blue-200">
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Formatos admitidos: XLSX, XLS, CSV</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setInstruccionesVisible(true)}
+              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+            >
+              Ver instrucciones / plantilla
+            </button>
           </div>
         </header>
 
@@ -611,9 +621,7 @@ export default function ImportarInscritosPage() {
                         key={`${e.fila}-${idx}`}
                         className="rounded-md bg-red-100/90 px-2 py-1 text-red-900 dark:bg-red-900/40 dark:text-red-100"
                       >
-                        <span className="font-semibold">
-                          Fila(s) {e.fila}:
-                        </span>{" "}
+                        <span className="font-semibold">Fila(s) {e.fila}:</span>{" "}
                         {e.mensaje}
                       </div>
                     ))}
@@ -668,6 +676,10 @@ export default function ImportarInscritosPage() {
         title={resultModal.title}
         message={resultModal.message}
         onClose={closeResultModal}
+      />
+      <InstruccionesImportarCSVModal
+        visible={instruccionesVisible}
+        onClose={() => setInstruccionesVisible(false)}
       />
     </div>
   );
