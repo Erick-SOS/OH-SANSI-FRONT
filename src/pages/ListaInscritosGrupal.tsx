@@ -1,569 +1,863 @@
-// src/pages/ListaInscritosGrupal.tsx
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/InscritosGrupales.tsx
+import { useEffect, useMemo, useState } from "react";
+import { Eye, Trash2, FileDown, FileText } from "lucide-react";
+import TablaBase from "../components/tables/TablaBase";
+import Paginacion from "../components/ui/Paginacion";
+import BarraBusquedaAreas from "../components/tables/BarraBusqueda";
+import ConfirmModal from "../components/modals/ConfirmModal";
+import ResultModal from "../components/modals/ResultModal";
+import { api } from "../api";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://back-oh-sansi.vercel.app";
+export interface IntegranteGrupoDto {
+  idOlimpista: number;
+  ci: string;
+  nombreCompleto: string;
+  rol: "LIDER" | "PARTICIPANTE";
+}
 
-type TeamRow = {
+export interface InscritoGrupalDto {
   idParticipacion: number;
-  idEquipo: number;
-  nombreEquipo: string;
-  unidadEducativa: string;
+  idGrupo: number;
+  nombreGrupo: string;
+  unidadEducativa: string | null;
+  departamento: string | null;
   area: string;
   nivel: string;
-  departamento: string;
+  integrantes: IntegranteGrupoDto[];
+}
+
+type InscritoGrupalRow = InscritoGrupalDto & {
+  numero: number;
+  cantidadIntegrantes: number;
 };
 
-type SortKey = keyof Pick<
-  TeamRow,
-  "nombreEquipo" | "unidadEducativa" | "area" | "nivel" | "departamento"
->;
+const REGISTROS_PAGINA = 10;
+type ConfirmMode = "bajaGrupo" | "removerIntegrante";
 
-type BackendInscritoEquipo = {
-  idParticipacion: number;
-  modalidad: "INDIVIDUAL" | "EQUIPO";
-  estado: "CLASIFICADO" | "NO_CLASIFICADO" | "DESCALIFICADO";
-  area: { id: number; nombre: string };
-  nivel: { id: number; nombre: string };
-  equipo: {
-    id: number;
-    nombre: string;
-    unidadEducativa?: string | null;
-    departamento?: string | null;
-  } | null;
-};
+export default function InscritosGrupalesPage() {
+  const [grupos, setGrupos] = useState<InscritoGrupalDto[]>([]);
+  const [loadingListado, setLoadingListado] = useState(false);
 
-type BackendListResponse = {
-  ok?: boolean;
-  total: number;
-  page: number;
-  pageSize: number;
-  data: BackendInscritoEquipo[];
-};
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroArea, setFiltroArea] = useState<string>("TODAS");
+  const [filtroNivel, setFiltroNivel] = useState<string>("TODOS");
+  const [pagina, setPagina] = useState(1);
+  const [, setOrdenColumna] = useState<string | null>(null);
+  const [, setOrdenDireccion] = useState<"asc" | "desc">("asc");
 
-type Miembro = {
-  idOlimpista: number;
-  nombreCompleto: string;
-  unidadEducativa: string;
-  departamento: string;
-  rolEnEquipo: string;
-};
+  // Modal de integrantes
+  const [integrantesVisible, setIntegrantesVisible] = useState(false);
+  const [grupoSeleccionado, setGrupoSeleccionado] =
+    useState<InscritoGrupalDto | null>(null);
 
-const ListaInscritosGrupal: React.FC = () => {
-  // ---------- STATE PRINCIPAL ----------
-  const [rows, setRows] = useState<TeamRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const pageSize = 7;
+  // Confirmaciones
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<ConfirmMode>("bajaGrupo");
+  const [confirmGrupoId, setConfirmGrupoId] = useState<number | null>(null);
+  const [confirmOlimpistaId, setConfirmOlimpistaId] = useState<number | null>(
+    null
+  );
+  const [confirmNombre, setConfirmNombre] = useState<string>("");
+  const [processingConfirm, setProcessingConfirm] = useState(false);
 
-  const [q, setQ] = useState("");
-  const [sortBy, setSortBy] = useState<SortKey>("nombreEquipo");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Modal de resultado
+  const [resultModal, setResultModal] = useState<{
+    visible: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
-  // ---------- STATE PARA MIEMBROS ----------
-  const [openMiembros, setOpenMiembros] = useState(false);
-  const [equipoSeleccionado, setEquipoSeleccionado] = useState<{
-    id: number;
-    nombre: string;
-  } | null>(null);
-  const [miembros, setMiembros] = useState<Miembro[]>([]);
-  const [loadingMiembros, setLoadingMiembros] = useState(false);
-  const [errorMiembros, setErrorMiembros] = useState<string | null>(null);
+  const showResult = (
+    type: "success" | "error",
+    title: string,
+    message: string
+  ) => {
+    setResultModal({ visible: true, type, title, message });
+  };
 
-  // ---------- CARGAR LISTA DESDE BACK ----------
+  const closeResult = () =>
+    setResultModal((prev) => ({ ...prev, visible: false }));
+
+  /* ---- Cargar grupos desde el backend ---- */
+
+  const cargarGrupos = async () => {
+    setLoadingListado(true);
+    try {
+      const res = (await api(
+        "/inscritos/grupales"
+      )) as unknown as { ok: boolean; data: InscritoGrupalDto[] };
+
+      const data = Array.isArray((res as any).data)
+        ? (res as any).data
+        : (res as any);
+
+      setGrupos(data as InscritoGrupalDto[]);
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "No se pudieron cargar los inscritos grupales.";
+      showResult("error", "Error al cargar", msg);
+    } finally {
+      setLoadingListado(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchEquipos = async () => {
-      try {
-        setLoading(true);
-        setErrorMsg(null);
+    void cargarGrupos();
+  }, []);
 
-        const params = new URLSearchParams();
-        params.set("tipo", "EQUIPO");
-        params.set("page", String(page));
-        params.set("pageSize", String(pageSize));
-        if (q.trim()) params.set("search", q.trim());
+  /* ---- Opciones de filtros (áreas / niveles) ---- */
 
-        const res = await fetch(
-          `${API_URL}/api/inscritos?${params.toString()}`
+  const areasDisponibles = useMemo(
+    () => Array.from(new Set(grupos.map((g) => g.area))).sort(),
+    [grupos]
+  );
+
+  const nivelesDisponibles = useMemo(
+    () => Array.from(new Set(grupos.map((g) => g.nivel))).sort(),
+    [grupos]
+  );
+
+  /* ---- Filtros + búsqueda ---- */
+
+  const gruposFiltrados = useMemo(() => {
+    let lista = [...grupos];
+
+    if (filtroArea !== "TODAS") {
+      lista = lista.filter((g) => g.area === filtroArea);
+    }
+
+    if (filtroNivel !== "TODOS") {
+      lista = lista.filter((g) => g.nivel === filtroNivel);
+    }
+
+    if (busqueda.trim()) {
+      const term = busqueda.toLowerCase();
+      lista = lista.filter((g) => {
+        const nombreGrupo = g.nombreGrupo?.toLowerCase() ?? "";
+        const ue = g.unidadEducativa?.toLowerCase() ?? "";
+        const dep = g.departamento?.toLowerCase() ?? "";
+        const area = g.area?.toLowerCase() ?? "";
+        const nivel = g.nivel?.toLowerCase() ?? "";
+        const integrantesTexto = g.integrantes
+          .map(
+            (i) =>
+              `${i.ci ?? ""} ${i.nombreCompleto ?? ""}`.toLowerCase().trim()
+          )
+          .join(" ");
+        return (
+          nombreGrupo.includes(term) ||
+          ue.includes(term) ||
+          dep.includes(term) ||
+          area.includes(term) ||
+          nivel.includes(term) ||
+          integrantesTexto.includes(term)
         );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      });
+    }
 
-        const json: BackendListResponse = await res.json();
-        setTotal(json.total);
+    return lista;
+  }, [grupos, filtroArea, filtroNivel, busqueda]);
 
-        const mapped: TeamRow[] = json.data
-          .filter((i) => i.equipo) // sólo los que tienen equipo
-          .map((i) => ({
-            idParticipacion: i.idParticipacion,
-            idEquipo: i.equipo!.id,
-            nombreEquipo: i.equipo!.nombre,
-            unidadEducativa: i.equipo!.unidadEducativa ?? "-",
-            area: i.area.nombre,
-            nivel: i.nivel.nombre,
-            departamento: i.equipo!.departamento ?? "-",
-          }));
+  /* ---- Paginación + numeración ---- */
 
-        setRows(mapped);
-      } catch (err) {
-        console.error("Error cargando equipos inscritos", err);
-        setErrorMsg("No se pudieron cargar los equipos inscritos.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEquipos();
-  }, [page, q]);
-
-  // ---------- BUSCADOR ----------
-  const filtrados = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return rows;
-
-    return rows.filter((r) =>
-      [r.nombreEquipo, r.unidadEducativa, r.area, r.nivel, r.departamento]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(term))
+  const gruposPaginadosConNumero: InscritoGrupalRow[] = useMemo(() => {
+    const inicio = (pagina - 1) * REGISTROS_PAGINA;
+    return gruposFiltrados.slice(inicio, inicio + REGISTROS_PAGINA).map(
+      (g, idx) =>
+        ({
+          ...g,
+          numero: inicio + idx + 1,
+          cantidadIntegrantes: g.integrantes.length,
+        } satisfies InscritoGrupalRow)
     );
-  }, [rows, q]);
+  }, [gruposFiltrados, pagina]);
 
-  // ---------- ORDENAMIENTO ----------
-  const ordenados = useMemo(() => {
-    const copy = [...filtrados];
-    copy.sort((a, b) => {
-      const va = a[sortBy] ?? "";
-      const vb = b[sortBy] ?? "";
-      const A = String(va).toLowerCase();
-      const B = String(vb).toLowerCase();
-      if (A < B) return sortDir === "asc" ? -1 : 1;
-      if (A > B) return sortDir === "asc" ? 1 : -1;
-      return 0;
+  /* ---- Ordenamiento ---- */
+
+  const handleOrdenar = (columna: string, direccion: "asc" | "desc") => {
+    setOrdenColumna(columna);
+    setOrdenDireccion(direccion);
+    setGrupos((prev) => {
+      const copia = [...prev];
+      copia.sort((a, b) => {
+        const valA = (a as any)[columna];
+        const valB = (b as any)[columna];
+
+        if (typeof valA === "string" && typeof valB === "string") {
+          return direccion === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+
+        if (typeof valA === "number" && typeof valB === "number") {
+          return direccion === "asc" ? valA - valB : valB - valA;
+        }
+
+        return 0;
+      });
+      return copia;
     });
-    return copy;
-  }, [filtrados, sortBy, sortDir]);
+  };
 
-  // ---------- PAGINACIÓN ----------
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const startIndex = (currentPage - 1) * pageSize;
-  const pageRows = ordenados.slice(startIndex, startIndex + pageSize);
-  const startLabel = total === 0 ? 0 : startIndex + 1;
-  const endLabel = startIndex + pageRows.length;
+  /* ---- Modal de integrantes ---- */
 
-  const toggleSort = (key: SortKey) => {
-    if (sortBy === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(key);
-      setSortDir("asc");
+  const abrirModalIntegrantes = (grupo: InscritoGrupalDto) => {
+    setGrupoSeleccionado(grupo);
+    setIntegrantesVisible(true);
+  };
+
+  const cerrarModalIntegrantes = () => {
+    setIntegrantesVisible(false);
+    setGrupoSeleccionado(null);
+  };
+
+  /* ---- Confirmaciones (baja grupo / remover integrante) ---- */
+
+  const abrirConfirmacionBajaGrupo = (grupo: InscritoGrupalDto) => {
+    setConfirmMode("bajaGrupo");
+    setConfirmGrupoId(grupo.idGrupo);
+    setConfirmOlimpistaId(null);
+    setConfirmNombre(grupo.nombreGrupo);
+    setConfirmVisible(true);
+  };
+
+  const abrirConfirmacionRemoverIntegrante = (
+    grupoId: number,
+    olimpistaId: number,
+    nombre: string
+  ) => {
+    setConfirmMode("removerIntegrante");
+    setConfirmGrupoId(grupoId);
+    setConfirmOlimpistaId(olimpistaId);
+    setConfirmNombre(nombre);
+    setConfirmVisible(true);
+  };
+
+  const ejecutarAccionConfirmada = async () => {
+    if (!confirmGrupoId) return;
+
+    setProcessingConfirm(true);
+    try {
+      if (confirmMode === "bajaGrupo") {
+        const res = (await api(
+          `/inscritos/grupales/grupo/${confirmGrupoId}/baja-participacion`,
+          { method: "PATCH" }
+        )) as { ok: boolean; message?: string; affected?: number };
+
+        showResult(
+          "success",
+          "Participación grupal actualizada",
+          res.message ||
+            "La participación grupal del equipo se actualizó correctamente."
+        );
+      } else if (confirmMode === "removerIntegrante" && confirmOlimpistaId) {
+        const res = (await api(
+          `/inscritos/grupales/grupo/${confirmGrupoId}/integrante/${confirmOlimpistaId}`,
+          { method: "DELETE" }
+        )) as { ok: boolean; message?: string };
+
+        showResult(
+          "success",
+          "Integrante removido",
+          res.message || "El integrante fue removido del grupo correctamente."
+        );
+      }
+
+      await cargarGrupos();
+      // Cerrar modal de integrantes después de una acción
+      cerrarModalIntegrantes();
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "No se pudo completar la operación solicitada.";
+      showResult("error", "Error en la operación", msg);
+    } finally {
+      setProcessingConfirm(false);
+      setConfirmVisible(false);
+      setConfirmGrupoId(null);
+      setConfirmOlimpistaId(null);
+      setConfirmNombre("");
     }
   };
 
-  const renderSortIcon = (key: SortKey) => {
-    if (sortBy !== key) {
-      return (
-        <span className="ml-1 text-[10px] text-gray-400 select-none">↑↓</span>
-      );
-    }
-    return (
-      <span className="ml-1 text-[10px] text-brand-500 select-none">
-        {sortDir === "asc" ? "↑" : "↓"}
-      </span>
-    );
-  };
+  /* ---- Definición de columnas (sin IDs, solo numeración) ---- */
 
-  // ---------- EXPORTAR ----------
-  const exportToExcel = () => {
-    const headers = [
-      "N°",
-      "Nombre de Equipo",
-      "Unidad Educativa",
-      "Área de Competencia",
-      "Nivel",
-      "Departamento",
-    ];
-    const body = ordenados.map((r, idx) => [
-      idx + 1,
-      r.nombreEquipo,
-      r.unidadEducativa,
-      r.area,
-      r.nivel,
-      r.departamento,
-    ]);
+  const columnas = [
+    {
+      clave: "numero" as const,
+      titulo: "N.º",
+      alineacion: "centro" as const,
+      ordenable: false,
+    },
+    {
+      clave: "nombreGrupo" as const,
+      titulo: "Nombre del grupo",
+      alineacion: "izquierda" as const,
+      ordenable: true,
+    },
+    {
+      clave: "unidadEducativa" as const,
+      titulo: "Unidad educativa",
+      alineacion: "izquierda" as const,
+      ordenable: true,
+    },
+    {
+      clave: "departamento" as const,
+      titulo: "Departamento",
+      alineacion: "centro" as const,
+      ordenable: true,
+    },
+    {
+      clave: "area" as const,
+      titulo: "Área",
+      alineacion: "centro" as const,
+      ordenable: true,
+    },
+    {
+      clave: "nivel" as const,
+      titulo: "Nivel",
+      alineacion: "centro" as const,
+      ordenable: true,
+    },
+    {
+      clave: "cantidadIntegrantes" as const,
+      titulo: "Integrantes",
+      alineacion: "centro" as const,
+      ordenable: true,
+      formatearCelda: (valor: number) => (
+        <span className="inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900/50 dark:text-slate-200">
+          {valor} integrante{valor === 1 ? "" : "s"}
+        </span>
+      ),
+    },
+  ];
 
-    const csv = [headers, ...body]
-      .map((row) =>
-        row
-          .map((cell) => {
-            const s = String(cell ?? "");
-            return s.includes(",") || s.includes('"') || s.includes("\n")
-              ? `"${s.replace(/"/g, '""')}"`
-              : s;
+  /* ---- Acciones con íconos ---- */
+
+  const renderAcciones = (fila: InscritoGrupalRow) => (
+    <div className="flex justify-center gap-2">
+      {/* Ver integrantes (modal) */}
+      <button
+        type="button"
+        onClick={() =>
+          abrirModalIntegrantes({
+            idParticipacion: fila.idParticipacion,
+            idGrupo: fila.idGrupo,
+            nombreGrupo: fila.nombreGrupo,
+            unidadEducativa: fila.unidadEducativa,
+            departamento: fila.departamento,
+            area: fila.area,
+            nivel: fila.nivel,
+            integrantes: fila.integrantes,
           })
-          .join(",")
-      )
-      .join("\n");
+        }
+        className="inline-flex items-center justify-center rounded-full border border-transparent bg-blue-50 p-1.5 text-blue-600 shadow-sm transition hover:bg-blue-100 hover:text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+        aria-label="Ver integrantes del grupo"
+      >
+        <Eye className="h-4 w-4" />
+      </button>
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      {/* Baja de participación grupal */}
+      <button
+        type="button"
+        onClick={() =>
+          abrirConfirmacionBajaGrupo({
+            idParticipacion: fila.idParticipacion,
+            idGrupo: fila.idGrupo,
+            nombreGrupo: fila.nombreGrupo,
+            unidadEducativa: fila.unidadEducativa,
+            departamento: fila.departamento,
+            area: fila.area,
+            nivel: fila.nivel,
+            integrantes: fila.integrantes,
+          })
+        }
+        className="inline-flex items-center justify-center rounded-full border border-transparent bg-red-50 p-1.5 text-red-600 shadow-sm transition hover:bg-red-100 hover:text-red-700 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+        aria-label="Dar de baja la participación grupal"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+
+  /* ---- Exportar (incluyendo integrantes) ---- */
+
+  const exportarCsv = () => {
+    if (!gruposFiltrados.length) {
+      showResult(
+        "error",
+        "Sin datos para exportar",
+        "No hay registros para exportar con los filtros actuales."
+      );
+      return;
+    }
+
+    const encabezados = [
+      "N.º",
+      "Nombre del grupo",
+      "Unidad educativa",
+      "Departamento",
+      "Área",
+      "Nivel",
+      "C.I. integrante",
+      "Nombre integrante",
+      "Rol",
+    ];
+
+    const filas: (string | number)[][] = [];
+    gruposFiltrados.forEach((g, idxGrupo) => {
+      if (!g.integrantes.length) {
+        filas.push([
+          idxGrupo + 1,
+          g.nombreGrupo,
+          g.unidadEducativa ?? "",
+          g.departamento ?? "",
+          g.area,
+          g.nivel,
+          "",
+          "",
+          "",
+        ]);
+      } else {
+        g.integrantes.forEach((integ) => {
+          filas.push([
+            idxGrupo + 1,
+            g.nombreGrupo,
+            g.unidadEducativa ?? "",
+            g.departamento ?? "",
+            g.area,
+            g.nivel,
+            integ.ci,
+            integ.nombreCompleto,
+            integ.rol === "LIDER" ? "Líder" : "Participante",
+          ]);
+        });
+      }
+    });
+
+    const csvContenido = [
+      encabezados.join(";"),
+      ...filas.map((f) =>
+        f
+          .map((valor) => {
+            const str = String(valor ?? "").replace(/"/g, '""');
+            return `"${str}"`;
+          })
+          .join(";")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContenido], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "equipos_olimpistas.csv";
-    a.click();
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = "inscritos_grupales.csv";
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
     URL.revokeObjectURL(url);
   };
 
-  const exportToPDF = () => {
-    const win = window.open("", "_blank");
-    if (!win) return;
+  const exportarPdf = () => {
+    if (!gruposFiltrados.length) {
+      showResult(
+        "error",
+        "Sin datos para exportar",
+        "No hay registros para exportar con los filtros actuales."
+      );
+      return;
+    }
 
-    win.document.write(`
+    const encabezadoHtml = `
+      <tr>
+        <th style="border:1px solid #ccc;padding:4px;">N.º</th>
+        <th style="border:1px solid #ccc;padding:4px;">Nombre del grupo</th>
+        <th style="border:1px solid #ccc;padding:4px;">Unidad educativa</th>
+        <th style="border:1px solid #ccc;padding:4px;">Departamento</th>
+        <th style="border:1px solid #ccc;padding:4px;">Área</th>
+        <th style="border:1px solid #ccc;padding:4px;">Nivel</th>
+        <th style="border:1px solid #ccc;padding:4px;">C.I. integrante</th>
+        <th style="border:1px solid #ccc;padding:4px;">Nombre integrante</th>
+        <th style="border:1px solid #ccc;padding:4px;">Rol</th>
+      </tr>
+    `;
+
+    const filasHtml = gruposFiltrados
+      .map((g, idxGrupo) => {
+        if (!g.integrantes.length) {
+          return `
+            <tr>
+              <td style="border:1px solid #ccc;padding:4px;text-align:center;">${
+                idxGrupo + 1
+              }</td>
+              <td style="border:1px solid #ccc;padding:4px;">${
+                g.nombreGrupo
+              }</td>
+              <td style="border:1px solid #ccc;padding:4px;">${
+                g.unidadEducativa ?? ""
+              }</td>
+              <td style="border:1px solid #ccc;padding:4px;">${
+                g.departamento ?? ""
+              }</td>
+              <td style="border:1px solid #ccc;padding:4px;">${g.area}</td>
+              <td style="border:1px solid #ccc;padding:4px;">${g.nivel}</td>
+              <td style="border:1px solid #ccc;padding:4px;"></td>
+              <td style="border:1px solid #ccc;padding:4px;"></td>
+              <td style="border:1px solid #ccc;padding:4px;"></td>
+            </tr>
+          `;
+        }
+
+        return g.integrantes
+          .map(
+            (integ) => `
+          <tr>
+            <td style="border:1px solid #ccc;padding:4px;text-align:center;">${
+              idxGrupo + 1
+            }</td>
+            <td style="border:1px solid #ccc;padding:4px;">${
+              g.nombreGrupo
+            }</td>
+            <td style="border:1px solid #ccc;padding:4px;">${
+              g.unidadEducativa ?? ""
+            }</td>
+            <td style="border:1px solid #ccc;padding:4px;">${
+              g.departamento ?? ""
+            }</td>
+            <td style="border:1px solid #ccc;padding:4px;">${g.area}</td>
+            <td style="border:1px solid #ccc;padding:4px;">${g.nivel}</td>
+            <td style="border:1px solid #ccc;padding:4px;">${integ.ci}</td>
+            <td style="border:1px solid #ccc;padding:4px;">${
+              integ.nombreCompleto
+            }</td>
+            <td style="border:1px solid #ccc;padding:4px;">${
+              integ.rol === "LIDER" ? "Líder" : "Participante"
+            }</td>
+          </tr>
+        `
+          )
+          .join("");
+      })
+      .join("");
+
+    const ventana = window.open("", "_blank");
+    if (!ventana) return;
+
+    ventana.document.write(`
       <html>
         <head>
-          <title>Inscritos grupal</title>
+          <title>Inscritos grupales</title>
           <style>
-            body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 24px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th, td { border: 1px solid #ddd; padding: 8px; }
-            th { background: #f3f4f6; text-align: left; }
+            body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
             h1 { font-size: 18px; margin-bottom: 12px; }
+            table { border-collapse: collapse; width: 100%; }
+            th { background: #f3f4f6; }
           </style>
         </head>
         <body>
-          <h1>Inscritos grupal</h1>
+          <h1>Listado de inscritos grupales</h1>
           <table>
-            <thead>
-              <tr>
-                <th>N°</th>
-                <th>Nombre de Equipo</th>
-                <th>Unidad Educativa</th>
-                <th>Área de Competencia</th>
-                <th>Nivel</th>
-                <th>Departamento</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${ordenados
-                .map(
-                  (r, idx) => `
-                <tr>
-                  <td>${idx + 1}</td>
-                  <td>${r.nombreEquipo}</td>
-                  <td>${r.unidadEducativa}</td>
-                  <td>${r.area}</td>
-                  <td>${r.nivel}</td>
-                  <td>${r.departamento}</td>
-                </tr>`
-                )
-                .join("")}
-            </tbody>
+            <thead>${encabezadoHtml}</thead>
+            <tbody>${filasHtml}</tbody>
           </table>
         </body>
       </html>
     `);
-    win.document.close();
-    win.print();
+    ventana.document.close();
+    ventana.focus();
+    ventana.print();
   };
 
-  // ---------- VER MIEMBROS ----------
-  const handleVerMiembros = async (row: TeamRow) => {
-    try {
-      setEquipoSeleccionado({ id: row.idEquipo, nombre: row.nombreEquipo });
-      setOpenMiembros(true);
-      setLoadingMiembros(true);
-      setErrorMiembros(null);
-      setMiembros([]);
+  /* ---- Render ---- */
 
-      const res = await fetch(
-        `${API_URL}/api/equipos/${row.idEquipo}/miembros`
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.message || "Error");
-
-      setMiembros(json.miembros as Miembro[]);
-    } catch (err) {
-      console.error("Error cargando miembros", err);
-      setErrorMiembros("No se pudieron cargar los miembros del equipo.");
-    } finally {
-      setLoadingMiembros(false);
-    }
-  };
-
-  // ---------- RENDER ----------
   return (
-    <div className="space-y-6">
-      {/* Título + botones exportar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Lista de Olimpistas
-          </h1>
-          <nav className="mt-1 text-sm text-gray-500">
-            <span>Inicio</span>
-            <span className="mx-1">›</span>
-            <span className="text-gray-700">Inscritos grupal</span>
-          </nav>
+    <div className="min-h-screen bg-gray-50 p-4 transition-colors dark:bg-gray-950 sm:p-6">
+      <div className="mx-auto w-full max-w-6xl">
+        {/* Header */}
+        <div className="mb-5 flex flex-col gap-3 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
+              Inscritos grupales
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Listado de equipos inscritos en modalidad grupal.
+            </p>
+          </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={exportToExcel}
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-          >
-            <span className="mr-2">⬇️</span>
-            Exportar Excel
-          </button>
-          <button
-            type="button"
-            onClick={exportToPDF}
-            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-          >
-            <span className="mr-2">⬇️</span>
-            Exportar PDF
-          </button>
-        </div>
-      </div>
+        <div className="space-y-4">
+          {/* Filtros + exportación */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="w-full max-w-xs">
+                  <BarraBusquedaAreas
+                    terminoBusqueda={busqueda}
+                    onBuscarChange={(t: string) => {
+                      setBusqueda(t);
+                      setPagina(1);
+                    }}
+                  />
+                </div>
 
-      {/* Buscador */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              🔍
-            </span>
-            <input
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Buscar por nombre de equipo, unidad educativa, área..."
-              className="w-full rounded-xl border border-gray-200 py-2.5 pl-9 pr-3 text-sm text-gray-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Área
+                    </label>
+                    <select
+                      value={filtroArea}
+                      onChange={(e) => {
+                        setFiltroArea(e.target.value);
+                        setPagina(1);
+                      }}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    >
+                      <option value="TODAS">Todas las áreas</option>
+                      {areasDisponibles.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Nivel
+                    </label>
+                    <select
+                      value={filtroNivel}
+                      onChange={(e) => {
+                        setFiltroNivel(e.target.value);
+                        setPagina(1);
+                      }}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    >
+                      <option value="TODOS">Todos los niveles</option>
+                      {nivelesDisponibles.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                <button
+                  type="button"
+                  onClick={exportarCsv}
+                  className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-brand-500 dark:hover:bg-brand-400 dark:focus-visible:ring-offset-gray-950"
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Descargar Excel (CSV)
+                </button>
+                <button
+                  type="button"
+                  onClick={exportarPdf}
+                  className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-950"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Descargar PDF
+                </button>
+              </div>
+            </div>
+            {loadingListado && (
+              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                Cargando inscritos...
+              </p>
+            )}
+          </div>
+
+          {/* Tabla */}
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <TablaBase
+              datos={gruposPaginadosConNumero}
+              columnas={columnas}
+              conOrdenamiento
+              onOrdenar={handleOrdenar}
+              conAcciones
+              renderAcciones={renderAcciones}
+            />
+          </div>
+
+          {/* Paginación */}
+          <div className="flex justify-end">
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={Math.max(
+                1,
+                Math.ceil(gruposFiltrados.length / REGISTROS_PAGINA)
+              )}
+              totalRegistros={gruposFiltrados.length}
+              registrosPorPagina={REGISTROS_PAGINA}
+              onPaginaChange={setPagina}
             />
           </div>
         </div>
-
-        {/* Tabla */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-gray-700">
-            <thead className="bg-gray-50 text-xs font-medium tracking-wide text-gray-500">
-              <tr>
-                <th className="px-6 py-3">N°</th>
-
-                <th
-                  className="cursor-pointer px-6 py-3"
-                  onClick={() => toggleSort("nombreEquipo")}
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Nombre de Equipo</span>
-                    {renderSortIcon("nombreEquipo")}
-                  </div>
-                </th>
-
-                <th
-                  className="cursor-pointer px-6 py-3"
-                  onClick={() => toggleSort("unidadEducativa")}
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Unidad Educativa</span>
-                    {renderSortIcon("unidadEducativa")}
-                  </div>
-                </th>
-
-                <th
-                  className="cursor-pointer px-6 py-3"
-                  onClick={() => toggleSort("area")}
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Área de Competencia</span>
-                    {renderSortIcon("area")}
-                  </div>
-                </th>
-
-                <th
-                  className="cursor-pointer px-6 py-3"
-                  onClick={() => toggleSort("nivel")}
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Nivel</span>
-                    {renderSortIcon("nivel")}
-                  </div>
-                </th>
-
-                <th
-                  className="cursor-pointer px-6 py-3"
-                  onClick={() => toggleSort("departamento")}
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Departamento</span>
-                    {renderSortIcon("departamento")}
-                  </div>
-                </th>
-
-                <th className="px-6 py-3 text-right">Acción</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    Cargando equipos...
-                  </td>
-                </tr>
-              )}
-
-              {!loading && errorMsg && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-red-600">
-                    {errorMsg}
-                  </td>
-                </tr>
-              )}
-
-              {!loading && !errorMsg && pageRows.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    No hay resultados.
-                  </td>
-                </tr>
-              )}
-
-              {!loading &&
-                !errorMsg &&
-                pageRows.map((row, idx) => (
-                  <tr
-                    key={row.idParticipacion}
-                    className="border-t border-gray-100 last:border-b"
-                  >
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {startIndex + idx + 1}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {row.nombreEquipo}
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">
-                      {row.unidadEducativa}
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">{row.area}</td>
-                    <td className="px-6 py-4 text-gray-700">{row.nivel}</td>
-                    <td className="px-6 py-4 text-gray-700">
-                      {row.departamento}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        className="text-sm font-medium text-brand-500 hover:underline"
-                        onClick={() => handleVerMiembros(row)}
-                      >
-                        Ver miembros
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer paginación */}
-        <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 text-sm text-gray-600">
-          <span>
-            Mostrando {startLabel} a {endLabel} de {total}
-          </span>
-
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-sm disabled:opacity-40"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              ‹
-            </button>
-            <span className="mx-1 rounded-lg bg-brand-500 px-3 py-1 text-sm font-medium text-white">
-              {currentPage}
-            </span>
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-sm disabled:opacity-40"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              ›
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* MODAL MIEMBROS */}
-      {openMiembros && equipoSeleccionado && (
+      {/* Modal integrantes */}
+      {integrantesVisible && grupoSeleccionado && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-          onClick={() => setOpenMiembros(false)}
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          aria-modal="true"
+          role="dialog"
         >
-          <div
-            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Miembros de {equipoSeleccionado.nombre}
-              </h2>
-              <button
-                className="text-sm text-gray-500 hover:text-gray-800"
-                onClick={() => setOpenMiembros(false)}
-              >
-                ✕
-              </button>
+          <div className="w-full max-w-2xl rounded-2xl border border-gray-100 bg-white p-5 shadow-xl ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800 sm:p-6">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
+                  Integrantes del grupo
+                </h2>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Grupo:{" "}
+                  <span className="font-semibold">
+                    {grupoSeleccionado.nombreGrupo}
+                  </span>
+                  {grupoSeleccionado.unidadEducativa && (
+                    <>
+                      {" "}
+                      · Unidad educativa:{" "}
+                      <span className="font-semibold">
+                        {grupoSeleccionado.unidadEducativa}
+                      </span>
+                    </>
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-500">
+                  Área: {grupoSeleccionado.area} · Nivel:{" "}
+                  {grupoSeleccionado.nivel}
+                </p>
+              </div>
             </div>
 
-            {loadingMiembros && (
-              <p className="text-sm text-gray-500">Cargando miembros...</p>
-            )}
-
-            {errorMiembros && (
-              <p className="text-sm text-red-600">{errorMiembros}</p>
-            )}
-
-            {!loadingMiembros && !errorMiembros && miembros.length === 0 && (
-              <p className="text-sm text-gray-500">
-                Este equipo no tiene miembros registrados.
-              </p>
-            )}
-
-            {!loadingMiembros && miembros.length > 0 && (
-              <table className="mt-2 w-full text-left text-sm text-gray-700">
-                <thead>
-                  <tr className="border-b text-xs text-gray-500">
-                    <th className="py-1 pr-2">N°</th>
-                    <th className="py-1 pr-2">Nombre</th>
-                    <th className="py-1 pr-2">Unidad Educativa</th>
-                    <th className="py-1 pr-2">Departamento</th>
-                    <th className="py-1 pr-2">Rol</th>
+            <div className="max-h-80 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/60 dark:border-gray-800 dark:bg-gray-950/40">
+              <table className="min-w-full text-left text-xs sm:text-sm">
+                <thead className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  <tr>
+                    <th className="px-3 py-2 text-center">N.º</th>
+                    <th className="px-3 py-2 text-center">C.I.</th>
+                    <th className="px-3 py-2">Nombre completo</th>
+                    <th className="px-3 py-2 text-center">Rol</th>
+                    <th className="px-3 py-2 text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {miembros.map((m, idx) => (
-                    <tr key={m.idOlimpista} className="border-b last:border-0">
-                      <td className="py-1 pr-2 text-gray-500">{idx + 1}</td>
-                      <td className="py-1 pr-2">{m.nombreCompleto}</td>
-                      <td className="py-1 pr-2">{m.unidadEducativa}</td>
-                      <td className="py-1 pr-2">{m.departamento}</td>
-                      <td className="py-1 pr-2">{m.rolEnEquipo}</td>
+                  {grupoSeleccionado.integrantes.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400"
+                      >
+                        No se registran integrantes activos en este grupo.
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    grupoSeleccionado.integrantes.map((integ, idx) => (
+                      <tr
+                        key={`${integ.idOlimpista}-${idx}`}
+                        className="border-t border-gray-200 bg-white text-gray-800 last:border-b dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                      >
+                        <td className="px-3 py-2 text-center align-middle">
+                          {idx + 1}
+                        </td>
+                        <td className="px-3 py-2 text-center align-middle">
+                          {integ.ci}
+                        </td>
+                        <td className="px-3 py-2 align-middle">
+                          {integ.nombreCompleto}
+                        </td>
+                        <td className="px-3 py-2 text-center align-middle">
+                          <span className="inline-flex rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
+                            {integ.rol === "LIDER" ? "Líder" : "Participante"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-center align-middle">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              abrirConfirmacionRemoverIntegrante(
+                                grupoSeleccionado.idGrupo,
+                                integ.idOlimpista,
+                                integ.nombreCompleto
+                              )
+                            }
+                            className="inline-flex items-center justify-center rounded-full border border-transparent bg-red-50 p-1.5 text-red-600 shadow-sm transition hover:bg-red-100 hover:text-red-700 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                            aria-label="Remover integrante del grupo"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
-            )}
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={cerrarModalIntegrantes}
+                className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-900 sm:w-auto"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Modal confirmar acción */}
+      <ConfirmModal
+        visible={confirmVisible}
+        title={
+          confirmMode === "bajaGrupo"
+            ? "Dar de baja participación grupal"
+            : "Remover integrante del grupo"
+        }
+        message={
+          confirmMode === "bajaGrupo"
+            ? `Se dará de baja la participación grupal del equipo "${confirmNombre}" en las categorías activas. ¿Deseas continuar?`
+            : `Se removerá al integrante "${confirmNombre}" del grupo. Esta acción no se puede deshacer. ¿Deseas continuar?`
+        }
+        onCancel={() => {
+          if (!processingConfirm) {
+            setConfirmVisible(false);
+            setConfirmGrupoId(null);
+            setConfirmOlimpistaId(null);
+            setConfirmNombre("");
+          }
+        }}
+        onConfirm={ejecutarAccionConfirmada}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={confirmMode === "removerIntegrante"}
+        loading={processingConfirm}
+      />
+
+      {/* Modal de resultado */}
+      <ResultModal
+        visible={resultModal.visible}
+        type={resultModal.type}
+        title={resultModal.title}
+        message={resultModal.message}
+        onClose={closeResult}
+      />
     </div>
   );
-};
-
-export default ListaInscritosGrupal;
+}
