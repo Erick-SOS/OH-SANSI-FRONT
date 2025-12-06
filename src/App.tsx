@@ -40,7 +40,7 @@ import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
 import Reglamento from "./pages/PublicInfo/Reglamento";
 import ConsultaDePremiados from "./pages/ConsultaDePremiados";
 
-import ListaInscritosIndividual from "./pages/ListaInscritosIndividual";
+import InscritosIndividual from "./pages/InscritosIndividual";
 import ListaInscritosGrupal from "./pages/ListaInscritosGrupal";
 
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
@@ -108,7 +108,7 @@ export default function App() {
               <Route path="/inscripciones-csv" element={<Inscripciones />} />
               <Route
                 path="/lista-de-inscritos"
-                element={<ListaInscritosIndividual />}
+                element={<InscritosIndividual />}
               />
               <Route
                 path="/lista-de-inscritos-grupal"
