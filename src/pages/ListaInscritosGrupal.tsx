@@ -27,7 +27,6 @@ export interface InscritoGrupalDto {
 }
 
 type InscritoGrupalRow = InscritoGrupalDto & {
-  numero: number;
   cantidadIntegrantes: number;
 };
 
@@ -166,15 +165,14 @@ export default function InscritosGrupalesPage() {
     return lista;
   }, [grupos, filtroArea, filtroNivel, busqueda]);
 
-  /* ---- Paginación + numeración ---- */
+  /* ---- Paginación ---- */
 
-  const gruposPaginadosConNumero: InscritoGrupalRow[] = useMemo(() => {
+  const gruposPaginadosConCantidad: InscritoGrupalRow[] = useMemo(() => {
     const inicio = (pagina - 1) * REGISTROS_PAGINA;
     return gruposFiltrados.slice(inicio, inicio + REGISTROS_PAGINA).map(
-      (g, idx) =>
+      (g) =>
         ({
           ...g,
-          numero: inicio + idx + 1,
           cantidadIntegrantes: g.integrantes.length,
         } satisfies InscritoGrupalRow)
     );
@@ -272,7 +270,6 @@ export default function InscritosGrupalesPage() {
       }
 
       await cargarGrupos();
-      // Cerrar modal de integrantes después de una acción
       cerrarModalIntegrantes();
     } catch (err) {
       const msg =
@@ -289,15 +286,9 @@ export default function InscritosGrupalesPage() {
     }
   };
 
-  /* ---- Definición de columnas (sin IDs, solo numeración) ---- */
+  /* ---- Definición de columnas (sin N.º, TablaBase ya enumera) ---- */
 
   const columnas = [
-    {
-      clave: "numero" as const,
-      titulo: "N.º",
-      alineacion: "centro" as const,
-      ordenable: false,
-    },
     {
       clave: "nombreGrupo" as const,
       titulo: "Nombre del grupo",
@@ -685,7 +676,7 @@ export default function InscritosGrupalesPage() {
           {/* Tabla */}
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <TablaBase
-              datos={gruposPaginadosConNumero}
+              datos={gruposPaginadosConCantidad}
               columnas={columnas}
               conOrdenamiento
               onOrdenar={handleOrdenar}
