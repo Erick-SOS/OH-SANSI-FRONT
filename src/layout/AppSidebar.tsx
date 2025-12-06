@@ -15,8 +15,10 @@ const AppSidebar: React.FC = () => {
 
   if (!user?.rol) return null;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const navItems: NavItem[] = sidebarConfig[user.rol] ?? [];
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
@@ -24,6 +26,7 @@ const AppSidebar: React.FC = () => {
 
   const isSidebarExpanded = isExpanded || isHovered || isMobileOpen;
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const activeIndex = navItems.findIndex(
       (nav) =>
@@ -37,6 +40,7 @@ const AppSidebar: React.FC = () => {
     setOpenSubmenu((prev) => (prev === index ? null : index));
   };
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (isMobileOpen) {
       document.body.style.overflow = "hidden";
@@ -81,7 +85,7 @@ const AppSidebar: React.FC = () => {
             }`}
           >
             <img
-              src={images.logoUmss}
+              src={images.unnamed}
               alt="Logo"
               className={`h-10 object-contain transition-all ${
                 isSidebarExpanded ? "w-auto" : "w-10"

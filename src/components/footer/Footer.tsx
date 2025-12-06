@@ -6,59 +6,45 @@ const Footer = () => {
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Columna 1 */}
-          <div>
-            <div className="flex items-center space-x-2 mb-4">
+          
+          {/* COLUMNA 1 - LOGO Y TEXTO CENTRADOS */}
+          <div className="flex flex-col items-center text-center">
+            {/* Logo que cambia según el modo */}
+            <div className="mb-6">
+              {/* Logo modo claro (azul) */}
               <img
-                src={images.logoUmss}
+                src={images.unnamed}
                 alt="Logo Oh! SanSí"
-                className="h-30 w-90 object-contain"
+                className="h-30 w-auto object-contain block dark:hidden"
+              />
+              {/* Logo modo oscuro (blanco) */}
+              <img
+                src={images.unnamed2}
+                alt="Logo Oh! SanSí"
+                className="h-30 w-auto object-contain hidden dark:block"
               />
             </div>
-            <p className="text-gray-400 text-sm">
-              Olimpiada en Ciencias y Tecnología San Simón, un espacio para el
-              desarrollo del talento juvenil en Bolivia.
+
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Olimpiada en Ciencias y Tecnología San Simón, 
+              un espacio para el desarrollo del talento juvenil en Bolivia.
             </p>
           </div>
 
-          {/* Columna 2 - Enlaces Rápidos (coherentes con Header) */}
+          {/* COLUMNA 2 - ENLACES RÁPIDOS */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Enlaces Rápidos</h3>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link to="/" className="hover:text-blue-400 transition">
-                  Inicio
-                </Link>
-              </li>
-              <li>
-                <Link to="/sobre-el-proyecto" className="hover:text-blue-400 transition">
-                  Sobre el Proyecto
-                </Link>
-              </li>
-              <li>
-                <Link to="/areas-publicas" className="hover:text-blue-400 transition">
-                  Áreas
-                </Link>
-              </li>
-              <li>
-                <Link to="/resultados-de-calificaciones" className="hover:text-blue-400 transition">
-                  Consultar Resultados
-                </Link>
-              </li>
-              <li>
-                <Link to="/fases-evaluacion-publica" className="hover:text-blue-400 transition">
-                  Fases de Evaluación
-                </Link>
-              </li>
-              <li>
-                <Link to="/reglamento" className="hover:text-blue-400 transition">
-                  Reglamento
-                </Link>
-              </li>
+              <li><Link to="/" className="hover:text-blue-400 transition">Inicio</Link></li>
+              <li><Link to="/sobre-el-proyecto" className="hover:text-blue-400 transition">Sobre el Proyecto</Link></li>
+              <li><Link to="/areas-publicas" className="hover:text-blue-400 transition">Áreas</Link></li>
+              <li><Link to="/resultados-de-calificaciones" className="hover:text-blue-400 transition">Consultar Resultados</Link></li>
+              <li><Link to="/fases-evaluacion-publica" className="hover:text-blue-400 transition">Fases de Evaluación</Link></li>
+              <li><Link to="/reglamento" className="hover:text-blue-400 transition">Reglamento</Link></li>
             </ul>
           </div>
 
-          {/* Columna 3 */}
+          {/* COLUMNA 3 - CONTACTO */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Contacto</h3>
             <ul className="space-y-2 text-sm text-gray-400">
@@ -76,6 +62,7 @@ const Footer = () => {
               </li>
             </ul>
           </div>
+
         </div>
 
         <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
