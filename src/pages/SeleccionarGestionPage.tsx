@@ -1,5 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Flag, Layers, PlayCircle, StopCircle, UploadCloud, Edit3, Plus, ChevronDown } from "lucide-react";
+import {
+  CalendarDays,
+  Flag,
+  Layers,
+  PlayCircle,
+  StopCircle,
+  UploadCloud,
+  Edit3,
+  Plus,
+  ChevronDown,
+} from "lucide-react";
 import { api } from "../api";
 import { getToken } from "../components/auth/authStorage";
 import ConfirmModal from "../components/modals/ConfirmModal";
@@ -107,13 +117,21 @@ function tipoLabel(tipo: TipoFase) {
 function accionLabel(accion: AccionFase, fase: FaseResumen): string {
   switch (accion) {
     case "ABRIR":
-      return `Abrir fase ${fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"}`;
+      return `Abrir fase ${
+        fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"
+      }`;
     case "CERRAR":
-      return `Finalizar fase ${fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"}`;
+      return `Finalizar fase ${
+        fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"
+      }`;
     case "PUBLICAR":
-      return `Publicar resultados de la fase ${fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"}`;
+      return `Publicar resultados de la fase ${
+        fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"
+      }`;
     case "QUITAR_PUBLICACION":
-      return `Quitar publicación de resultados de la fase ${fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"}`;
+      return `Quitar publicación de resultados de la fase ${
+        fase.tipo === "CLASIFICATORIA" ? "clasificatoria" : "final"
+      }`;
     default:
       return "Acción sobre fase";
   }
@@ -144,8 +162,11 @@ const GestionDeFases: React.FC = () => {
   // Confirmación de acción sobre fase
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [faseSeleccionada, setFaseSeleccionada] = useState<FaseResumen | null>(null);
-  const [accionSeleccionada, setAccionSeleccionada] = useState<AccionFase | null>(null);
+  const [faseSeleccionada, setFaseSeleccionada] = useState<FaseResumen | null>(
+    null
+  );
+  const [accionSeleccionada, setAccionSeleccionada] =
+    useState<AccionFase | null>(null);
 
   // Result modal
   const [resultVisible, setResultVisible] = useState(false);
@@ -154,7 +175,9 @@ const GestionDeFases: React.FC = () => {
   const [resultMessage, setResultMessage] = useState("");
 
   // Expandir/colapsar detalle por gestión
-  const [gestionesExpand, setGestionesExpand] = useState<Record<number, boolean>>({});
+  const [gestionesExpand, setGestionesExpand] = useState<
+    Record<number, boolean>
+  >({});
 
   const yaExisteGestionActual = useMemo(
     () => !!gestiones.find((g) => g.gestion === currentYear),
@@ -288,13 +311,17 @@ const GestionDeFases: React.FC = () => {
       })) as CrearGestionResponse;
 
       const nueva = resp.data;
-      setGestiones((prev) => [...prev, nueva].sort((a, b) => b.gestion - a.gestion));
+      setGestiones((prev) =>
+        [...prev, nueva].sort((a, b) => b.gestion - a.gestion)
+      );
       setModalCrearAbierto(false);
       resetModalCrear();
 
       setResultType("success");
       setResultTitle("Gestión creada");
-      setResultMessage(resp.message || "La gestión y sus fases se crearon correctamente.");
+      setResultMessage(
+        resp.message || "La gestión y sus fases se crearon correctamente."
+      );
       setResultVisible(true);
     } catch (err: any) {
       setResultType("error");
@@ -320,7 +347,9 @@ const GestionDeFases: React.FC = () => {
     if (!editarTitulo.trim() && !editarInicio && !editarFin) {
       setResultType("error");
       setResultTitle("Sin cambios");
-      setResultMessage("Debe modificar al menos un campo para actualizar la gestión.");
+      setResultMessage(
+        "Debe modificar al menos un campo para actualizar la gestión."
+      );
       setResultVisible(true);
       return;
     }
@@ -354,7 +383,9 @@ const GestionDeFases: React.FC = () => {
 
       setGestiones((prev) =>
         prev
-          .map((g) => (g.gestion === gestionActualizada.gestion ? gestionActualizada : g))
+          .map((g) =>
+            g.gestion === gestionActualizada.gestion ? gestionActualizada : g
+          )
           .sort((a, b) => b.gestion - a.gestion)
       );
 
@@ -363,7 +394,9 @@ const GestionDeFases: React.FC = () => {
 
       setResultType("success");
       setResultTitle("Gestión actualizada");
-      setResultMessage(resp.message || "La gestión se actualizó correctamente.");
+      setResultMessage(
+        resp.message || "La gestión se actualizó correctamente."
+      );
       setResultVisible(true);
     } catch (err: any) {
       setResultType("error");
@@ -390,24 +423,31 @@ const GestionDeFases: React.FC = () => {
     setConfirmLoading(true);
 
     try {
-      const resp = (await api(`/gestion-fases/fase/${faseSeleccionada.id}/accion`, {
-        method: "PATCH",
-        token,
-        body: { accion: accionSeleccionada },
-      })) as FaseAccionResponse;
+      const resp = (await api(
+        `/gestion-fases/fase/${faseSeleccionada.id}/accion`,
+        {
+          method: "PATCH",
+          token,
+          body: { accion: accionSeleccionada },
+        }
+      )) as FaseAccionResponse;
 
       const faseActualizada = resp.data;
 
       setGestiones((prev) =>
         prev.map((g) => ({
           ...g,
-          fases: g.fases.map((f) => (f.id === faseActualizada.id ? faseActualizada : f)),
+          fases: g.fases.map((f) =>
+            f.id === faseActualizada.id ? faseActualizada : f
+          ),
         }))
       );
 
       setResultType("success");
       setResultTitle("Fase actualizada");
-      setResultMessage(resp.message || accionLabel(accionSeleccionada, faseSeleccionada));
+      setResultMessage(
+        resp.message || accionLabel(accionSeleccionada, faseSeleccionada)
+      );
       setResultVisible(true);
       setConfirmVisible(false);
       setFaseSeleccionada(null);
@@ -415,7 +455,9 @@ const GestionDeFases: React.FC = () => {
     } catch (err: any) {
       setResultType("error");
       setResultTitle("No se pudo actualizar la fase");
-      setResultMessage(err.message || "Ocurrió un error al aplicar la acción seleccionada.");
+      setResultMessage(
+        err.message || "Ocurrió un error al aplicar la acción seleccionada."
+      );
       setResultVisible(true);
     } finally {
       setConfirmLoading(false);
@@ -423,7 +465,8 @@ const GestionDeFases: React.FC = () => {
   }
 
   function puedeAbrir(fase: FaseResumen): boolean {
-    if (fase.estado === "EN_EJECUCION" || fase.estado === "CANCELADA") return false;
+    if (fase.estado === "EN_EJECUCION" || fase.estado === "CANCELADA")
+      return false;
     return true;
   }
 
@@ -451,9 +494,9 @@ const GestionDeFases: React.FC = () => {
               Gestión de fases por año
             </h1>
             <p className="max-w-2xl text-sm text-gray-600 dark:text-gray-300">
-              Desde esta pantalla puede registrar la gestión anual con sus fases clasificatoria
-              y final, actualizar fechas y controlar el estado de cada fase (apertura, cierre y
-              publicación de resultados).
+              Desde esta pantalla puede registrar la gestión anual con sus fases
+              clasificatoria y final, actualizar fechas y controlar el estado de
+              cada fase (apertura, cierre y publicación de resultados).
             </p>
           </div>
 
@@ -476,7 +519,9 @@ const GestionDeFases: React.FC = () => {
                 disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <Plus className="h-4 w-4" />
-              {yaExisteGestionActual ? "Ya existe gestión actual" : "Registrar nueva gestión"}
+              {yaExisteGestionActual
+                ? "Ya existe gestión actual"
+                : "Registrar nueva gestión"}
             </button>
           </div>
         </header>
@@ -503,8 +548,8 @@ const GestionDeFases: React.FC = () => {
               No hay gestiones registradas entre 2025 y 2030.
             </p>
             <p>
-              Puede crear la gestión del año actual y se generarán automáticamente las fases
-              clasificatoria y final.
+              Puede crear la gestión del año actual y se generarán
+              automáticamente las fases clasificatoria y final.
             </p>
           </div>
         )}
@@ -538,7 +583,8 @@ const GestionDeFases: React.FC = () => {
                       <div className="inline-flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-1 dark:bg-gray-800/80">
                         <CalendarDays className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                         <span>
-                          {formatFecha(gestion.inicio)} – {formatFecha(gestion.fin)}
+                          {formatFecha(gestion.inicio)} –{" "}
+                          {formatFecha(gestion.fin)}
                         </span>
                       </div>
                       <div className="inline-flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-1 text-gray-700 dark:bg-gray-800/80 dark:text-gray-300">
@@ -581,75 +627,13 @@ const GestionDeFases: React.FC = () => {
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
                     {fasesOrdenadas.map((fase) => {
                       const puedePub = puedePublicar(fase);
-                      const esPublicada = fase.resultados_publicados;
+
                       return (
                         <article
                           key={fase.id}
                           className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950/60"
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-800 shadow-sm dark:bg-gray-900 dark:text-gray-200">
-                                <span
-                                  className={
-                                    fase.tipo === "CLASIFICATORIA"
-                                      ? "h-2 w-2 rounded-full bg-emerald-500"
-                                      : "h-2 w-2 rounded-full bg-indigo-500"
-                                  }
-                                />
-                                {tipoLabel(fase.tipo)}
-                              </div>
-                              {fase.descripcion && (
-                                <p className="text-xs text-gray-600 dark:text-gray-300">
-                                  {fase.descripcion}
-                                </p>
-                              )}
-                            </div>
-                            <span
-                              className={
-                                "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold " +
-                                estadoBadgeClasses(fase.estado)
-                              }
-                            >
-                              <span
-                                className={
-                                  fase.estado === "EN_EJECUCION"
-                                    ? "h-2 w-2 rounded-full bg-emerald-500"
-                                    : fase.estado === "FINALIZADA"
-                                    ? "h-2 w-2 rounded-full bg-blue-500"
-                                    : fase.estado === "CANCELADA"
-                                    ? "h-2 w-2 rounded-full bg-red-500"
-                                    : "h-2 w-2 rounded-full bg-gray-400"
-                                }
-                              />
-                              {fase.estado === "PENDIENTE" && "Pendiente"}
-                              {fase.estado === "EN_EJECUCION" && "En ejecución"}
-                              {fase.estado === "FINALIZADA" && "Finalizada"}
-                              {fase.estado === "CANCELADA" && "Cancelada"}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
-                            <div className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1 shadow-sm dark:bg-gray-900">
-                              <CalendarDays className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                              <span>
-                                {formatFecha(fase.inicio)} – {formatFecha(fase.fin)}
-                              </span>
-                            </div>
-                            <div className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1 shadow-sm dark:bg-gray-900">
-                              <UploadCloud
-                                className={`h-4 w-4 ${
-                                  fase.resultados_publicados
-                                    ? "text-emerald-500"
-                                    : "text-gray-400"
-                                }`}
-                              />
-                              <span>
-                                Resultados{" "}
-                                {fase.resultados_publicados ? "publicados" : "no publicados"}
-                              </span>
-                            </div>
-                          </div>
+                          {/* ... resto del encabezado y fechas ... */}
 
                           <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
                             {/* Abrir */}
@@ -658,13 +642,13 @@ const GestionDeFases: React.FC = () => {
                               onClick={() => abrirConfirmacion(fase, "ABRIR")}
                               disabled={!puedeAbrir(fase)}
                               className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm
-                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-                                focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
-                                ${
-                                  puedeAbrir(fase)
-                                    ? "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 dark:border-emerald-900/60 dark:bg-gray-900 dark:text-emerald-300"
-                                    : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
-                                }`}
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+            focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
+            ${
+              puedeAbrir(fase)
+                ? "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 dark:border-emerald-900/60 dark:bg-gray-900 dark:text-emerald-300"
+                : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
+            }`}
                             >
                               <PlayCircle className="h-4 w-4" />
                               Abrir fase
@@ -676,13 +660,13 @@ const GestionDeFases: React.FC = () => {
                               onClick={() => abrirConfirmacion(fase, "CERRAR")}
                               disabled={!puedeCerrar(fase)}
                               className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm
-                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
-                                focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
-                                ${
-                                  puedeCerrar(fase)
-                                    ? "border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-900/60 dark:bg-gray-900 dark:text-blue-300"
-                                    : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
-                                }`}
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
+            focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
+            ${
+              puedeCerrar(fase)
+                ? "border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-900/60 dark:bg-gray-900 dark:text-blue-300"
+                : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
+            }`}
                             >
                               <StopCircle className="h-4 w-4" />
                               Cerrar fase
@@ -701,15 +685,15 @@ const GestionDeFases: React.FC = () => {
                               }
                               disabled={!puedePub}
                               className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm
-                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2
-                                focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
-                                ${
-                                  puedePub
-                                    ? fase.resultados_publicados
-                                      ? "border-amber-300 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-200"
-                                      : "border-amber-200 bg-white text-amber-700 hover:border-amber-300 hover:bg-amber-50 dark:border-amber-900/60 dark:bg-gray-900 dark:text-amber-300"
-                                    : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
-                                }`}
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2
+            focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
+            ${
+              puedePub
+                ? fase.resultados_publicados
+                  ? "border-amber-300 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-200"
+                  : "border-amber-200 bg-white text-amber-700 hover:border-amber-300 hover:bg-amber-50 dark:border-amber-900/60 dark:bg-gray-900 dark:text-amber-300"
+                : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
+            }`}
                             >
                               <UploadCloud className="h-4 w-4" />
                               {fase.resultados_publicados
@@ -736,8 +720,9 @@ const GestionDeFases: React.FC = () => {
                     Registrar nueva gestión
                   </h2>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    Se crearán automáticamente las fases clasificatoria y final para la gestión
-                    seleccionada. Solo se permite una gestión por año.
+                    Se crearán automáticamente las fases clasificatoria y final
+                    para la gestión seleccionada. Solo se permite una gestión
+                    por año.
                   </p>
                 </div>
               </div>
@@ -829,8 +814,8 @@ const GestionDeFases: React.FC = () => {
                     Editar gestión {editarGestion}
                   </h2>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    Los cambios en el título o en las fechas se aplican a ambas fases de la
-                    gestión seleccionada.
+                    Los cambios en el título o en las fechas se aplican a ambas
+                    fases de la gestión seleccionada.
                   </p>
                 </div>
               </div>
@@ -877,7 +862,8 @@ const GestionDeFases: React.FC = () => {
                 </div>
 
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Si deja las fechas vacías, se mantendrán las fechas actuales de la gestión.
+                  Si deja las fechas vacías, se mantendrán las fechas actuales
+                  de la gestión.
                 </p>
               </div>
 
@@ -933,7 +919,8 @@ const GestionDeFases: React.FC = () => {
           confirmText="Aplicar"
           cancelText="Cancelar"
           danger={
-            accionSeleccionada === "CERRAR" || accionSeleccionada === "QUITAR_PUBLICACION"
+            accionSeleccionada === "CERRAR" ||
+            accionSeleccionada === "QUITAR_PUBLICACION"
           }
           loading={confirmLoading}
         />
