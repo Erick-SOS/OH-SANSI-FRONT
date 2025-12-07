@@ -1,190 +1,482 @@
 // src/pages/ConsultaDePremiados.tsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import TablaBase from '../components/tables/TablaBase';
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, AlertCircle, Award, Medal, Star, Info } from "lucide-react";
+import TablaBase from "../components/tables/TablaBase";
+import { api } from "../api";
 
-interface Premiado {
-    id: number;
-    nombreCompleto: string;
-    unidadEducativa: string;
-    nota: number;
-    area: string;
-    nivel: string;
-    posicionOriginal?: number;
+type ModalidadCategoria = "INDIVIDUAL" | "GRUPAL";
+type Medalla = "ORO" | "PLATA" | "BRONCE" | "MENCIÓN" | null;
+
+interface PremiadoItem {
+  id: number;
+  nombreCompleto: string;
+  unidadEducativa: string;
+  nota: number;
+  modalidad: ModalidadCategoria;
+  posicion: number;
+  medalla: Medalla;
+}
+
+interface MedalleroBackend {
+  oros_final: number;
+  platas_final: number;
+  bronces_final: number;
+  menciones_final: number;
+}
+
+interface FiltroCategoriaDTO {
+  area: string;
+  niveles: string[];
 }
 
 const ConsultaDePremiados: React.FC = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const gestion = new Date().getFullYear();
 
-    const [area, setArea] = useState('Matemáticas');
-    const [nivel, setNivel] = useState('Primaria');
-    const [loading, setLoading] = useState(false);
-    const [resultados, setResultados] = useState<Premiado[]>([]);
-    const [busquedaRealizada, setBusquedaRealizada] = useState(false);
+  const [filtrosCategorias, setFiltrosCategorias] = useState<FiltroCategoriaDTO[]>([]);
+  const [areaSeleccionada, setAreaSeleccionada] = useState<string>("");
+  const [nivelSeleccionado, setNivelSeleccionado] = useState<string>("");
 
-    const areas = ['Matemáticas', 'Física', 'Química', 'Biología', 'Informática'];
-    const niveles = ['Primaria', 'Secundaria'];
+  const [loadingFiltros, setLoadingFiltros] = useState(false);
+  const [errorFiltros, setErrorFiltros] = useState<string | null>(null);
 
-    const generarDatos = (cantidad: number): Premiado[] => {
-        const nombres = ['Juan', 'María', 'Carlos', 'Ana', 'Pedro', 'Lucía', 'Roberto', 'Fernanda', 'Diego', 'Sofía'];
-        const apellidos = ['Pérez', 'López', 'Ruiz', 'Gómez', 'Sola', 'Méndez', 'Flores', 'Vargas', 'Torres'];
-        const colegios = ['San Agustín', 'La Salle', 'Don Bosco', 'Anglo Americano', 'San Ignacio', 'Calvert', 'Boliviano Alemán', 'Santa Ana'];
-        const grupos = ['Los Pitágoras', 'Alpha Team', 'Calculistas', 'Los Newton', 'Quantum', 'Los Einsteins'];
+  const [loadingResultados, setLoadingResultados] = useState(false);
+  const [errorResultados, setErrorResultados] = useState<string | null>(null);
 
-        const datos: Premiado[] = [];
-        for (let i = 0; i < cantidad; i++) {
-            const esGrupal = Math.random() > 0.7;
-            const nombre = esGrupal
-                ? grupos[Math.floor(Math.random() * grupos.length)] + ' ' + (i + 1)
-                : `${nombres[Math.floor(Math.random() * nombres.length)]} ${apellidos[Math.floor(Math.random() * apellidos.length)]}`;
+  const [premiados, setPremiados] = useState<PremiadoItem[]>([]);
+  const [busquedaRealizada, setBusquedaRealizada] = useState(false);
+  const [medallero, setMedallero] = useState<MedalleroBackend | null>(null);
+  const [totalPremiados, setTotalPremiados] = useState(0);
 
-            datos.push({
-                id: i + 1,
-                nombreCompleto: nombre,
-                unidadEducativa: colegios[Math.floor(Math.random() * colegios.length)],
-                nota: Math.floor(Math.random() * (100 - 60 + 1)) + 60,
-                area,
-                nivel
-            });
+  // =========================
+  // Filtros (área / nivel)
+  // =========================
+  useEffect(() => {
+    const cargarFiltros = async () => {
+      setLoadingFiltros(true);
+      setErrorFiltros(null);
+      try {
+        const resp = await api(`/filtros/categorias?gestion=${gestion}`);
+        const data = (resp.data ?? []) as FiltroCategoriaDTO[];
+        setFiltrosCategorias(data);
+
+        if (data.length > 0) {
+          const primeraArea = data[0].area;
+          const primerNivel = data[0].niveles[0] ?? "";
+          setAreaSeleccionada((prev) => prev || primeraArea);
+          setNivelSeleccionado((prev) => prev || primerNivel);
         }
-        return datos;
+      } catch (err: any) {
+        setErrorFiltros(
+          err?.message || "No se pudieron cargar los filtros de categorías."
+        );
+      } finally {
+        setLoadingFiltros(false);
+      }
     };
 
-    const handleSearch = () => {
-        setLoading(true);
-        setBusquedaRealizada(true);
-        setResultados([]);
+    cargarFiltros();
+  }, [gestion]);
 
-        setTimeout(() => {
-            const datosGenerados = generarDatos(Math.floor(Math.random() * 8) + 5);
-            const ordenados = [...datosGenerados].sort((a, b) => b.nota - a.nota);
+  const nivelesDisponibles = useMemo(() => {
+    if (!areaSeleccionada) return [];
+    const filtroArea = filtrosCategorias.find((f) => f.area === areaSeleccionada);
+    return filtroArea?.niveles ?? [];
+  }, [filtrosCategorias, areaSeleccionada]);
 
-            const conPodio = ordenados.map((item, index) => ({
-                ...item,
-                posicionOriginal: index + 1
-            }));
+  // =========================
+  // Consulta de premiados
+  // =========================
+  const handleBuscarPremiados = async () => {
+    if (!areaSeleccionada || !nivelSeleccionado) {
+      setErrorResultados("Seleccione un área y un nivel.");
+      setPremiados([]);
+      setMedallero(null);
+      setTotalPremiados(0);
+      setBusquedaRealizada(true);
+      return;
+    }
 
-            setResultados(conPodio);
-            setLoading(false);
-        }, 800);
-    };
+    setLoadingResultados(true);
+    setErrorResultados(null);
+    setPremiados([]);
+    setMedallero(null);
+    setTotalPremiados(0);
+    setBusquedaRealizada(true);
 
-    const columnas = [
-        { clave: 'nombreCompleto', titulo: 'Ganador', ordenable: false },
-        { clave: 'unidadEducativa', titulo: 'Unidad Educativa', ordenable: false },
-        {
-            clave: 'nota',
-            titulo: 'Nota Final',
-            alineacion: 'centro' as const,
-            ordenable: false,
-            formatearCelda: (valor: number) => (
-                <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">{valor}/100</span>
-            )
-        },
-    ];
+    try {
+      const params = new URLSearchParams({
+        area: areaSeleccionada,
+        nivel: nivelSeleccionado,
+        gestion: String(gestion),
+      });
 
-    const fieldBase = 'w-full px-4 py-3 rounded-lg border transition focus:outline-none focus:ring-2 ' +
-        'bg-white text-gray-900 placeholder:text-gray-400 border-gray-300 focus:ring-blue-500/30 focus:border-blue-300 ' +
-        'dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400 dark:border-gray-600 dark:focus:border-blue-500';
+      const resp = await api(`/premiados?${params.toString()}`);
+      const data = (resp.data ?? []) as PremiadoItem[];
 
-    return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 px-4">
-            <div className="max-w-4xl mx-auto">
-                <header className="mb-10">
-                    <div className="flex items-center justify-between mb-6">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-all duration-200 shadow-md hover:shadow-lg"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                            Volver
-                        </button>
-                    </div>
+      setPremiados(data);
+      setTotalPremiados(resp.total ?? data.length ?? 0);
+      setMedallero(resp.medallero ?? null);
+    } catch (err: any) {
+      setErrorResultados(err?.message || "No se pudieron cargar los premiados.");
+      setPremiados([]);
+      setMedallero(null);
+      setTotalPremiados(0);
+    } finally {
+      setLoadingResultados(false);
+    }
+  };
 
-                    <div className="text-center">
-                        <h1 className="text-4xl font-bold text-gray-800 dark:text-white">
-                            Lista de Premiados
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">
-                            Ganadores por área y nivel
-                        </p>
-                        <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm font-medium">
-                        <span className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-yellow-500 rounded-full"></div> Oro
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-slate-500 rounded-full"></div> Plata
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-orange-500 rounded-full"></div> Bronce
-                        </span>
-                    </div>
-                    </div>
-                </header>
+  // =========================
+  // Métricas por tipo de medalla
+  // =========================
+  const conteos = useMemo(() => {
+    const oro = premiados.filter((p) => p.medalla === "ORO").length;
+    const plata = premiados.filter((p) => p.medalla === "PLATA").length;
+    const bronce = premiados.filter((p) => p.medalla === "BRONCE").length;
+    const mencion = premiados.filter((p) => p.medalla === "MENCIÓN").length;
+    return { oro, plata, bronce, mencion };
+  }, [premiados]);
 
-                {/* Filtros SOLO Área y Nivel */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-8 mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-                        <div>
-                            <label className="block font-medium mb-2 text-gray-700 dark:text-gray-300">Área</label>
-                            <select value={area} onChange={(e) => setArea(e.target.value)} className={fieldBase}>
-                                {areas.map(op => <option key={op} value={op}>{op}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block font-medium mb-2 text-gray-700 dark:text-gray-300">Nivel</label>
-                            <select value={nivel} onChange={(e) => setNivel(e.target.value)} className={fieldBase}>
-                                {niveles.map(op => <option key={op} value={op}>{op}</option>)}
-                            </select>
-                        </div>
-                    </div>
+  // =========================
+  // Tabla
+  // =========================
+  const columnas = [
+    {
+      clave: "posicion" as const,
+      titulo: "Posición",
+      alineacion: "centro" as const,
+      formatearCelda: (valor: number) => (
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          #{valor}
+        </span>
+      ),
+    },
+    {
+      clave: "nombreCompleto" as const,
+      titulo: "Ganador / equipo",
+      alineacion: "izquierda" as const,
+      formatearCelda: (valor: string, fila: PremiadoItem) => (
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {valor}
+          </span>
+          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+            {fila.modalidad === "INDIVIDUAL" ? "Modalidad individual" : "Modalidad grupal"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      clave: "unidadEducativa" as const,
+      titulo: "Unidad educativa",
+      alineacion: "izquierda" as const,
+      formatearCelda: (valor: string) => (
+        <span className="text-sm text-gray-800 dark:text-gray-200">
+          {valor}
+        </span>
+      ),
+    },
+    {
+      clave: "nota" as const,
+      titulo: "Nota",
+      alineacion: "centro" as const,
+      formatearCelda: (valor: number) => (
+        <span className="inline-flex rounded-full bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-800 shadow-sm dark:bg-blue-900/40 dark:text-blue-200">
+          {valor.toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      clave: "medalla" as const,
+      titulo: "Distinción",
+      alineacion: "centro" as const,
+      formatearCelda: (valor: Medalla) => {
+        if (!valor) {
+          return (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Sin medalla
+            </span>
+          );
+        }
 
-                    <div className="mt-10 text-center">
-                        <button
-                            onClick={handleSearch}
-                            disabled={loading}
-                            className={`w-full max-w-md mx-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-105 shadow-lg ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                        >
-                            {loading ? 'Buscando...' : 'Ver Resultados Finales'}
-                        </button>
-                    </div>
+        let classes =
+          "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ";
+        let label = "";
+        let icon: React.ReactNode = null;
+
+        if (valor === "ORO") {
+          classes +=
+            "bg-yellow-50 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200";
+          label = "Medalla de oro";
+          icon = <Award className="mr-1.5 h-4 w-4" />;
+        } else if (valor === "PLATA") {
+          classes +=
+            "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200";
+          label = "Medalla de plata";
+          icon = <Star className="mr-1.5 h-4 w-4" />;
+        } else if (valor === "BRONCE") {
+          classes +=
+            "bg-orange-50 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200";
+          label = "Medalla de bronce";
+          icon = <Medal className="mr-1.5 h-4 w-4" />;
+        } else {
+          classes +=
+            "bg-indigo-50 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200";
+          label = "Mención de honor";
+          icon = <Info className="mr-1.5 h-4 w-4" />;
+        }
+
+        return (
+          <span className={classes}>
+            {icon}
+            {label}
+          </span>
+        );
+      },
+    },
+  ];
+
+  const fieldBase =
+    "w-full px-4 py-3 rounded-lg border transition focus:outline-none focus:ring-2 bg-white text-gray-900 placeholder:text-gray-400 border-gray-300 focus:ring-blue-500/30 focus:border-blue-300 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400 dark:border-gray-600 dark:focus:border-blue-500";
+
+  const claseFila = (fila: PremiadoItem) => {
+    if (fila.medalla === "ORO") {
+      return "bg-yellow-50 dark:bg-yellow-900/25 border-l-4 border-yellow-500";
+    }
+    if (fila.medalla === "PLATA") {
+      return "bg-slate-50 dark:bg-slate-800/60 border-l-4 border-slate-400";
+    }
+    if (fila.medalla === "BRONCE") {
+      return "bg-orange-50 dark:bg-orange-900/25 border-l-4 border-orange-500";
+    }
+    if (fila.medalla === "MENCIÓN") {
+      return "bg-indigo-50 dark:bg-indigo-900/25 border-l-4 border-indigo-500";
+    }
+    return "hover:bg-gray-50 dark:hover:bg-gray-800";
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8 px-4 dark:bg-gray-950">
+      <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <header className="mb-10">
+          <div className="mb-6 flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-medium text-gray-700 shadow-md transition hover:border-blue-500 hover:bg-gray-50 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-500 dark:hover:bg-gray-700"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              Volver
+            </button>
+          </div>
+
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-800 dark:text-white">
+              Lista de premiados
+            </h1>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Ganadores por área y nivel. Gestión {gestion}.
+            </p>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-6 text-xs font-medium">
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-yellow-500" />
+                Oro
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-slate-500" />
+                Plata
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-orange-500" />
+                Bronce
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-indigo-500" />
+                Mención de honor
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Filtros */}
+        <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+          <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Área
+              </label>
+              <select
+                value={areaSeleccionada}
+                onChange={(e) => {
+                  const nuevaArea = e.target.value;
+                  setAreaSeleccionada(nuevaArea);
+                  const filtroArea = filtrosCategorias.find(
+                    (f) => f.area === nuevaArea
+                  );
+                  setNivelSeleccionado(filtroArea?.niveles[0] ?? "");
+                  setPremiados([]);
+                  setBusquedaRealizada(false);
+                  setErrorResultados(null);
+                  setMedallero(null);
+                  setTotalPremiados(0);
+                }}
+                className={fieldBase}
+                disabled={loadingFiltros || !filtrosCategorias.length}
+              >
+                {filtrosCategorias.map((f) => (
+                  <option key={f.area} value={f.area}>
+                    {f.area}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Nivel
+              </label>
+              <select
+                value={nivelSeleccionado}
+                onChange={(e) => {
+                  setNivelSeleccionado(e.target.value);
+                  setPremiados([]);
+                  setBusquedaRealizada(false);
+                  setErrorResultados(null);
+                  setMedallero(null);
+                  setTotalPremiados(0);
+                }}
+                className={fieldBase}
+                disabled={loadingFiltros || !nivelesDisponibles.length}
+              >
+                {nivelesDisponibles.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {errorFiltros && (
+            <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+              <AlertCircle className="h-4 w-4" />
+              <span>{errorFiltros}</span>
+            </div>
+          )}
+
+          <div className="mt-8 text-center">
+            <button
+              onClick={handleBuscarPremiados}
+              disabled={
+                loadingResultados ||
+                loadingFiltros ||
+                !areaSeleccionada ||
+                !nivelSeleccionado
+              }
+              className="mx-auto flex w-full max-w-md items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:from-blue-700 hover:to-blue-800 disabled:cursor-not-allowed disabled:opacity-75"
+            >
+              {loadingResultados ? "Consultando resultados..." : "Ver resultados finales"}
+            </button>
+          </div>
+
+          {medallero && busquedaRealizada && !errorResultados && (
+            <div className="mt-6 grid gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700 dark:border-gray-800 dark:bg-gray-900/60 dark:text-gray-200 md:grid-cols-2">
+              <div className="flex items-start gap-2">
+                <Award className="mt-0.5 h-4 w-4 text-yellow-500" />
+                <div>
+                  <p className="font-semibold">Configuración de medallero</p>
+                  <p>
+                    Oro:{" "}
+                    <span className="font-semibold">
+                      {medallero.oros_final}
+                    </span>{" "}
+                    · Plata:{" "}
+                    <span className="font-semibold">
+                      {medallero.platas_final}
+                    </span>{" "}
+                    · Bronce:{" "}
+                    <span className="font-semibold">
+                      {medallero.bronces_final}
+                    </span>{" "}
+                    · Menciones:{" "}
+                    <span className="font-semibold">
+                      {medallero.menciones_final}
+                    </span>
+                    .
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Info className="mt-0.5 h-4 w-4 text-blue-500" />
+                <div>
+                  <p className="font-semibold">Resumen de ganadores</p>
+                  <p>
+                    Oro:{" "}
+                    <span className="font-semibold">{conteos.oro}</span> · Plata:{" "}
+                    <span className="font-semibold">{conteos.plata}</span> · Bronce:{" "}
+                    <span className="font-semibold">{conteos.bronce}</span> ·
+                    Menciones:{" "}
+                    <span className="font-semibold">{conteos.mencion}</span> ·
+                    Total premiados:{" "}
+                    <span className="font-semibold">{totalPremiados}</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Resultados */}
+        {busquedaRealizada && !loadingResultados && (
+          <div className="space-y-6">
+            {errorResultados && (
+              <div className="flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+                <AlertCircle className="h-4 w-4" />
+                <span>{errorResultados}</span>
+              </div>
+            )}
+
+            {!errorResultados && (
+              <>
+                <div className="mb-2 text-center">
+                  <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
+                    Ganadores para {areaSeleccionada} · {nivelSeleccionado}
+                  </h2>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Gestión {gestion}. Total de premiados:{" "}
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      {totalPremiados}
+                    </span>
+                    .
+                  </p>
                 </div>
 
-                {busquedaRealizada && !loading && (
-                    <div className="space-y-6 animate-fade-in">
-                        <div className="text-center mb-6">
-                            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
-                                Ganadores encontrados: {resultados.length}
-                            </h2>
-                        </div>
-
-                        {resultados.length > 0 ? (
-                            <TablaBase
-                                datos={resultados}
-                                columnas={columnas}
-                                className="shadow-2xl rounded-2xl overflow-hidden"
-                                conOrdenamiento={false}
-                                claseFila={(fila: Premiado) => {
-                                    if (fila.posicionOriginal === 1) return 'bg-yellow-100 dark:bg-yellow-900/40 border-l-8 border-yellow-500 shadow-lg';
-                                    if (fila.posicionOriginal === 2) return 'bg-slate-100 dark:bg-slate-800/60 border-l-8 border-slate-400 shadow-lg';
-                                    if (fila.posicionOriginal === 3) return 'bg-orange-100 dark:bg-orange-900/40 border-l-8 border-orange-500 shadow-lg';
-                                    return 'hover:bg-gray-50 dark:hover:bg-gray-800';
-                                }}
-                            />
-                        ) : (
-                            <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700">
-                                <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
-                                    No se encontraron ganadores para esta área y nivel.
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                {premiados.length > 0 ? (
+                  <TablaBase
+                    datos={premiados}
+                    columnas={columnas}
+                    className="overflow-hidden rounded-2xl shadow-2xl"
+                    conOrdenamiento={false}
+                    claseFila={claseFila}
+                  />
+                ) : (
+                  <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-white py-16 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      No se encontraron premiados para esta área y nivel o los
+                      resultados finales aún no fueron publicados.
+                    </p>
+                  </div>
                 )}
-            </div>
-        </div>
-    );
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ConsultaDePremiados;
