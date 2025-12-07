@@ -1,5 +1,5 @@
 // src/pages/CantidadDeMedallas.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FiSave } from "react-icons/fi";
 import { FileDown, FileText } from "lucide-react";
 import TablaBase from "../components/tables/TablaBase";
@@ -7,94 +7,25 @@ import Paginacion from "../components/ui/Paginacion";
 import BarraBusquedaAreas from "../components/tables/BarraBusqueda";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import ResultModal from "../components/modals/ResultModal";
+import { api } from "../api";
+import { getToken } from "../components/auth/authStorage";
 
 interface MedallaItem {
-  id: number; // id interno solo para el front
-  areaId: number;
-  nivelId: number;
-  areaCompetencia: string;
+  idCategoria: number;
+  area: string;
   nivel: string;
-  medallasOro: string;
-  medallasPlata: string;
-  medallasBronce: string;
-  notaMinimaAprobacion: string;
+  oro: string;
+  plata: string;
+  bronce: string;
+  mencion: string;
+  notaMin: string;
 }
-
-/* ---- Datos estáticos de ejemplo ---- */
-const DATOS_INICIALES: MedallaItem[] = [
-  {
-    id: 1,
-    areaId: 1,
-    nivelId: 1,
-    areaCompetencia: "Matemática",
-    nivel: "Primaria",
-    medallasOro: "2",
-    medallasPlata: "2",
-    medallasBronce: "2",
-    notaMinimaAprobacion: "60",
-  },
-  {
-    id: 2,
-    areaId: 1,
-    nivelId: 2,
-    areaCompetencia: "Matemática",
-    nivel: "Secundaria",
-    medallasOro: "3",
-    medallasPlata: "3",
-    medallasBronce: "3",
-    notaMinimaAprobacion: "65",
-  },
-  {
-    id: 3,
-    areaId: 2,
-    nivelId: 1,
-    areaCompetencia: "Física",
-    nivel: "Primaria",
-    medallasOro: "1",
-    medallasPlata: "2",
-    medallasBronce: "2",
-    notaMinimaAprobacion: "55",
-  },
-  {
-    id: 4,
-    areaId: 2,
-    nivelId: 2,
-    areaCompetencia: "Física",
-    nivel: "Secundaria",
-    medallasOro: "2",
-    medallasPlata: "2",
-    medallasBronce: "3",
-    notaMinimaAprobacion: "60",
-  },
-  {
-    id: 5,
-    areaId: 3,
-    nivelId: 2,
-    areaCompetencia: "Informática",
-    nivel: "Secundaria",
-    medallasOro: "3",
-    medallasPlata: "3",
-    medallasBronce: "3",
-    notaMinimaAprobacion: "70",
-  },
-  {
-    id: 6,
-    areaId: 4,
-    nivelId: 3,
-    areaCompetencia: "Química",
-    nivel: "Preuniversitario",
-    medallasOro: "1",
-    medallasPlata: "1",
-    medallasBronce: "1",
-    notaMinimaAprobacion: "75",
-  },
-];
 
 const REGISTROS_POR_PAGINA = 8;
 
 export default function CantidadDeMedallas() {
-  const [datosCompletos, setDatosCompletos] =
-    useState<MedallaItem[]>(DATOS_INICIALES);
+  const [datosCompletos, setDatosCompletos] = useState<MedallaItem[]>([]);
+  const [cargando, setCargando] = useState(false);
 
   const [valoresEditados, setValoresEditados] = useState<
     Record<number, Partial<MedallaItem>>
@@ -141,34 +72,113 @@ export default function CantidadDeMedallas() {
   const cerrarResultModal = () =>
     setResultModal((prev) => ({ ...prev, visible: false }));
 
-  /* ---- Validaciones de inputs ---- */
+  /* =========================
+   * Cargar datos desde backend
+   * ========================= */
+  const cargarDatos = async () => {
+    try {
+      setCargando(true);
+
+      const token = await getToken();
+      if (!token) {
+        throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
+      }
+
+      const resp = (await api("/parametrizacion-medallas", {
+        token,
+      })) as {
+        ok: boolean;
+        total: number;
+        data: {
+          idCategoria: number;
+          area: string;
+          nivel: string;
+          oro: number;
+          plata: number;
+          bronce: number;
+          mencion: number;
+          notaMin: number;
+        }[];
+      };
+
+      const data = Array.isArray(resp.data) ? resp.data : [];
+
+      const items: MedallaItem[] = data.map((d) => ({
+        idCategoria: d.idCategoria,
+        area: d.area,
+        nivel: d.nivel,
+        oro: String(d.oro ?? 0),
+        plata: String(d.plata ?? 0),
+        bronce: String(d.bronce ?? 0),
+        mencion: String(d.mencion ?? 0),
+        notaMin: String(d.notaMin ?? 0),
+      }));
+
+      setDatosCompletos(items);
+      setValoresEditados({});
+      setValoresGuardados({});
+      setErrores({});
+    } catch (error: any) {
+      console.error(error);
+      mostrarResultado(
+        "error",
+        "Error al cargar",
+        error?.message || "No se pudo obtener la configuración de medallas."
+      );
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => {
+    void cargarDatos();
+  }, []);
+
+  /* =========================
+   * Validaciones de inputs
+   * ========================= */
   const validarYActualizar = (
-    id: number,
+    idCategoria: number,
     campo: keyof MedallaItem,
     valor: string
   ) => {
     const num = parseInt(valor, 10);
 
-    // medallas: mínimo 1
+    // oro / plata / bronce -> mínimo 1
     if (
-      (campo === "medallasOro" ||
-        campo === "medallasPlata" ||
-        campo === "medallasBronce") &&
+      (campo === "oro" || campo === "plata" || campo === "bronce") &&
       (isNaN(num) || num < 1)
     ) {
       setErrores((prev) => ({
         ...prev,
-        [id]: { ...prev[id], [campo]: "Mínimo 1 medalla" },
+        [idCategoria]: { ...prev[idCategoria], [campo]: "Mínimo 1 medalla" },
       }));
       return;
     }
 
-    // nota mínima: 1-100
-    if (campo === "notaMinimaAprobacion") {
+    // mencion -> puede ser 0, máximo 100
+    if (campo === "mencion") {
+      if (isNaN(num) || num < 0 || num > 100) {
+        setErrores((prev) => ({
+          ...prev,
+          [idCategoria]: {
+            ...prev[idCategoria],
+            [campo]: "Debe estar entre 0 y 100",
+          },
+        }));
+        return;
+      }
+    }
+
+    // nota mínima -> 1 a 100
+    if (campo === "notaMin") {
       if (isNaN(num) || num < 1 || num > 100) {
         setErrores((prev) => ({
           ...prev,
-          [id]: { ...prev[id], [campo]: "Debe estar entre 1 y 100" },
+          [idCategoria]: {
+            ...prev[idCategoria],
+            [campo]: "Debe estar entre 1 y 100",
+          },
         }));
         return;
       }
@@ -178,7 +188,10 @@ export default function CantidadDeMedallas() {
     if (!isNaN(num) && num > 100) {
       setErrores((prev) => ({
         ...prev,
-        [id]: { ...prev[id], [campo]: "Máximo 100" },
+        [idCategoria]: {
+          ...prev[idCategoria],
+          [campo]: "Máximo 100",
+        },
       }));
       return;
     }
@@ -186,86 +199,170 @@ export default function CantidadDeMedallas() {
     // limpia error
     setErrores((prev) => ({
       ...prev,
-      [id]: { ...prev[id], [campo]: undefined },
+      [idCategoria]: { ...prev[idCategoria], [campo]: undefined },
     }));
 
-    // set valores editados
+    // registra edición
     setValoresEditados((prev) => ({
       ...prev,
-      [id]: { ...prev[id], [campo]: valor },
+      [idCategoria]: { ...prev[idCategoria], [campo]: valor },
     }));
   };
 
-  /* ---- Abrir modal de confirmación ---- */
+  /* =========================
+   * Confirmaciones
+   * ========================= */
   const manejarClickGuardar = (fila: MedallaItem) => {
-    const erroresFila = errores[fila.id];
+    const erroresFila = errores[fila.idCategoria];
     if (erroresFila && Object.values(erroresFila).some((msg) => msg)) return;
-    if (!valoresEditados[fila.id]) return; // nada que guardar
+    if (!valoresEditados[fila.idCategoria]) return; // nada que guardar
 
     setFilaSeleccionada(fila);
     setMostrarConfirm(true);
   };
 
-  /* ---- Confirmar guardado (solo local, sin backend) ---- */
   const confirmarGuardar = async () => {
     if (!filaSeleccionada) return;
     const fila = filaSeleccionada;
 
-    const cambios = valoresEditados[fila.id] || {};
-    const filaFinal: MedallaItem = {
-      ...fila,
-      ...cambios,
-    };
+    const cambios = valoresEditados[fila.idCategoria] || {};
 
-    setGuardando(true);
+    const body: {
+      oro?: number;
+      plata?: number;
+      bronce?: number;
+      mencion?: number;
+      notaMin?: number;
+    } = {};
 
-    // simulamos "guardar" solo en el front
-    setDatosCompletos((prev) =>
-      prev.map((item) => (item.id === fila.id ? filaFinal : item))
-    );
+    if (cambios.oro !== undefined) body.oro = Number(cambios.oro);
+    if (cambios.plata !== undefined) body.plata = Number(cambios.plata);
+    if (cambios.bronce !== undefined) body.bronce = Number(cambios.bronce);
+    if (cambios.mencion !== undefined) body.mencion = Number(cambios.mencion);
+    if (cambios.notaMin !== undefined) body.notaMin = Number(cambios.notaMin);
 
-    setValoresGuardados((prev) => ({
-      ...prev,
-      [fila.id]: cambios,
-    }));
+    if (
+      body.oro === undefined &&
+      body.plata === undefined &&
+      body.bronce === undefined &&
+      body.mencion === undefined &&
+      body.notaMin === undefined
+    ) {
+      mostrarResultado(
+        "error",
+        "Sin cambios",
+        "No hay cambios para guardar en esta fila."
+      );
+      setMostrarConfirm(false);
+      setFilaSeleccionada(null);
+      return;
+    }
 
-    setValoresEditados((prev) => {
-      const nuevo = { ...prev };
-      delete nuevo[fila.id];
-      return nuevo;
-    });
+    try {
+      setGuardando(true);
 
-    mostrarResultado(
-      "success",
-      "Cambios guardados",
-      `Se guardó la configuración para ${filaFinal.areaCompetencia} - ${filaFinal.nivel} (datos de prueba, solo en el navegador).`
-    );
+      const token = await getToken();
+      if (!token) {
+        throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
+      }
 
-    setGuardando(false);
-    setMostrarConfirm(false);
-    setFilaSeleccionada(null);
+      const resp = (await api(
+        `/parametrizacion-medallas/${fila.idCategoria}`,
+        {
+          method: "PATCH",
+          token,
+          body,
+        }
+      )) as {
+        ok: boolean;
+        message?: string;
+        data: {
+          idCategoria: number;
+          area: string;
+          nivel: string;
+          oro: number;
+          plata: number;
+          bronce: number;
+          mencion: number;
+          notaMin: number;
+        };
+      };
+
+      const d = resp.data;
+      const filaActualizada: MedallaItem = {
+        idCategoria: d.idCategoria,
+        area: d.area,
+        nivel: d.nivel,
+        oro: String(d.oro ?? 0),
+        plata: String(d.plata ?? 0),
+        bronce: String(d.bronce ?? 0),
+        mencion: String(d.mencion ?? 0),
+        notaMin: String(d.notaMin ?? 0),
+      };
+
+      setDatosCompletos((prev) =>
+        prev.map((item) =>
+          item.idCategoria === filaActualizada.idCategoria
+            ? filaActualizada
+            : item
+        )
+      );
+
+      setValoresGuardados((prev) => ({
+        ...prev,
+        [fila.idCategoria]: cambios,
+      }));
+
+      setValoresEditados((prev) => {
+        const nuevo = { ...prev };
+        delete nuevo[fila.idCategoria];
+        return nuevo;
+      });
+
+      mostrarResultado(
+        "success",
+        "Cambios guardados",
+        resp.message ||
+          `Se guardó la configuración para ${filaActualizada.area} - ${filaActualizada.nivel}.`
+      );
+    } catch (error: any) {
+      console.error(error);
+      mostrarResultado(
+        "error",
+        "Error al guardar",
+        error?.message || "No se pudo guardar la configuración."
+      );
+    } finally {
+      setGuardando(false);
+      setMostrarConfirm(false);
+      setFilaSeleccionada(null);
+    }
   };
 
-  /* ---- Render de inputs en las celdas ---- */
+  /* =========================
+   * Render input en celdas
+   * ========================= */
   const renderInput = (
     fila: MedallaItem,
     campo: keyof MedallaItem,
     valorActual: string
   ) => {
-    const valorMostrado = (valoresEditados[fila.id]?.[campo] ??
+    const valorMostrado = (valoresEditados[fila.idCategoria]?.[campo] ??
       valorActual) as string;
-    const error = errores[fila.id]?.[campo];
-    const editado = valoresEditados[fila.id]?.[campo] !== undefined;
-    const guardado = valoresGuardados[fila.id]?.[campo] !== undefined;
+    const error = errores[fila.idCategoria]?.[campo];
+    const editado = valoresEditados[fila.idCategoria]?.[campo] !== undefined;
+    const guardado = valoresGuardados[fila.idCategoria]?.[campo] !== undefined;
 
     return (
       <div className="flex flex-col items-center">
         <input
           type="number"
-          min={1}
+          min={campo === "mencion" ? 0 : 1}
           max={100}
           value={valorMostrado}
-          onChange={(e) => validarYActualizar(fila.id, campo, e.target.value)}
+          onChange={(e) =>
+            validarYActualizar(fila.idCategoria, campo, e.target.value)
+          }
           className={`
             w-20 text-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-all
             ${
@@ -288,10 +385,12 @@ export default function CantidadDeMedallas() {
     );
   };
 
-  /* ---- Columnas de la tabla ---- */
+  /* =========================
+   * Columnas de la tabla
+   * ========================= */
   const columnas = [
     {
-      clave: "areaCompetencia" as const,
+      clave: "area" as const,
       titulo: "Área",
       alineacion: "izquierda" as const,
       ordenable: true,
@@ -303,36 +402,44 @@ export default function CantidadDeMedallas() {
       ordenable: true,
     },
     {
-      clave: "medallasOro" as const,
+      clave: "oro" as const,
       titulo: "Oro",
       alineacion: "centro" as const,
       ordenable: false,
       formatearCelda: (valor: string, fila: MedallaItem) =>
-        renderInput(fila, "medallasOro", valor),
+        renderInput(fila, "oro", valor),
     },
     {
-      clave: "medallasPlata" as const,
+      clave: "plata" as const,
       titulo: "Plata",
       alineacion: "centro" as const,
       ordenable: false,
       formatearCelda: (valor: string, fila: MedallaItem) =>
-        renderInput(fila, "medallasPlata", valor),
+        renderInput(fila, "plata", valor),
     },
     {
-      clave: "medallasBronce" as const,
+      clave: "bronce" as const,
       titulo: "Bronce",
       alineacion: "centro" as const,
       ordenable: false,
       formatearCelda: (valor: string, fila: MedallaItem) =>
-        renderInput(fila, "medallasBronce", valor),
+        renderInput(fila, "bronce", valor),
     },
     {
-      clave: "notaMinimaAprobacion" as const,
+      clave: "mencion" as const,
+      titulo: "Mención",
+      alineacion: "centro" as const,
+      ordenable: false,
+      formatearCelda: (valor: string, fila: MedallaItem) =>
+        renderInput(fila, "mencion", valor),
+    },
+    {
+      clave: "notaMin" as const,
       titulo: "Nota mín. clasificación",
       alineacion: "centro" as const,
       ordenable: false,
       formatearCelda: (valor: string, fila: MedallaItem) =>
-        renderInput(fila, "notaMinimaAprobacion", valor),
+        renderInput(fila, "notaMin", valor),
     },
     {
       clave: "accion" as const,
@@ -340,10 +447,10 @@ export default function CantidadDeMedallas() {
       alineacion: "centro" as const,
       ordenable: false,
       formatearCelda: (_: any, fila: MedallaItem) => {
-        const tieneCambios = !!valoresEditados[fila.id];
+        const tieneCambios = !!valoresEditados[fila.idCategoria];
         const tieneErrores =
-          errores[fila.id] &&
-          Object.values(errores[fila.id]).some((msg) => Boolean(msg));
+          errores[fila.idCategoria] &&
+          Object.values(errores[fila.idCategoria]).some((msg) => Boolean(msg));
 
         return (
           <button
@@ -367,14 +474,18 @@ export default function CantidadDeMedallas() {
     },
   ];
 
-  /* ---- Filtros, búsqueda y paginación ---- */
+  /* =========================
+   * Filtros, búsqueda y paginación
+   * ========================= */
   const [paginaActual, setPaginaActual] = useState(1);
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
   const [filtroArea, setFiltroArea] = useState<string>("TODAS");
   const [filtroNivel, setFiltroNivel] = useState<string>("TODOS");
+  const [, setOrdenColumna] = useState<string | null>(null);
+  const [, setOrdenDireccion] = useState<"asc" | "desc">("asc");
 
   const areasDisponibles = useMemo(
-    () => Array.from(new Set(datosCompletos.map((d) => d.areaCompetencia))).sort(),
+    () => Array.from(new Set(datosCompletos.map((d) => d.area))).sort(),
     [datosCompletos]
   );
 
@@ -387,7 +498,7 @@ export default function CantidadDeMedallas() {
     let lista = [...datosCompletos];
 
     if (filtroArea !== "TODAS") {
-      lista = lista.filter((d) => d.areaCompetencia === filtroArea);
+      lista = lista.filter((d) => d.area === filtroArea);
     }
 
     if (filtroNivel !== "TODOS") {
@@ -397,7 +508,7 @@ export default function CantidadDeMedallas() {
     if (terminoBusqueda.trim()) {
       const term = terminoBusqueda.toLowerCase();
       lista = lista.filter((item) => {
-        const area = item.areaCompetencia.toLowerCase();
+        const area = item.area.toLowerCase();
         const nivel = item.nivel.toLowerCase();
         return area.includes(term) || nivel.includes(term);
       });
@@ -411,7 +522,29 @@ export default function CantidadDeMedallas() {
     return datosFiltrados.slice(inicio, inicio + REGISTROS_POR_PAGINA);
   }, [datosFiltrados, paginaActual]);
 
-  /* ---- Exportar CSV ---- */
+  const handleOrdenar = (columna: string, direccion: "asc" | "desc") => {
+    setOrdenColumna(columna);
+    setOrdenDireccion(direccion);
+    setDatosCompletos((prev) => {
+      const copia = [...prev];
+      copia.sort((a, b) => {
+        const valA = (a as any)[columna];
+        const valB = (b as any)[columna];
+
+        if (typeof valA === "string" && typeof valB === "string") {
+          return direccion === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+        return 0;
+      });
+      return copia;
+    });
+  };
+
+  /* =========================
+   * Exportar CSV
+   * ========================= */
   const exportarCsv = () => {
     if (!datosFiltrados.length) {
       mostrarResultado(
@@ -429,17 +562,19 @@ export default function CantidadDeMedallas() {
       "Oro",
       "Plata",
       "Bronce",
+      "Mención",
       "Nota mínima clasificación",
     ];
 
     const filas = datosFiltrados.map((d, idx) => [
       idx + 1,
-      d.areaCompetencia,
+      d.area,
       d.nivel,
-      d.medallasOro,
-      d.medallasPlata,
-      d.medallasBronce,
-      d.notaMinimaAprobacion,
+      d.oro,
+      d.plata,
+      d.bronce,
+      d.mencion,
+      d.notaMin,
     ]);
 
     const csvContenido = [
@@ -467,7 +602,9 @@ export default function CantidadDeMedallas() {
     URL.revokeObjectURL(url);
   };
 
-  /* ---- Exportar PDF (blanco y negro) ---- */
+  /* =========================
+   * Exportar PDF (blanco y negro)
+   * ========================= */
   const exportarPdf = () => {
     if (!datosFiltrados.length) {
       mostrarResultado(
@@ -486,6 +623,7 @@ export default function CantidadDeMedallas() {
         <th style="border:1px solid #000;padding:4px;">Oro</th>
         <th style="border:1px solid #000;padding:4px;">Plata</th>
         <th style="border:1px solid #000;padding:4px;">Bronce</th>
+        <th style="border:1px solid #000;padding:4px;">Mención</th>
         <th style="border:1px solid #000;padding:4px;">Nota mín. clasificación</th>
       </tr>
     `;
@@ -497,19 +635,22 @@ export default function CantidadDeMedallas() {
         <td style="border:1px solid #000;padding:4px;text-align:center;">${
           idx + 1
         }</td>
-        <td style="border:1px solid #000;padding:4px;">${d.areaCompetencia}</td>
+        <td style="border:1px solid #000;padding:4px;">${d.area}</td>
         <td style="border:1px solid #000;padding:4px;">${d.nivel}</td>
         <td style="border:1px solid #000;padding:4px;text-align:center;">${
-          d.medallasOro
+          d.oro
         }</td>
         <td style="border:1px solid #000;padding:4px;text-align:center;">${
-          d.medallasPlata
+          d.plata
         }</td>
         <td style="border:1px solid #000;padding:4px;text-align:center;">${
-          d.medallasBronce
+          d.bronce
         }</td>
         <td style="border:1px solid #000;padding:4px;text-align:center;">${
-          d.notaMinimaAprobacion
+          d.mencion
+        }</td>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${
+          d.notaMin
         }</td>
       </tr>
     `
@@ -571,6 +712,11 @@ export default function CantidadDeMedallas() {
               mínima de clasificación.
             </p>
           </div>
+          {cargando && (
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Cargando configuración...
+            </span>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -662,10 +808,7 @@ export default function CantidadDeMedallas() {
               datos={datosPaginados}
               columnas={columnas}
               conOrdenamiento
-              onOrdenar={() => {
-                // si tu TablaBase ya maneja ordenamiento interno,
-                // puedes implementar lógica aquí más adelante
-              }}
+              onOrdenar={handleOrdenar}
               conAcciones={false}
             />
           </div>
@@ -692,7 +835,7 @@ export default function CantidadDeMedallas() {
         title="Confirmar guardado"
         message={
           filaSeleccionada
-            ? `¿Deseas guardar la configuración para "${filaSeleccionada.areaCompetencia}" - "${filaSeleccionada.nivel}"?`
+            ? `¿Deseas guardar la configuración para "${filaSeleccionada.area}" - "${filaSeleccionada.nivel}"?`
             : ""
         }
         onCancel={() => {
