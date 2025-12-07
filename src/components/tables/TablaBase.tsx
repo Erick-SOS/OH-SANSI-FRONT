@@ -83,9 +83,25 @@ const TablaBase: React.FC<TablaBaseProps> = ({
                     <span>{columna.titulo}</span>
                     {conOrdenamiento && columna.ordenable !== false && onOrdenar && (
                       <div className="flex flex-col">
-                        <button onClick={() => onOrdenar(columna.clave, 'asc')} className="hover:text-blue-600 text-xs">Up</button>
-                        <button onClick={() => onOrdenar(columna.clave, 'desc')} className="hover:text-blue-600 text-xs">Down</button>
-                      </div>
+                      <button
+                        onClick={() => onOrdenar(columna.clave, 'asc')}
+                        className="hover:text-blue-600 transition-colors"
+                        title="Ordenar ascendente"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => onOrdenar(columna.clave, 'desc')}
+                        className="hover:text-blue-600 transition-colors"
+                        title="Ordenar descendente"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
                     )}
                   </div>
                 </TableCell>
