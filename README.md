@@ -83,7 +83,6 @@ Para mantener el control de versiones, sigue estas pautas:
     git commit -m "feat: [Descripción corta del nuevo feature o cambio]"
     ```
 
-    > **Convención:** Usar prefijos como `feat:`, `fix:`, `docs:`, etc.
 
 5.  Sube tus cambios al repositorio remoto:
 
