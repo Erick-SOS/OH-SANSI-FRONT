@@ -1,632 +1,1087 @@
-// src/pages/DesignarEvaluadorPage.tsx
-import React, { useState, useMemo } from "react";
-import TablaBase from '../components/tables/TablaBase';
-import Paginacion from '../components/ui/Paginacion';
-import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
+// src/pages/DesignarEvaluadores.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import { FiTrash2 } from "react-icons/fi";
+import { Eye, FileDown, FileText } from "lucide-react";
 
+import TablaBase from "../components/tables/TablaBase";
+import Paginacion from "../components/ui/Paginacion";
+import BarraBusquedaAreas from "../components/tables/BarraBusqueda";
+import ConfirmModal from "../components/modals/ConfirmModal";
+import ResultModal from "../components/modals/ResultModal";
+import SelectConBusqueda from "../components/ui/select/SelectConBusqueda";
 
-type AreaNivel = {
-  id: number;
-  area: string;
-  nivel: string; 
-  evaluadorId: number | null;
-  evaluadorNombre: string | null;
-  modalidad: string; 
-};
+import { api } from "../api";
+import { getToken } from "../components/auth/authStorage";
 
+type Modalidad = "INDIVIDUAL" | "GRUPAL";
 
-type Evaluador = {
-  id: number;
+interface EvaluadorAsignado {
+  idEvaluador: number;
+  ci: string;
   nombreCompleto: string;
-  profesion: string | null;
-  institucion: string | null;
-  habilitado: boolean;
-};
+  apellidoIndiceInicialParticipacion: string | null;
+  apellidoIndiceFinalParticipacion: string | null;
+}
 
+interface CategoriaAsignacionItem {
+  idCategoria: number;
+  area: string;
+  nivel: string;
+  modalidad: Modalidad;
+  evaluadores: EvaluadorAsignado[];
+}
 
-const AREAS_NIVELES_MOCK: AreaNivel[] = [
-  { id: 1, area: "Biología", nivel: "Secundaria", evaluadorId: null, evaluadorNombre: null, modalidad: "Individual" },
-  { id: 2, area: "Matemática", nivel: "Primaria", evaluadorId: 5, evaluadorNombre: "Juan Pérez", modalidad: "Grupal" },
-  { id: 3, area: "Física", nivel: "Secundaria", evaluadorId: null, evaluadorNombre: null, modalidad: "Individual" },
-  { id: 4, area: "Química", nivel: "Secundaria", evaluadorId: null, evaluadorNombre: null, modalidad: "Individual" },
-  { id: 5, area: "Historia", nivel: "Primaria", evaluadorId: null, evaluadorNombre: null, modalidad: "Grupal" },
-  { id: 6, area: "Lenguaje", nivel: "Secundaria", evaluadorId: 8, evaluadorNombre: "María García", modalidad: "Individual" },
-  { id: 7, area: "Educación Física", nivel: "Primaria", evaluadorId: 3, evaluadorNombre: "Carlos López", modalidad: "Grupal" },
-  { id: 8, area: "Arte", nivel: "Secundaria", evaluadorId: 7, evaluadorNombre: "Ana Martínez", modalidad: "Individual" },
-  { id: 9, area: "Inglés", nivel: "Primaria", evaluadorId: null, evaluadorNombre: null, modalidad: "Individual" },
-  { id: 10, area: "Computación", nivel: "Secundaria", evaluadorId: 6, evaluadorNombre: "Roberto Sánchez", modalidad: "Grupal" },
-  { id: 11, area: "Geografía", nivel: "Secundaria", evaluadorId: 9, evaluadorNombre: "Sofía Díaz", modalidad: "Individual" },
-  { id: 12, area: "Música", nivel: "Primaria", evaluadorId: null, evaluadorNombre: null, modalidad: "Individual" },
-  { id: 13, area: "Filosofía", nivel: "Secundaria", evaluadorId: 2, evaluadorNombre: "María García", modalidad: "Individual" },
-  { id: 14, area: "Tecnología", nivel: "Secundaria", evaluadorId: 6, evaluadorNombre: "Roberto Sánchez", modalidad: "Grupal" },
-  { id: 15, area: "Economía", nivel: "Secundaria", evaluadorId: null, evaluadorNombre: null, modalidad: "Individual" },
-];
+interface EvaluadorDisponible {
+  idEvaluador: number;
+  nombreCompleto: string;
+}
 
-// Datos mockeados para evaluadores
-const EVALUADORES_MOCK: Evaluador[] = [
-  { id: 1, nombreCompleto: "Juan Pérez", profesion: "Matemático", institucion: "Universidad Nacional", habilitado: true },
-  { id: 2, nombreCompleto: "María García", profesion: "Lic. en Lengua", institucion: "Colegio Modelo", habilitado: true },
-  { id: 3, nombreCompleto: "Carlos López", profesion: "Prof. Educación Física", institucion: "Instituto Deportivo", habilitado: true },
-  { id: 4, nombreCompleto: "Lucía Ramírez", profesion: "Bióloga", institucion: "Laboratorio Central", habilitado: false },
-  { id: 5, nombreCompleto: "Pedro Martínez", profesion: "Físico", institucion: "Centro de Investigación", habilitado: true },
-  { id: 6, nombreCompleto: "Roberto Sánchez", profesion: "Ing. en Sistemas", institucion: "Tecnología Avanzada", habilitado: true },
-  { id: 7, nombreCompleto: "Ana Martínez", profesion: "Artista Plástica", institucion: "Escuela de Bellas Artes", habilitado: true },
-  { id: 8, nombreCompleto: "Miguel Torres", profesion: "Químico", institucion: "Laboratorio Químico", habilitado: true },
-  { id: 9, nombreCompleto: "Sofía Díaz", profesion: "Historiadora", institucion: "Museo Nacional", habilitado: true },
-  { id: 10, nombreCompleto: "David Ruiz", profesion: "Prof. de Inglés", institucion: "Academia de Idiomas", habilitado: false },
-];
+const REGISTROS_POR_PAGINA = 10;
 
-const DesignarEvaluadorPage: React.FC = () => {
-  const [areasNiveles, setAreasNiveles] = useState<AreaNivel[]>(AREAS_NIVELES_MOCK);
-  const [evaluadores] = useState<Evaluador[]>(EVALUADORES_MOCK);
-  const [asignando, setAsignando] = useState<number | null>(null);
- 
+const DesignarEvaluadores: React.FC = () => {
+  const [token, setToken] = useState<string | null>(null);
+  const [gestion] = useState<number>(new Date().getFullYear());
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 7;
+  const [cargando, setCargando] = useState(false);
 
- 
-  const [modalConfirmacionAbierto, setModalConfirmacionAbierto] = useState(false);
-  const [areaConfirmacion, setAreaConfirmacion] = useState<AreaNivel | null>(null);
-  const [tipoAccion, setTipoAccion] = useState<'asignar' | 'cambiar' | 'quitar'>('asignar');
+  const [categorias, setCategorias] = useState<CategoriaAsignacionItem[]>([]);
 
- 
-  const [modalSeleccionAbierto, setModalSeleccionAbierto] = useState(false);
-  const [areaSeleccion, setAreaSeleccion] = useState<AreaNivel | null>(null);
-  const [evaluadorSeleccionado, setEvaluadorSeleccionado] = useState<number | null>(null);
+  // filtros / búsqueda / paginación
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [terminoBusqueda, setTerminoBusqueda] = useState("");
+  const [filtroArea, setFiltroArea] = useState<string>("TODAS");
+  const [filtroNivel, setFiltroNivel] = useState<string>("TODOS");
 
-  
-  const evaluadoresDisponibles = useMemo(() => {
-    return evaluadores.filter(e => e.habilitado);
-  }, [evaluadores]);
+  // Modal evaluadores
+  const [modalEvaluadoresVisible, setModalEvaluadoresVisible] =
+    useState(false);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] =
+    useState<CategoriaAsignacionItem | null>(null);
 
- 
-  const handleAsignarEvaluador = (areaId: number, evaluadorId: number | null) => {
-    setAsignando(areaId);
-   
-    setTimeout(() => {
-      const evaluador = evaluadores.find(e => e.id === evaluadorId);
-     
-      setAreasNiveles(prev =>
-        prev.map(area =>
-          area.id === areaId
-            ? {
-                ...area,
-                evaluadorId: evaluadorId,
-                evaluadorNombre: evaluador?.nombreCompleto || null,
-              }
-            : area
-        )
+  // Evaluadores disponibles para select
+  const [evaluadoresDisponibles, setEvaluadoresDisponibles] = useState<
+    EvaluadorDisponible[]
+  >([]);
+  const [valorSelectEvaluador, setValorSelectEvaluador] = useState("");
+  const [loadingEvaluadoresDisponibles, setLoadingEvaluadoresDisponibles] =
+    useState(false);
+  const [loadingAgregarEvaluador, setLoadingAgregarEvaluador] =
+    useState(false);
+
+  // Eliminar asignación
+  const [asignacionAEliminar, setAsignacionAEliminar] = useState<{
+    idCategoria: number;
+    idEvaluador: number;
+    nombreCompleto: string;
+  } | null>(null);
+  const [loadingEliminarAsignacion, setLoadingEliminarAsignacion] =
+    useState(false);
+
+  // Result modal
+  const [resultModal, setResultModal] = useState<{
+    visible: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const showResult = (
+    type: "success" | "error",
+    title: string,
+    message: string
+  ) => {
+    setResultModal({
+      visible: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const closeResultModal = () =>
+    setResultModal((prev) => ({ ...prev, visible: false }));
+
+  const labelModalidad = (m: Modalidad) =>
+    m === "INDIVIDUAL" ? "Individual" : "Grupal";
+
+  // =======================
+  // Carga inicial
+  // =======================
+  useEffect(() => {
+    (async () => {
+      const t = await getToken();
+      if (!t) {
+        showResult(
+          "error",
+          "Sesión no encontrada",
+          "No se encontró un token de autenticación. Inicia sesión nuevamente."
+        );
+        return;
+      }
+      setToken(t);
+      await cargarCategorias(t);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const mapCategoriasResponse = (resp: any): CategoriaAsignacionItem[] => {
+    return (resp.categorias ?? []).map((c: any) => ({
+      idCategoria: c.idCategoria ?? c.id,
+      area: c.area,
+      nivel: c.nivel,
+      modalidad: (c.modalidad ?? "INDIVIDUAL") as Modalidad,
+      evaluadores: (c.evaluadores ?? []).map((e: any) => ({
+        idEvaluador: e.idEvaluador ?? e.id,
+        ci: e.ci,
+        nombreCompleto: e.nombreCompleto,
+        apellidoIndiceInicialParticipacion:
+          e.apellidoIndiceInicialParticipacion ?? null,
+        apellidoIndiceFinalParticipacion:
+          e.apellidoIndiceFinalParticipacion ?? null,
+      })),
+    }));
+  };
+
+  const cargarCategorias = async (
+    tok: string,
+    opts?: {
+      silent?: boolean;
+      keepPage?: boolean;
+      categoriaSeleccionadaId?: number;
+    }
+  ) => {
+    const silent = opts?.silent ?? false;
+    const keepPage = opts?.keepPage ?? false;
+
+    if (!silent) setCargando(true);
+    try {
+      const resp = await api(`/designar/evaluadores?gestion=${gestion}`, {
+        token: tok,
+      });
+
+      const items = mapCategoriasResponse(resp);
+
+      setCategorias(items);
+
+      if (!keepPage) {
+        setPaginaActual(1);
+      }
+
+      if (opts?.categoriaSeleccionadaId) {
+        const encontrada =
+          items.find(
+            (c) => c.idCategoria === opts.categoriaSeleccionadaId
+          ) ?? null;
+        setCategoriaSeleccionada(encontrada);
+      }
+
+      return items;
+    } catch (error: any) {
+      console.error("Error al cargar categorías para asignación", error);
+      showResult(
+        "error",
+        "Error al cargar categorías",
+        error?.message ||
+          "No se pudieron obtener las categorías para asignar evaluadores."
       );
-     
-      setAsignando(null);
-      setModalConfirmacionAbierto(false);
-      setModalSeleccionAbierto(false);
-      setAreaConfirmacion(null);
-      setAreaSeleccion(null);
-      setEvaluadorSeleccionado(null);
-    }, 500);
-  };
-
-  
-  const abrirModalConfirmacion = (area: AreaNivel, accion: 'asignar' | 'cambiar' | 'quitar') => {
-    setAreaConfirmacion(area);
-    setTipoAccion(accion);
-    setModalConfirmacionAbierto(true);
-  };
-
-  
-  const abrirModalSeleccion = (area: AreaNivel) => {
-    setAreaSeleccion(area);
-    setEvaluadorSeleccionado(area.evaluadorId);
-    setModalSeleccionAbierto(true);
-  };
-
- 
-  const confirmarAccion = () => {
-    if (!areaConfirmacion) return;
-   
-    if (tipoAccion === 'quitar') {
-      handleAsignarEvaluador(areaConfirmacion.id, null);
-    } else {
-      abrirModalSeleccion(areaConfirmacion);
-      setModalConfirmacionAbierto(false);
+      return [];
+    } finally {
+      if (!silent) setCargando(false);
     }
   };
 
-  
-  const confirmarSeleccion = () => {
-    if (!areaSeleccion || evaluadorSeleccionado === null) return;
-    handleAsignarEvaluador(areaSeleccion.id, evaluadorSeleccionado);
+  const cargarEvaluadoresDisponibles = async (
+    tok: string,
+    idCategoria: number
+  ) => {
+    setLoadingEvaluadoresDisponibles(true);
+    try {
+      const resp = await api(
+        `/designar/evaluadores/${idCategoria}/evaluadores-disponibles`,
+        {
+          token: tok,
+        }
+      );
+
+      const lista: EvaluadorDisponible[] = (resp.evaluadores ?? []).map(
+        (e: any) => ({
+          idEvaluador: e.idEvaluador ?? e.id,
+          nombreCompleto: e.nombreCompleto,
+        })
+      );
+
+      setEvaluadoresDisponibles(lista);
+    } catch (error: any) {
+      console.error("Error al cargar evaluadores disponibles", error);
+      showResult(
+        "error",
+        "Error al cargar evaluadores",
+        error?.message ||
+          "No se pudieron obtener los evaluadores disponibles."
+      );
+    } finally {
+      setLoadingEvaluadoresDisponibles(false);
+    }
   };
 
- 
-  const CeldaEvaluadorEditable = ({ area }: { area: AreaNivel }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    return (
-      <div
-        className="relative min-w-[120px]"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div
-          className={`${badgeClass} cursor-pointer transition-all duration-200 ${
-            area.evaluadorId !== null
-              ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/60"
-              : "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60"
-          } ${isHovered ? 'ring-2 ring-offset-1 ring-opacity-50 ' +
-            (area.evaluadorId !== null ? 'ring-green-400' : 'ring-amber-400') : ''}`}
-          onDoubleClick={() => abrirModalSeleccion(area)}
-          title="Haz doble clic para asignar o cambiar evaluador"
-        >
-          {area.evaluadorNombre || "Sin asignar"}
-          {isHovered && (
-            <span className="ml-1 text-xs opacity-70">
-              {}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // =======================
+  // Filtros y búsqueda
+  // =======================
 
-  
-  const BotonAccionDesignar = ({ area }: { area: AreaNivel }) => {
-    return (
-      <button
-        onClick={() => {
-          if (area.evaluadorId) {
-            abrirModalConfirmacion(area, 'cambiar');
-          } else {
-            abrirModalConfirmacion(area, 'asignar');
-          }
-        }}
-        className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-all hover:scale-105 active:scale-95 ${
-          area.evaluadorId
-            ? "bg-blue-600 hover:bg-blue-700"
-            : "bg-green-600 hover:bg-green-700"
-        }`}
-        disabled={asignando === area.id}
-      >
-        {asignando === area.id ? (
-          <span className="flex items-center gap-1">
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-            Procesando...
-          </span>
-        ) : (
-          area.evaluadorId ? "Asignado" : "Asignar"
-        )}
-      </button>
-    );
-  };
+  const areasDisponiblesFiltro = useMemo(
+    () =>
+      Array.from(new Set(categorias.map((c) => c.area)))
+        .filter(Boolean)
+        .sort(),
+    [categorias]
+  );
 
-  const badgeClass = "inline-flex items-center justify-center min-w-[100px] px-3 py-1.5 text-xs font-semibold rounded-full";
+  const nivelesDisponiblesFiltro = useMemo(
+    () =>
+      Array.from(new Set(categorias.map((c) => c.nivel)))
+        .filter(Boolean)
+        .sort(),
+    [categorias]
+  );
 
-  const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    const sorted = [...areasNiveles].sort((a, b) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const aVal = (a as any)[column];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bVal = (b as any)[column];
-     
-      if (column === 'evaluadorNombre') {
-        const nombreA = a.evaluadorNombre || '';
-        const nombreB = b.evaluadorNombre || '';
-        return direction === 'asc' ? nombreA.localeCompare(nombreB) : nombreB.localeCompare(nombreA);
-      }
-     
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-      return 0;
+  const categoriasFiltradas = useMemo(() => {
+    let lista = [...categorias];
+
+    if (filtroArea !== "TODAS") {
+      lista = lista.filter((c) => c.area === filtroArea);
+    }
+
+    if (filtroNivel !== "TODOS") {
+      lista = lista.filter((c) => c.nivel === filtroNivel);
+    }
+
+    if (terminoBusqueda.trim()) {
+      const term = terminoBusqueda.toLowerCase();
+      lista = lista.filter((c) => {
+        const textoEval = c.evaluadores
+          .map(
+            (e) =>
+              `${e.nombreCompleto} ${e.ci}`.toLocaleLowerCase("es-BO")
+          )
+          .join(" ");
+
+        return (
+          c.area.toLowerCase().includes(term) ||
+          c.nivel.toLowerCase().includes(term) ||
+          labelModalidad(c.modalidad).toLowerCase().includes(term) ||
+          textoEval.includes(term)
+        );
+      });
+    }
+
+    return lista;
+  }, [categorias, filtroArea, filtroNivel, terminoBusqueda]);
+
+  const categoriasPaginadas = useMemo(() => {
+    const inicio = (paginaActual - 1) * REGISTROS_POR_PAGINA;
+    return categoriasFiltradas.slice(inicio, inicio + REGISTROS_POR_PAGINA);
+  }, [categoriasFiltradas, paginaActual]);
+
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(categoriasFiltradas.length / REGISTROS_POR_PAGINA)
+  );
+
+  // =======================
+  // Ordenamiento desde TablaBase
+  // =======================
+
+  const handleOrdenar = (columna: string, direccion: "asc" | "desc") => {
+    setCategorias((prev) => {
+      const copia = [...prev];
+      copia.sort((a, b) => {
+        const valA: any = (a as any)[columna];
+        const valB: any = (b as any)[columna];
+
+        if (typeof valA === "string" && typeof valB === "string") {
+          return direccion === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+
+        return 0;
+      });
+      return copia;
     });
-    setAreasNiveles(sorted);
+    setPaginaActual(1);
   };
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return areasNiveles;
-    const term = searchTerm.toLowerCase();
-    return areasNiveles.filter(item =>
-      item.area.toLowerCase().includes(term) ||
-      item.nivel.toLowerCase().includes(term) ||
-      (item.evaluadorNombre?.toLowerCase() || '').includes(term) ||
-      item.modalidad.toLowerCase().includes(term)
+  // =======================
+  // Modal evaluadores
+  // =======================
+
+  const abrirModalEvaluadores = async (cat: CategoriaAsignacionItem) => {
+    setCategoriaSeleccionada(cat);
+    setModalEvaluadoresVisible(true);
+    setValorSelectEvaluador("");
+
+    if (!token) {
+      showResult(
+        "error",
+        "Sin sesión",
+        "No se pudo obtener el token de autenticación."
+      );
+      return;
+    }
+
+    await cargarEvaluadoresDisponibles(token, cat.idCategoria);
+  };
+
+  const cerrarModalEvaluadores = () => {
+    if (loadingAgregarEvaluador || loadingEvaluadoresDisponibles) return;
+    setModalEvaluadoresVisible(false);
+    setCategoriaSeleccionada(null);
+    setEvaluadoresDisponibles([]);
+    setValorSelectEvaluador("");
+  };
+
+  const labelEvaluadorDisponible = (e: EvaluadorDisponible) =>
+    `${e.nombreCompleto} (ID ${e.idEvaluador})`;
+
+  // ahora el agregar puede recibir el label directamente (para usarlo desde el select)
+  const handleAgregarEvaluador = async (labelDesdeSelect?: string) => {
+    if (!token) {
+      showResult(
+        "error",
+        "Sin sesión",
+        "No se pudo obtener el token de autenticación."
+      );
+      return;
+    }
+
+    if (!categoriaSeleccionada) {
+      showResult(
+        "error",
+        "Sin categoría",
+        "No se ha seleccionado una categoría."
+      );
+      return;
+    }
+
+    const label = labelDesdeSelect ?? valorSelectEvaluador;
+
+    if (!label) {
+      showResult(
+        "error",
+        "Evaluador no seleccionado",
+        "Selecciona un evaluador de la lista para asignarlo."
+      );
+      return;
+    }
+
+    const seleccionado = evaluadoresDisponibles.find(
+      (e) => labelEvaluadorDisponible(e) === label
     );
-  }, [areasNiveles, searchTerm]);
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(start, start + itemsPerPage);
-  }, [filteredData, currentPage]);
+    if (!seleccionado) {
+      showResult(
+        "error",
+        "Evaluador inválido",
+        "El evaluador seleccionado no es válido."
+      );
+      return;
+    }
 
-  const columns = [
-    {
-      clave: 'area',
-      titulo: 'Área',
-      alineacion: 'izquierda' as const,
-      ordenable: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: AreaNivel & { numero: number }) => (
-        <div className="flex items-center">
-          <span className="text-gray-700 dark:text-gray-300 font-medium mr-3">
-            {fila.numero}
-          </span>
-          <div className="font-medium text-gray-900 dark:text-white">
-            {fila.area}
-          </div>
-        </div>
+    try {
+      setLoadingAgregarEvaluador(true);
+
+      await api(
+        `/designar/evaluadores/${categoriaSeleccionada.idCategoria}/evaluadores`,
+        {
+          method: "POST",
+          token,
+          body: {
+            evaluador_id: seleccionado.idEvaluador,
+          },
+        }
+      );
+
+      showResult(
+        "success",
+        "Evaluador asignado",
+        `Se asignó a ${seleccionado.nombreCompleto} como evaluador de ${categoriaSeleccionada.area} - ${categoriaSeleccionada.nivel} (${labelModalidad(
+          categoriaSeleccionada.modalidad
+        )}).`
+      );
+
+      await cargarCategorias(token, {
+        silent: true,
+        keepPage: true,
+        categoriaSeleccionadaId: categoriaSeleccionada.idCategoria,
+      });
+
+      await cargarEvaluadoresDisponibles(
+        token,
+        categoriaSeleccionada.idCategoria
+      );
+
+      setValorSelectEvaluador("");
+    } catch (error: any) {
+      console.error("Error al asignar evaluador", error);
+      showResult(
+        "error",
+        "Error al asignar evaluador",
+        error?.mensaje ||
+          error?.message ||
+          "No se pudo asignar el evaluador a la categoría."
+      );
+    } finally {
+      setLoadingAgregarEvaluador(false);
+    }
+  };
+
+  const solicitarEliminarAsignacion = (evalItem: EvaluadorAsignado) => {
+    if (!categoriaSeleccionada) return;
+    setAsignacionAEliminar({
+      idCategoria: categoriaSeleccionada.idCategoria,
+      idEvaluador: evalItem.idEvaluador,
+      nombreCompleto: evalItem.nombreCompleto,
+    });
+  };
+
+  const confirmarEliminarAsignacion = async () => {
+    if (!token || !asignacionAEliminar) return;
+
+    try {
+      setLoadingEliminarAsignacion(true);
+
+      await api(
+        `/designar/evaluadores/${asignacionAEliminar.idCategoria}/evaluadores/${asignacionAEliminar.idEvaluador}`,
+        {
+          method: "DELETE",
+          token,
+        }
+      );
+
+      showResult(
+        "success",
+        "Asignación eliminada",
+        `Se eliminó la asignación de ${asignacionAEliminar.nombreCompleto} de la categoría seleccionada.`
+      );
+
+      await cargarCategorias(token, {
+        silent: true,
+        keepPage: true,
+        categoriaSeleccionadaId: asignacionAEliminar.idCategoria,
+      });
+
+      await cargarEvaluadoresDisponibles(
+        token,
+        asignacionAEliminar.idCategoria
+      );
+    } catch (error: any) {
+      console.error("Error al eliminar asignación", error);
+      showResult(
+        "error",
+        "Error al eliminar asignación",
+        error?.mensaje ||
+          error?.message ||
+          "No se pudo eliminar la asignación del evaluador."
+      );
+    } finally {
+      setLoadingEliminarAsignacion(false);
+      setAsignacionAEliminar(null);
+    }
+  };
+
+  // =======================
+  // Exportar CSV / PDF
+  // =======================
+
+  const exportarCsv = () => {
+    if (!categoriasFiltradas.length) {
+      showResult(
+        "error",
+        "Sin datos para exportar",
+        "No hay categorías para exportar con los filtros actuales."
+      );
+      return;
+    }
+
+    const encabezados = [
+      "N.º",
+      "Área",
+      "Nivel",
+      "Modalidad",
+      "Total evaluadores",
+      "Detalle evaluadores",
+    ];
+
+    const filas = categoriasFiltradas.map((c, idx) => {
+      const detalle = c.evaluadores
+        .map(
+          (e) =>
+            `${e.ci} - ${e.nombreCompleto}` +
+            (e.apellidoIndiceInicialParticipacion ||
+            e.apellidoIndiceFinalParticipacion
+              ? ` [${e.apellidoIndiceInicialParticipacion ?? "?"} - ${
+                  e.apellidoIndiceFinalParticipacion ?? "?"
+                }]`
+              : "")
+        )
+        .join(" | ");
+
+      return [
+        idx + 1,
+        c.area,
+        c.nivel,
+        labelModalidad(c.modalidad),
+        c.evaluadores.length,
+        detalle || "Sin evaluadores",
+      ];
+    });
+
+    const csvContenido = [
+      encabezados.join(";"),
+      ...filas.map((f) =>
+        f
+          .map((valor) => {
+            const str = String(valor ?? "").replace(/"/g, '""');
+            return `"${str}"`;
+          })
+          .join(";")
       ),
+    ].join("\n");
+
+    const blob = new Blob([csvContenido], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = "designacion_evaluadores_olimpiada.csv";
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportarPdf = () => {
+    if (!categoriasFiltradas.length) {
+      showResult(
+        "error",
+        "Sin datos para exportar",
+        "No hay categorías para exportar con los filtros actuales."
+      );
+      return;
+    }
+
+    const encabezadoHtml = `
+      <tr>
+        <th style="border:1px solid #000;padding:4px;">N.º</th>
+        <th style="border:1px solid #000;padding:4px;">Área</th>
+        <th style="border:1px solid #000;padding:4px;">Nivel</th>
+        <th style="border:1px solid #000;padding:4px;">Modalidad</th>
+        <th style="border:1px solid #000;padding:4px;">Total evaluadores</th>
+        <th style="border:1px solid #000;padding:4px;">Detalle evaluadores</th>
+      </tr>
+    `;
+
+    const filasHtml = categoriasFiltradas
+      .map((c, idx) => {
+        const detalle = c.evaluadores
+          .map(
+            (e) =>
+              `${e.ci} - ${e.nombreCompleto}` +
+              (e.apellidoIndiceInicialParticipacion ||
+              e.apellidoIndiceFinalParticipacion
+                ? ` [${e.apellidoIndiceInicialParticipacion ?? "?"} - ${
+                    e.apellidoIndiceFinalParticipacion ?? "?"
+                  }]`
+                : "")
+          )
+          .join(" | ");
+
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:4px;text-align:center;">${
+              idx + 1
+            }</td>
+            <td style="border:1px solid #000;padding:4px;">${c.area}</td>
+            <td style="border:1px solid #000;padding:4px;">${c.nivel}</td>
+            <td style="border:1px solid #000;padding:4px;text-align:center;">${labelModalidad(
+              c.modalidad
+            )}</td>
+            <td style="border:1px solid #000;padding:4px;text-align:center;">${
+              c.evaluadores.length
+            }</td>
+            <td style="border:1px solid #000;padding:4px;">${
+              detalle || "Sin evaluadores"
+            }</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const ventana = window.open("", "_blank");
+    if (!ventana) return;
+
+    ventana.document.write(`
+      <html>
+        <head>
+          <title>Designación de evaluadores por categoría</title>
+          <style>
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              font-size: 12px;
+              color: #000;
+              background: #fff;
+            }
+            h1 {
+              font-size: 18px;
+              margin-bottom: 12px;
+            }
+            table {
+              border-collapse: collapse;
+              width: 100%;
+            }
+            th {
+              background: #f3f3f3;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Designación de evaluadores por categoría (gestión ${gestion})</h1>
+          <table>
+            <thead>${encabezadoHtml}</thead>
+            <tbody>${filasHtml}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+
+    ventana.document.close();
+    ventana.focus();
+    ventana.print();
+  };
+
+  // =======================
+  // Columnas tabla principal
+  // =======================
+
+  const columnas = [
+    {
+      clave: "area" as const,
+      titulo: "Área",
+      alineacion: "izquierda" as const,
+      ordenable: true,
     },
     {
-      clave: 'nivel',
-      titulo: 'Nivel',
-      alineacion: 'centro' as const,
+      clave: "nivel" as const,
+      titulo: "Nivel",
+      alineacion: "izquierda" as const,
       ordenable: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: AreaNivel) => (
+    },
+    {
+      clave: "modalidad" as const,
+      titulo: "Modalidad",
+      alineacion: "centro" as const,
+      ordenable: true,
+      formatearCelda: (valor: Modalidad) => (
         <span
-          className={`${badgeClass} ${
-            fila.nivel === "Primaria"
-              ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-              : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+            valor === "INDIVIDUAL"
+              ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+              : "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
           }`}
         >
-          {fila.nivel}
+          {labelModalidad(valor)}
         </span>
       ),
     },
     {
-      clave: 'evaluadorNombre',
-      titulo: 'Evaluador',
-      alineacion: 'centro' as const,
-      ordenable: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: AreaNivel) => (
-        <CeldaEvaluadorEditable area={fila} />
-      ),
-    },
-    {
-      clave: 'modalidad',
-      titulo: 'Modalidad',
-      alineacion: 'centro' as const,
-      ordenable: true,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: AreaNivel) => (
-        <span
-          className={`${badgeClass} ${
-            fila.modalidad === "Individual"
-              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-              : "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
-          }`}
-        >
-          {fila.modalidad}
-        </span>
-      ),
-    },
-    {
-      clave: 'accion',
-      titulo: 'Acción',
-      alineacion: 'centro' as const,
+      clave: "evaluadores" as const,
+      titulo: "Evaluadores",
+      alineacion: "izquierda" as const,
       ordenable: false,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: AreaNivel) => (
-        <BotonAccionDesignar area={fila} />
-      ),
+      formatearCelda: (valor: EvaluadorAsignado[]) => {
+        if (!valor.length) {
+          return (
+            <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-200">
+              Sin evaluadores asignados
+            </span>
+          );
+        }
+
+        return (
+          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">
+            {valor.length} evaluador{valor.length > 1 ? "es" : ""}
+          </span>
+        );
+      },
     },
   ];
 
+  // =======================
+  // Render
+  // =======================
+
   return (
-    <>
-      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Designar Evaluadores por Área y Nivel
+    <div className="min-h-screen bg-gray-50 p-4 transition-colors dark:bg-gray-950 sm:p-6">
+      <div className="mx-auto w-full max-w-6xl space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
+              Designación de evaluadores
             </h1>
-            <nav className="text-sm text-gray-600 dark:text-gray-400 mt-2 sm:mt-0">
-              Inicio › Gestión de Evaluador › Designar
-            </nav>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Asigna y administra evaluadores por categoría (área, nivel y
+              modalidad). Gestión {gestion}.
+            </p>
           </div>
-
-          {/* Contadores */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-none border border-gray-200 dark:border-gray-700 p-4 mb-6">
-            <div className="flex flex-wrap justify-between items-center gap-4 text-left">
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Total Áreas:</span>
-                <span className="text-gray-700 dark:text-gray-300 font-normal text-base">{areasNiveles.length}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Asignados:</span>
-                <span className="text-green-600 dark:text-green-400 font-normal text-base">{areasNiveles.filter(a => a.evaluadorId).length}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Pendientes:</span>
-                <span className="text-amber-600 dark:text-amber-400 font-normal text-base">{areasNiveles.filter(a => !a.evaluadorId).length}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-900 dark:text-gray-300 font-bold text-base">Mostrando:</span>
-                <span className="text-gray-700 dark:text-gray-300 font-normal text-base">{filteredData.length}</span>
-              </div>
-            </div>
-          </div>
-
-          {}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-            <BarraBusquedaAreas
-              terminoBusqueda={searchTerm}
-              onBuscarChange={(t) => { setSearchTerm(t); setCurrentPage(1); }}
-            />
-          </div>
-
-          {}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="min-w-[800px] overflow-x-auto">
-              <TablaBase
-                datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
-                columnas={columns}
-                conOrdenamiento={true}
-                onOrdenar={handleSort}
-                conAcciones={false}
-              />
-            </div>
-          </div>
-
-          {/* Paginación */}
-          <div className="mt-6">
-            <Paginacion
-              paginaActual={currentPage}
-              totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
-              totalRegistros={filteredData.length}
-              registrosPorPagina={itemsPerPage}
-              onPaginaChange={setCurrentPage}
-            />
+          <div className="flex items-center gap-3">
+            {cargando && (
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                Cargando datos…
+              </span>
+            )}
           </div>
         </div>
-      </div>
 
-      {}
-      {modalConfirmacionAbierto && areaConfirmacion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 shadow-xl">
-            {/* Header */}
-            <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                  {tipoAccion === 'cambiar'
-                    ? "Cambiar evaluador"
-                    : tipoAccion === 'asignar'
-                    ? "Asignar evaluador"
-                    : "Quitar evaluador"}
-                </h3>
-                <button
-                  onClick={() => {
-                    setModalConfirmacionAbierto(false);
-                    setAreaConfirmacion(null);
+        {/* Filtros + exportaciones */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            {/* Búsqueda + filtros */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="w-full max-w-xs">
+                <BarraBusquedaAreas
+                  terminoBusqueda={terminoBusqueda}
+                  onBuscarChange={(t: string) => {
+                    setTerminoBusqueda(t);
+                    setPaginaActual(1);
                   }}
-                  className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 text-sm"
-                >
-                  ✕
-                </button>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                {tipoAccion === 'cambiar'
-                  ? "¿Estás seguro de que deseas cambiar el evaluador asignado?"
-                  : tipoAccion === 'asignar'
-                  ? "¿Estás seguro de que deseas asignar un evaluador a esta área?"
-                  : "¿Estás seguro de que deseas quitar el evaluador asignado?"}
-              </p>
-            </div>
-
-            {/* Contenido */}
-            <div className="p-4">
-              <div className="mb-4 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Área:</span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{areaConfirmacion.area}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Nivel:</span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{areaConfirmacion.nivel}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Modalidad:</span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{areaConfirmacion.modalidad}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Evaluador actual:</span>
-                  <span className={`text-sm font-semibold ${areaConfirmacion.evaluadorId ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}>
-                    {areaConfirmacion.evaluadorNombre || "Sin asignar"}
-                  </span>
-                </div>
+                />
               </div>
 
-              {/* Botones PEQUEÑOS */}
-              <div className="space-y-2">
-                {/* Botón principal */}
-                <button
-                  onClick={confirmarAccion}
-                  className={`w-full py-2 px-3 text-xs font-medium text-white rounded-lg transition-colors ${
-                    tipoAccion === 'quitar'
-                      ? "bg-red-600 hover:bg-red-700"
-                      : tipoAccion === 'cambiar'
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "bg-green-600 hover:bg-green-700"
-                  }`}
-                >
-                  {tipoAccion === 'quitar'
-                    ? "Sí, quitar evaluador"
-                    : tipoAccion === 'cambiar'
-                    ? "Sí, cambiar evaluador"
-                    : "Sí, asignar evaluador"}
-                </button>
-
-                {/* Botón secundario - solo para cambiar */}
-                {tipoAccion === 'cambiar' && areaConfirmacion.evaluadorId && (
-                  <>
-                    <button
-                      onClick={() => {
-                        abrirModalSeleccion(areaConfirmacion);
-                        setModalConfirmacionAbierto(false);
-                      }}
-                      className="w-full py-2 px-3 text-xs font-medium text-green-600 dark:text-green-400 border border-green-600 dark:border-green-500 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                    >
-                      + Agregar otro evaluador
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setTipoAccion('quitar');
-                      }}
-                      className="w-full py-2 px-3 text-xs font-medium text-red-600 dark:text-red-400 border border-red-600 dark:border-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    >
-                      Quitar asignación actual
-                    </button>
-                  </>
-                )}
-
-                {/* Botón cancelar */}
-                <button
-                  onClick={() => {
-                    setModalConfirmacionAbierto(false);
-                    setAreaConfirmacion(null);
-                  }}
-                  className="w-full py-2 px-3 text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {}
-      {modalSeleccionAbierto && areaSeleccion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white dark:bg-gray-800 shadow-xl">
-            {/* Header */}
-            <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                  Seleccionar Evaluador
-                </h3>
-                <button
-                  onClick={() => {
-                    setModalSeleccionAbierto(false);
-                    setAreaSeleccion(null);
-                    setEvaluadorSeleccionado(null);
-                  }}
-                  className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 text-sm"
-                >
-                  ✕
-                </button>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Selecciona un evaluador para <span className="font-medium text-gray-900 dark:text-white">{areaSeleccion.area}</span> ({areaSeleccion.nivel})
-              </p>
-            </div>
-
-            <div className="p-4">
-              {/* Seleccionar un evaluador */}
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Selecciona un evaluador
-                </label>
-                <div className="relative">
+              <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                {/* Filtro área */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Área
+                  </label>
                   <select
-                    value={evaluadorSeleccionado || ""}
-                    onChange={(e) => setEvaluadorSeleccionado(e.target.value ? Number(e.target.value) : null)}
-                    className="w-full px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                    value={filtroArea}
+                    onChange={(e) => {
+                      setFiltroArea(e.target.value);
+                      setPaginaActual(1);
+                    }}
+                    className="w-full min-w-[140px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                   >
-                    <option value="">-- Selecciona un evaluador --</option>
-                    {evaluadoresDisponibles.map((evaluador) => (
-                      <option key={evaluador.id} value={evaluador.id}>
-                        {evaluador.nombreCompleto}
+                    <option value="TODAS">Todas las áreas</option>
+                    {areasDisponiblesFiltro.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
                       </option>
                     ))}
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                </div>
+
+                {/* Filtro nivel */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Nivel
+                  </label>
+                  <select
+                    value={filtroNivel}
+                    onChange={(e) => {
+                      setFiltroNivel(e.target.value);
+                      setPaginaActual(1);
+                    }}
+                    className="w-full min-w-[140px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  >
+                    <option value="TODOS">Todos los niveles</option>
+                    {nivelesDisponiblesFiltro.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+            </div>
 
-              {/* Asignar otro evaluador */}
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Asignar otro evaluador (opcional)
-                </label>
-                <div className="relative">
-                  <select
-                    className="w-full px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white cursor-not-allowed opacity-60"
-                    disabled
-                  >
-                    <option>-- Selecciona otro evaluador --</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Útil para grupos grandes que requieren más de un evaluador
+            {/* Exportar */}
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <button
+                type="button"
+                onClick={exportarCsv}
+                className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-brand-500 dark:hover:bg-brand-400 dark:focus-visible:ring-offset-gray-950"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Descargar Excel (CSV)
+              </button>
+              <button
+                type="button"
+                onClick={exportarPdf}
+                className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-950"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Descargar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabla */}
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <TablaBase
+            datos={categoriasPaginadas}
+            columnas={columnas}
+            conOrdenamiento
+            onOrdenar={handleOrdenar}
+            conAcciones
+            renderAcciones={(fila: CategoriaAsignacionItem) => (
+              <div className="flex items-center justify-center gap-2">
+                {/* Ver evaluadores */}
+                <button
+                  type="button"
+                  onClick={() => abrirModalEvaluadores(fila)}
+                  className="inline-flex items-center justify-center rounded-full bg-gray-100 p-2 text-sm text-gray-600 transition hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                  aria-label="Ver evaluadores de la categoría"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          />
+        </div>
+
+        {/* Paginación */}
+        <div className="flex justify-end">
+          <Paginacion
+            paginaActual={paginaActual}
+            totalPaginas={totalPaginas}
+            totalRegistros={categoriasFiltradas.length}
+            registrosPorPagina={REGISTROS_POR_PAGINA}
+            onPaginaChange={setPaginaActual}
+          />
+        </div>
+      </div>
+
+      {/* Modal resultado */}
+      <ResultModal
+        visible={resultModal.visible}
+        type={resultModal.type}
+        title={resultModal.title}
+        message={resultModal.message}
+        onClose={closeResultModal}
+      />
+
+      {/* Modal asignar / ver evaluadores */}
+      {modalEvaluadoresVisible && categoriaSeleccionada && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-gray-100 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+            {/* Header modal */}
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
+                  Evaluadores asignados
+                </h2>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  {categoriaSeleccionada.area} · {categoriaSeleccionada.nivel} ·{" "}
+                  {labelModalidad(categoriaSeleccionada.modalidad)} — Gestión{" "}
+                  {gestion}.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={cerrarModalEvaluadores}
+                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+              >
+                <span className="sr-only">Cerrar</span>✕
+              </button>
+            </div>
 
-              {}
-              {evaluadorSeleccionado && (
-                <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
-                  <div className="text-xs">
-                    <div className="font-medium text-blue-800 dark:text-blue-300">
-                      {evaluadoresDisponibles.find(e => e.id === evaluadorSeleccionado)?.nombreCompleto}
-                    </div>
-                    <div className="text-blue-600 dark:text-blue-400 mt-0.5">
-                      {evaluadoresDisponibles.find(e => e.id === evaluadorSeleccionado)?.profesion}
-                      {evaluadoresDisponibles.find(e => e.id === evaluadorSeleccionado)?.institucion &&
-                        ` • ${evaluadoresDisponibles.find(e => e.id === evaluadorSeleccionado)?.institucion}`}
-                    </div>
+            {/* Contenido modal */}
+            <div className="space-y-5">
+              {/* Tabla de evaluadores asignados */}
+              <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-3 dark:border-gray-700 dark:bg-gray-900/60">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                  Evaluadores asignados (
+                  {categoriaSeleccionada.evaluadores.length}/5)
+                </h3>
+
+                {categoriaSeleccionada.evaluadores.length === 0 ? (
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    No hay evaluadores asignados a esta categoría. Usa el
+                    selector de abajo para agregar uno.
+                  </p>
+                ) : (
+                  <div className="max-h-64 overflow-auto rounded-lg border border-gray-200 bg-white text-xs dark:border-gray-700 dark:bg-gray-950">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            CI
+                          </th>
+                          <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Evaluador
+                          </th>
+                          <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Rango de participaciones
+                          </th>
+                          <th className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Acciones
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                        {categoriaSeleccionada.evaluadores.map((e) => (
+                          <tr key={e.idEvaluador}>
+                            <td className="px-3 py-2 text-[11px] text-gray-800 dark:text-gray-200">
+                              {e.ci}
+                            </td>
+                            <td className="px-3 py-2 text-[11px] text-gray-800 dark:text-gray-200">
+                              {e.nombreCompleto}
+                            </td>
+                            <td className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300">
+                              {e.apellidoIndiceInicialParticipacion ||
+                              e.apellidoIndiceFinalParticipacion ? (
+                                <span>
+                                  Desde{" "}
+                                  <span className="font-medium">
+                                    {e.apellidoIndiceInicialParticipacion ??
+                                      "?"}
+                                  </span>{" "}
+                                  hasta{" "}
+                                  <span className="font-medium">
+                                    {e.apellidoIndiceFinalParticipacion ??
+                                      "?"}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">
+                                  Rango aún no definido
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => solicitarEliminarAsignacion(e)}
+                                className="inline-flex items-center justify-center rounded-full bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/40"
+                                aria-label="Eliminar asignación"
+                              >
+                                <FiTrash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Agregar evaluador */}
+              <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/60 p-3 dark:border-brand-500/40 dark:bg-brand-500/5">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-800 dark:text-brand-200">
+                  Agregar evaluador
+                </h3>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Evaluador disponible (máx. 5 por categoría, máx. 5
+                      asignaciones por evaluador)
+                    </label>
+                    <SelectConBusqueda
+                      opciones={evaluadoresDisponibles.map(
+                        (e) => labelEvaluadorDisponible(e)
+                      )}
+                      value={valorSelectEvaluador}
+                      placeholder={
+                        loadingEvaluadoresDisponibles
+                          ? "Cargando evaluadores..."
+                          : "Buscar evaluador por nombre..."
+                      }
+                      onChange={(nuevo) => {
+                        if (
+                          loadingEvaluadoresDisponibles ||
+                          loadingAgregarEvaluador
+                        ) {
+                          return;
+                        }
+                        setValorSelectEvaluador(nuevo);
+                        // al seleccionar, se agrega directamente
+                        handleAgregarEvaluador(nuevo);
+                      }}
+                    />
+                    {!evaluadoresDisponibles.length &&
+                      !loadingEvaluadoresDisponibles && (
+                        <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                          No hay evaluadores disponibles que cumplan las
+                          condiciones (rol, estado activo y límite de
+                          asignaciones).
+                        </p>
+                      )}
+                  </div>
+                  <div className="sm:w-44">
+                    <button
+                      type="button"
+                      onClick={() => handleAgregarEvaluador()}
+                      disabled={
+                        loadingAgregarEvaluador ||
+                        loadingEvaluadoresDisponibles ||
+                        !valorSelectEvaluador ||
+                        categoriaSeleccionada.evaluadores.length >= 5
+                      }
+                      className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 ${
+                        loadingAgregarEvaluador ||
+                        loadingEvaluadoresDisponibles ||
+                        !valorSelectEvaluador ||
+                        categoriaSeleccionada.evaluadores.length >= 5
+                          ? "cursor-not-allowed bg-brand-300 dark:bg-brand-400/60"
+                          : "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400"
+                      }`}
+                    >
+                      {loadingAgregarEvaluador
+                        ? "Agregando..."
+                        : "Agregar evaluador"}
+                    </button>
+                    {categoriaSeleccionada.evaluadores.length >= 5 && (
+                      <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">
+                        Esta categoría ya tiene el máximo de 5 evaluadores.
+                      </p>
+                    )}
                   </div>
                 </div>
-              )}
-
-              {/* Botones PEQUEÑOS */}
-              <div className="space-y-1.5">
-                <button
-                  onClick={confirmarSeleccion}
-                  disabled={!evaluadorSeleccionado}
-                  className={`w-full py-2 px-3 text-xs font-medium text-white rounded-lg transition-colors ${
-                    evaluadorSeleccionado
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"
-                  }`}
-                >
-                  {areaSeleccion.evaluadorId ? "Confirmar Cambio" : "Confirmar Asignación"}
-                </button>
-               
-                <button
-                  onClick={() => {
-                    setModalSeleccionAbierto(false);
-                    setAreaSeleccion(null);
-                    setEvaluadorSeleccionado(null);
-                  }}
-                  className="w-full py-2 px-3 text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors bg-white dark:bg-gray-800"
-                >
-                  Cancelar
-                </button>
               </div>
             </div>
           </div>
         </div>
       )}
-    </>
+
+      {/* Confirm modal para eliminar asignación */}
+      <ConfirmModal
+        visible={!!asignacionAEliminar}
+        title="Eliminar asignación"
+        message={
+          asignacionAEliminar
+            ? `¿Deseas eliminar la asignación de "${asignacionAEliminar.nombreCompleto}" de esta categoría? La distribución de participaciones se actualizará automáticamente.`
+            : ""
+        }
+        onCancel={() => {
+          if (!loadingEliminarAsignacion) setAsignacionAEliminar(null);
+        }}
+        onConfirm={confirmarEliminarAsignacion}
+        confirmText="Eliminar asignación"
+        cancelText="Cancelar"
+        danger
+        loading={loadingEliminarAsignacion}
+      />
+    </div>
   );
 };
 
-export default DesignarEvaluadorPage;
+export default DesignarEvaluadores;

@@ -1,6 +1,6 @@
 // src/pages/GestionDeEvaluadores.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { FileDown, FileText, RefreshCw, ShieldCheck, ShieldOff } from "lucide-react";
+import { FileDown, FileText, ShieldCheck, ShieldOff, Eye } from "lucide-react";
 
 import TablaBase from "../components/tables/TablaBase";
 import Paginacion from "../components/ui/Paginacion";
@@ -39,12 +39,19 @@ const GestionDeEvaluadores: React.FC = () => {
   const [paginaActual, setPaginaActual] = useState(1);
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
 
+  // Filtro por estado: TODOS | ACTIVOS | INACTIVOS
+  const [filtroEstado, setFiltroEstado] = useState<"TODOS" | "ACTIVOS" | "INACTIVOS">("TODOS");
+
   // target para habilitar/inhabilitar
   const [estadoTarget, setEstadoTarget] = useState<{
     evaluador: EvaluadorItem;
     nuevoEstado: boolean;
   } | null>(null);
   const [loadingEstado, setLoadingEstado] = useState(false);
+
+  // Modal para ver categorías asignadas
+  const [catModalVisible, setCatModalVisible] = useState(false);
+  const [catModalEvaluador, setCatModalEvaluador] = useState<EvaluadorItem | null>(null);
 
   // Result modal
   const [resultModal, setResultModal] = useState<{
@@ -135,17 +142,21 @@ const GestionDeEvaluadores: React.FC = () => {
     }
   };
 
-  const recargar = async () => {
-    if (!token) return;
-    await cargarEvaluadores(token);
-  };
-
   // =========================
   // Filtros / búsqueda / paginación
   // =========================
 
   const evaluadoresFiltrados = useMemo(() => {
     let lista = [...evaluadores];
+
+    // Filtro por estado
+    if (filtroEstado === "ACTIVOS") {
+      lista = lista.filter((e) => e.estado);
+    } else if (filtroEstado === "INACTIVOS") {
+      lista = lista.filter((e) => !e.estado);
+    }
+
+    // Búsqueda libre
     if (terminoBusqueda.trim()) {
       const t = terminoBusqueda.toLowerCase();
       lista = lista.filter((e) => {
@@ -168,8 +179,9 @@ const GestionDeEvaluadores: React.FC = () => {
         );
       });
     }
+
     return lista;
-  }, [evaluadores, terminoBusqueda]);
+  }, [evaluadores, filtroEstado, terminoBusqueda]);
 
   const evaluadoresPaginados = useMemo(() => {
     const inicio = (paginaActual - 1) * REGISTROS_POR_PAGINA;
@@ -257,6 +269,20 @@ const GestionDeEvaluadores: React.FC = () => {
       setLoadingEstado(false);
       setEstadoTarget(null);
     }
+  };
+
+  // =========================
+  // Modal categorías asignadas
+  // =========================
+
+  const abrirModalCategorias = (evaluador: EvaluadorItem) => {
+    setCatModalEvaluador(evaluador);
+    setCatModalVisible(true);
+  };
+
+  const cerrarModalCategorias = () => {
+    setCatModalVisible(false);
+    setCatModalEvaluador(null);
   };
 
   // =========================
@@ -519,35 +545,46 @@ const GestionDeEvaluadores: React.FC = () => {
               las categorías que tienen asignadas.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {cargando && (
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Cargando datos…
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={recargar}
-              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:ring-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-950"
-            >
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-              Recargar
-            </button>
-          </div>
+          {cargando && (
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Cargando datos…
+            </span>
+          )}
         </div>
 
-        {/* Búsqueda + exportaciones */}
+        {/* Búsqueda + filtro estado + exportaciones */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            {/* Búsqueda */}
-            <div className="w-full max-w-md">
-              <BarraBusquedaAreas
-                terminoBusqueda={terminoBusqueda}
-                onBuscarChange={(t: string) => {
-                  setTerminoBusqueda(t);
-                  setPaginaActual(1);
-                }}
-              />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            {/* Búsqueda + filtro estado */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="w-full max-w-md">
+                <BarraBusquedaAreas
+                  terminoBusqueda={terminoBusqueda}
+                  onBuscarChange={(t: string) => {
+                    setTerminoBusqueda(t);
+                    setPaginaActual(1);
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Estado
+                </label>
+                <select
+                  value={filtroEstado}
+                  onChange={(e) => {
+                    const val = e.target.value as "TODOS" | "ACTIVOS" | "INACTIVOS";
+                    setFiltroEstado(val);
+                    setPaginaActual(1);
+                  }}
+                  className="w-full min-w-[150px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="TODOS">Todos</option>
+                  <option value="ACTIVOS">Solo activos</option>
+                  <option value="INACTIVOS">Solo inactivos</option>
+                </select>
+              </div>
             </div>
 
             {/* Exportar */}
@@ -582,7 +619,7 @@ const GestionDeEvaluadores: React.FC = () => {
             conAcciones
             renderAcciones={(fila: EvaluadorItem) => {
               const esActivo = fila.estado;
-              const Icono = esActivo ? ShieldOff : ShieldCheck;
+              const IconoEstado = esActivo ? ShieldOff : ShieldCheck;
               const labelBoton = esActivo ? "Inhabilitar" : "Habilitar";
 
               const isLoading =
@@ -592,6 +629,17 @@ const GestionDeEvaluadores: React.FC = () => {
 
               return (
                 <div className="flex items-center justify-center gap-2">
+                  {/* Ver categorías (solo icono de ojo) */}
+                  <button
+                    type="button"
+                    onClick={() => abrirModalCategorias(fila)}
+                    className="inline-flex items-center justify-center rounded-full bg-gray-100 p-2 text-xs text-gray-600 transition hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    aria-label="Ver categorías asignadas"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+
+                  {/* Cambiar estado */}
                   <button
                     type="button"
                     onClick={() => iniciarCambioEstado(fila)}
@@ -602,7 +650,7 @@ const GestionDeEvaluadores: React.FC = () => {
                         : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 focus-visible:ring-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
                     } ${isLoading ? "cursor-not-allowed opacity-70" : ""}`}
                   >
-                    <Icono className="mr-1.5 h-4 w-4" />
+                    <IconoEstado className="mr-1.5 h-4 w-4" />
                     {isLoading ? "Aplicando…" : labelBoton}
                   </button>
                 </div>
@@ -649,6 +697,83 @@ const GestionDeEvaluadores: React.FC = () => {
         danger={estadoTarget ? !estadoTarget.nuevoEstado : false}
         loading={loadingEstado}
       />
+
+      {/* Modal categorías asignadas (solo ojo) */}
+      {catModalVisible && catModalEvaluador && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-gray-100 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
+                  Categorías asignadas
+                </h2>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Evaluador:{" "}
+                  <span className="font-medium">
+                    {catModalEvaluador.nombreCompleto}
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={cerrarModalCategorias}
+                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+              >
+                <span className="sr-only">Cerrar</span>✕
+              </button>
+            </div>
+
+            {catModalEvaluador.categoriasAsignadas.length === 0 ? (
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Este evaluador no tiene categorías asignadas.
+              </p>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                  <thead className="bg-gray-50 dark:bg-gray-800/60">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                        Área
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                        Nivel
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                        Modalidad
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white text-sm dark:divide-gray-800 dark:bg-gray-900">
+                    {catModalEvaluador.categoriasAsignadas.map((c, idx) => (
+                      <tr key={`${c.area}-${c.nivel}-${c.modalidad}-${idx}`}>
+                        <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
+                          {c.area}
+                        </td>
+                        <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
+                          {c.nivel}
+                        </td>
+                        <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
+                          {labelModalidad(c.modalidad)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={cerrarModalCategorias}
+                className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:ring-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-950"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal resultado */}
       <ResultModal
