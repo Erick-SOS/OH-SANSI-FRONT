@@ -52,13 +52,16 @@ const DesignarEvaluadores: React.FC = () => {
   const [filtroArea, setFiltroArea] = useState<string>("TODAS");
   const [filtroNivel, setFiltroNivel] = useState<string>("TODOS");
 
-  // Modal evaluadores
+  // Modal ver evaluadores
   const [modalEvaluadoresVisible, setModalEvaluadoresVisible] =
     useState(false);
   const [categoriaSeleccionada, setCategoriaSeleccionada] =
     useState<CategoriaAsignacionItem | null>(null);
 
-  // Evaluadores disponibles para select
+  // Modal agregar evaluador
+  const [modalAgregarVisible, setModalAgregarVisible] = useState(false);
+
+  // Evaluadores disponibles para select (se recicla entre modales)
   const [evaluadoresDisponibles, setEvaluadoresDisponibles] = useState<
     EvaluadorDisponible[]
   >([]);
@@ -345,18 +348,41 @@ const DesignarEvaluadores: React.FC = () => {
     setValorSelectEvaluador("");
   };
 
-  const labelEvaluadorDisponible = (e: EvaluadorDisponible) =>
-    `${e.nombreCompleto} (ID ${e.idEvaluador})`;
+  // abrir modal de agregar: se cierra el de ver mientras tanto
+  const abrirModalAgregarEvaluador = () => {
+    if (!categoriaSeleccionada) return;
 
-  // ahora el agregar puede recibir el label directamente (para usarlo desde el select)
-  const handleAgregarEvaluador = async (labelDesdeSelect?: string) => {
+    if (categoriaSeleccionada.evaluadores.length >= 5) {
+      showResult(
+        "error",
+        "Límite alcanzado",
+        "Esta categoría ya tiene el máximo de 5 evaluadores."
+      );
+      return;
+    }
+
+    setValorSelectEvaluador("");
+    setModalEvaluadoresVisible(false);
+    setModalAgregarVisible(true);
+  };
+
+  const cerrarModalAgregarEvaluador = () => {
+    if (loadingAgregarEvaluador) return;
+    setModalAgregarVisible(false);
+    // volver a ver el listado de evaluadores
+    if (categoriaSeleccionada) {
+      setModalEvaluadoresVisible(true);
+    }
+  };
+
+  const handleAgregarEvaluador = async (): Promise<boolean> => {
     if (!token) {
       showResult(
         "error",
         "Sin sesión",
         "No se pudo obtener el token de autenticación."
       );
-      return;
+      return false;
     }
 
     if (!categoriaSeleccionada) {
@@ -365,22 +391,20 @@ const DesignarEvaluadores: React.FC = () => {
         "Sin categoría",
         "No se ha seleccionado una categoría."
       );
-      return;
+      return false;
     }
 
-    const label = labelDesdeSelect ?? valorSelectEvaluador;
-
-    if (!label) {
+    if (!valorSelectEvaluador) {
       showResult(
         "error",
         "Evaluador no seleccionado",
         "Selecciona un evaluador de la lista para asignarlo."
       );
-      return;
+      return false;
     }
 
     const seleccionado = evaluadoresDisponibles.find(
-      (e) => labelEvaluadorDisponible(e) === label
+      (e) => e.nombreCompleto === valorSelectEvaluador
     );
 
     if (!seleccionado) {
@@ -389,7 +413,7 @@ const DesignarEvaluadores: React.FC = () => {
         "Evaluador inválido",
         "El evaluador seleccionado no es válido."
       );
-      return;
+      return false;
     }
 
     try {
@@ -426,6 +450,7 @@ const DesignarEvaluadores: React.FC = () => {
       );
 
       setValorSelectEvaluador("");
+      return true;
     } catch (error: any) {
       console.error("Error al asignar evaluador", error);
       showResult(
@@ -435,8 +460,17 @@ const DesignarEvaluadores: React.FC = () => {
           error?.message ||
           "No se pudo asignar el evaluador a la categoría."
       );
+      return false;
     } finally {
       setLoadingAgregarEvaluador(false);
+    }
+  };
+
+  const handleConfirmAgregarEvaluador = async () => {
+    const ok = await handleAgregarEvaluador();
+    if (ok) {
+      setModalAgregarVisible(false);
+      setModalEvaluadoresVisible(true);
     }
   };
 
@@ -878,7 +912,7 @@ const DesignarEvaluadores: React.FC = () => {
         onClose={closeResultModal}
       />
 
-      {/* Modal asignar / ver evaluadores */}
+      {/* Modal ver evaluadores */}
       {modalEvaluadoresVisible && categoriaSeleccionada && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-2xl border border-gray-100 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:p-6">
@@ -914,8 +948,7 @@ const DesignarEvaluadores: React.FC = () => {
 
                 {categoriaSeleccionada.evaluadores.length === 0 ? (
                   <p className="text-xs text-gray-600 dark:text-gray-400">
-                    No hay evaluadores asignados a esta categoría. Usa el
-                    selector de abajo para agregar uno.
+                    No hay evaluadores asignados a esta categoría.
                   </p>
                 ) : (
                   <div className="max-h-64 overflow-auto rounded-lg border border-gray-200 bg-white text-xs dark:border-gray-700 dark:bg-gray-950">
@@ -949,16 +982,16 @@ const DesignarEvaluadores: React.FC = () => {
                               {e.apellidoIndiceInicialParticipacion ||
                               e.apellidoIndiceFinalParticipacion ? (
                                 <span>
-                                  Desde{" "}
-                                  <span className="font-medium">
+                                  Desde el apellido{" "}
+                                  <strong>
                                     {e.apellidoIndiceInicialParticipacion ??
                                       "?"}
-                                  </span>{" "}
-                                  hasta{" "}
-                                  <span className="font-medium">
+                                  </strong>{" "}
+                                  hasta el apellido{" "}
+                                  <strong>
                                     {e.apellidoIndiceFinalParticipacion ??
                                       "?"}
-                                  </span>
+                                  </strong>
                                 </span>
                               ) : (
                                 <span className="text-gray-400">
@@ -984,78 +1017,116 @@ const DesignarEvaluadores: React.FC = () => {
                 )}
               </div>
 
-              {/* Agregar evaluador */}
+              {/* CTA para abrir modal de agregar */}
               <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/60 p-3 dark:border-brand-500/40 dark:bg-brand-500/5">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-800 dark:text-brand-200">
-                  Agregar evaluador
-                </h3>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <div className="flex-1">
-                    <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
-                      Evaluador disponible (máx. 5 por categoría, máx. 5
-                      asignaciones por evaluador)
-                    </label>
-                    <SelectConBusqueda
-                      opciones={evaluadoresDisponibles.map(
-                        (e) => labelEvaluadorDisponible(e)
-                      )}
-                      value={valorSelectEvaluador}
-                      placeholder={
-                        loadingEvaluadoresDisponibles
-                          ? "Cargando evaluadores..."
-                          : "Buscar evaluador por nombre..."
-                      }
-                      onChange={(nuevo) => {
-                        if (
-                          loadingEvaluadoresDisponibles ||
-                          loadingAgregarEvaluador
-                        ) {
-                          return;
-                        }
-                        setValorSelectEvaluador(nuevo);
-                        // al seleccionar, se agrega directamente
-                        handleAgregarEvaluador(nuevo);
-                      }}
-                    />
-                    {!evaluadoresDisponibles.length &&
-                      !loadingEvaluadoresDisponibles && (
-                        <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                          No hay evaluadores disponibles que cumplan las
-                          condiciones (rol, estado activo y límite de
-                          asignaciones).
-                        </p>
-                      )}
+                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-brand-800 dark:text-brand-200">
+                      Agregar nuevo evaluador a esta categoría
+                    </h3>
+                    <p className="mt-1 text-[11px] text-gray-600 dark:text-gray-400">
+                      Máximo 5 evaluadores por categoría. El rango de
+                      participaciones se redistribuye automáticamente cada vez
+                      que agregues o elimines evaluadores.
+                    </p>
                   </div>
-                  <div className="sm:w-44">
-                    <button
-                      type="button"
-                      onClick={() => handleAgregarEvaluador()}
-                      disabled={
-                        loadingAgregarEvaluador ||
-                        loadingEvaluadoresDisponibles ||
-                        !valorSelectEvaluador ||
-                        categoriaSeleccionada.evaluadores.length >= 5
-                      }
-                      className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 ${
-                        loadingAgregarEvaluador ||
-                        loadingEvaluadoresDisponibles ||
-                        !valorSelectEvaluador ||
-                        categoriaSeleccionada.evaluadores.length >= 5
-                          ? "cursor-not-allowed bg-brand-300 dark:bg-brand-400/60"
-                          : "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400"
-                      }`}
-                    >
-                      {loadingAgregarEvaluador
-                        ? "Agregando..."
-                        : "Agregar evaluador"}
-                    </button>
-                    {categoriaSeleccionada.evaluadores.length >= 5 && (
-                      <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">
-                        Esta categoría ya tiene el máximo de 5 evaluadores.
-                      </p>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={abrirModalAgregarEvaluador}
+                    className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-brand-500 dark:hover:bg-brand-400 dark:focus-visible:ring-offset-gray-950"
+                  >
+                    + Agregar evaluador
+                  </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal agregar evaluador */}
+      {modalAgregarVisible && categoriaSeleccionada && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+            {/* Header modal */}
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
+                  Agregar evaluador
+                </h2>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  {categoriaSeleccionada.area} · {categoriaSeleccionada.nivel} ·{" "}
+                  {labelModalidad(categoriaSeleccionada.modalidad)} — Gestión{" "}
+                  {gestion}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={cerrarModalAgregarEvaluador}
+                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+              >
+                <span className="sr-only">Cerrar</span>✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Selecciona un evaluador activo
+                </label>
+                <SelectConBusqueda
+                  opciones={evaluadoresDisponibles.map(
+                    (e) => e.nombreCompleto
+                  )}
+                  value={valorSelectEvaluador}
+                  placeholder={
+                    loadingEvaluadoresDisponibles
+                      ? "Cargando evaluadores..."
+                      : "Buscar evaluador por nombre..."
+                  }
+                  onChange={(nuevo) => {
+                    if (loadingEvaluadoresDisponibles || loadingAgregarEvaluador)
+                      return;
+                    setValorSelectEvaluador(nuevo);
+                  }}
+                />
+                {!evaluadoresDisponibles.length &&
+                  !loadingEvaluadoresDisponibles && (
+                    <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                      No hay evaluadores disponibles que cumplan las
+                      condiciones (rol, estado activo y límite de
+                      asignaciones).
+                    </p>
+                  )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={cerrarModalAgregarEvaluador}
+                  className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                  disabled={loadingAgregarEvaluador}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmAgregarEvaluador}
+                  disabled={
+                    loadingAgregarEvaluador ||
+                    loadingEvaluadoresDisponibles ||
+                    !valorSelectEvaluador
+                  }
+                  className={`inline-flex items-center justify-center rounded-lg px-4 py-1.5 text-xs font-semibold text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 ${
+                    loadingAgregarEvaluador ||
+                    loadingEvaluadoresDisponibles ||
+                    !valorSelectEvaluador
+                      ? "cursor-not-allowed bg-brand-300 dark:bg-brand-400/60"
+                      : "bg-brand-500 hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-400"
+                  }`}
+                >
+                  {loadingAgregarEvaluador ? "Agregando..." : "Agregar"}
+                </button>
               </div>
             </div>
           </div>
