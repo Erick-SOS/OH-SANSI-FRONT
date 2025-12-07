@@ -40,7 +40,9 @@ const GestionDeEvaluadores: React.FC = () => {
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
 
   // Filtro por estado: TODOS | ACTIVOS | INACTIVOS
-  const [filtroEstado, setFiltroEstado] = useState<"TODOS" | "ACTIVOS" | "INACTIVOS">("TODOS");
+  const [filtroEstado, setFiltroEstado] = useState<
+    "TODOS" | "ACTIVOS" | "INACTIVOS"
+  >("TODOS");
 
   // target para habilitar/inhabilitar
   const [estadoTarget, setEstadoTarget] = useState<{
@@ -51,7 +53,8 @@ const GestionDeEvaluadores: React.FC = () => {
 
   // Modal para ver categorías asignadas
   const [catModalVisible, setCatModalVisible] = useState(false);
-  const [catModalEvaluador, setCatModalEvaluador] = useState<EvaluadorItem | null>(null);
+  const [catModalEvaluador, setCatModalEvaluador] =
+    useState<EvaluadorItem | null>(null);
 
   // Result modal
   const [resultModal, setResultModal] = useState<{
@@ -497,34 +500,8 @@ const GestionDeEvaluadores: React.FC = () => {
         </span>
       ),
     },
-    {
-      clave: "categoriasAsignadas" as const,
-      titulo: "Categorías asignadas",
-      alineacion: "izquierda" as const,
-      ordenable: false,
-      formatearCelda: (valor: CategoriaAsignada[]) => {
-        if (!valor || !valor.length) {
-          return (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Sin categorías asignadas
-            </span>
-          );
-        }
-
-        return (
-          <div className="flex flex-wrap gap-1.5">
-            {valor.map((c, idx) => (
-              <span
-                key={`${c.area}-${c.nivel}-${c.modalidad}-${idx}`}
-                className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200"
-              >
-                {c.area} • {c.nivel} • {labelModalidad(c.modalidad)}
-              </span>
-            ))}
-          </div>
-        );
-      },
-    },
+    // columna de categorías eliminada de la tabla principal;
+    // ahora se visualiza solo mediante el icono de ojo (modal)
   ];
 
   // =========================
@@ -574,7 +551,10 @@ const GestionDeEvaluadores: React.FC = () => {
                 <select
                   value={filtroEstado}
                   onChange={(e) => {
-                    const val = e.target.value as "TODOS" | "ACTIVOS" | "INACTIVOS";
+                    const val = e.target.value as
+                      | "TODOS"
+                      | "ACTIVOS"
+                      | "INACTIVOS";
                     setFiltroEstado(val);
                     setPaginaActual(1);
                   }}
@@ -691,7 +671,9 @@ const GestionDeEvaluadores: React.FC = () => {
         }}
         onConfirm={confirmarCambioEstado}
         confirmText={
-          estadoTarget?.nuevoEstado ? "Habilitar evaluador" : "Inhabilitar evaluador"
+          estadoTarget?.nuevoEstado
+            ? "Habilitar evaluador"
+            : "Inhabilitar evaluador"
         }
         cancelText="Cancelar"
         danger={estadoTarget ? !estadoTarget.nuevoEstado : false}
