@@ -206,7 +206,7 @@ const GestionDeFases: React.FC = () => {
     setErrorGlobal(null);
 
     try {
-      const resp = (await api("/gestion-fases?desde=2025&hasta=2030", {
+      const resp = (await api("/gestion-fases", {
         token: tk,
       })) as ListResponse;
 
@@ -468,7 +468,7 @@ const GestionDeFases: React.FC = () => {
   function puedeAbrir(fase: FaseResumen): boolean {
     if (fase.estado === "EN_EJECUCION" || fase.estado === "CANCELADA")
       return false;
-    // Permitir abrir cuando está PENDIENTE o FINALIZADA
+    // Permitir abrir cuando está PENDIENTE o FINALIZADA (backend igual valida)
     return true;
   }
 
@@ -478,7 +478,7 @@ const GestionDeFases: React.FC = () => {
 
   function puedePublicar(fase: FaseResumen): boolean {
     if (fase.resultados_publicados) return true; // permite quitar publicación
-    // Publicar solo si está finalizada
+    // Publicar solo si está finalizada (regla fuerte la aplica el back)
     return fase.estado === "FINALIZADA";
   }
 
@@ -547,7 +547,7 @@ const GestionDeFases: React.FC = () => {
         {!loadingPage && gestiones.length === 0 && !errorGlobal && (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
             <p className="mb-3 font-medium">
-              No hay gestiones registradas entre 2025 y 2030.
+              No hay gestiones registradas.
             </p>
             <p>
               Puede crear la gestión del año actual y se generarán
@@ -648,7 +648,8 @@ const GestionDeFases: React.FC = () => {
                                 }
                               >
                                 {fase.estado === "PENDIENTE" && "Pendiente"}
-                                {fase.estado === "EN_EJECUCION" && "En ejecución"}
+                                {fase.estado === "EN_EJECUCION" &&
+                                  "En ejecución"}
                                 {fase.estado === "FINALIZADA" && "Finalizada"}
                                 {fase.estado === "CANCELADA" && "Cancelada"}
                               </span>
@@ -678,9 +679,7 @@ const GestionDeFases: React.FC = () => {
                             <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-600 dark:text-gray-300">
                               <div className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 dark:bg-gray-900">
                                 <CalendarDays className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-                                <span>
-                                  Inicio: {formatFecha(fase.inicio)}
-                                </span>
+                                <span>Inicio: {formatFecha(fase.inicio)}</span>
                               </div>
                               <div className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 dark:bg-gray-900">
                                 <CalendarDays className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
@@ -712,7 +711,9 @@ const GestionDeFases: React.FC = () => {
                             {/* Cerrar */}
                             <button
                               type="button"
-                              onClick={() => abrirConfirmacion(fase, "CERRAR")}
+                              onClick={() =>
+                                abrirConfirmacion(fase, "CERRAR")
+                              }
                               disabled={!puedeCerrar(fase)}
                               className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm
                                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
