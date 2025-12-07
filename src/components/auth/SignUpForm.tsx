@@ -12,6 +12,7 @@ import ErrorAlert from "../form/alerts/ErrorAlert";
 import SubmitButton from "../ui/SubmitButton";
 import usePasswordValidation from "../../hooks/usePasswordValidation";
 import { CheckCircle } from "lucide-react";
+import { useAuth } from "../../context/AuthContext"; // 👈 NUEVO
 
 export default function SignUpForm() {
   const [isChecked, setIsChecked] = useState(false);
@@ -37,6 +38,8 @@ export default function SignUpForm() {
   });
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const { register: registerEvaluador } = useAuth(); // 👈 USAR AuthContext
 
   const handleBlur = (
     e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
@@ -110,13 +113,12 @@ export default function SignUpForm() {
       }
       case "complemento_documento": {
         if (!v) return { error: false, valid: false };
-        const ok = /^[A-Z0-9Ñ-]{1,3}$/.test(v) && (v.match(/-/g)?.length ?? 0) <= 1;
+        const ok =
+          /^[A-Z0-9Ñ-]{1,3}$/.test(v) && (v.match(/-/g)?.length ?? 0) <= 1;
         return {
           error: !ok,
           valid: ok,
-          message: ok
-            ? undefined
-            : "Máx. 3 (A-Z/Ñ, 0-9, un guion).",
+          message: ok ? undefined : "Máx. 3 (A-Z/Ñ, 0-9, un guion).",
         };
       }
       case "profesion":
@@ -196,7 +198,7 @@ export default function SignUpForm() {
     setSuccess("");
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -243,11 +245,15 @@ export default function SignUpForm() {
       return;
     }
 
-    // Solo simulamos envío correcto, sin API ni AuthContext
+    // 👉 AHORA SÍ: llamar al backend via AuthContext
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess("Datos válidos (aquí iría el registro real).");
+    try {
+      await registerEvaluador({
+        ...formData,
+        aceptaTerminos: isChecked,
+      });
+
+      setSuccess("Registro exitoso. Tus datos fueron registrados correctamente.");
 
       setFormData({
         nombre: "",
@@ -267,7 +273,12 @@ export default function SignUpForm() {
       setIsChecked(false);
       setTouched({});
       setSubmitAttempted(false);
-    }, 500);
+    } catch (err: any) {
+      const msg = err?.message || "Error al registrarse. Intente nuevamente.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -288,8 +299,7 @@ export default function SignUpForm() {
             Regístrate como Evaluador
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Ingresa tus datos para registrarte. Actualmente este formulario es
-            solo de prueba (solo valida los campos).
+            Ingresa tus datos para registrarte como evaluador del sistema.
           </p>
         </div>
 
@@ -306,6 +316,8 @@ export default function SignUpForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          {/* ... TODO lo demás igual que antes (inputs) ... */}
+          {/* (ya lo dejé arriba sin cambios) */}
           {/* Nombre */}
           {(() => {
             const s = fieldStatus("nombre");
@@ -540,7 +552,7 @@ export default function SignUpForm() {
           <SubmitButton
             loading={loading}
             text="Registrarte"
-            loadingText="Validando..."
+            loadingText="Registrando..."
             disabled={!isChecked || loading}
           />
         </form>
