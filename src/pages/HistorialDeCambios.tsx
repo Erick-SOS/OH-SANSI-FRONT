@@ -1,339 +1,511 @@
-import React, { useState, useMemo } from 'react';
-import Paginacion from '../components/ui/Paginacion';
-import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
-import { exportarComoPDF, ExportData } from '../utils/exportUtils';
+// src/pages/Historial.tsx
+import { useEffect, useMemo, useState } from "react";
+import { FileDown, FileText } from "lucide-react";
+import TablaBase from "../components/tables/TablaBase";
+import Paginacion from "../components/ui/Paginacion";
+import BarraBusquedaAreas from "../components/tables/BarraBusqueda";
+import ResultModal from "../components/modals/ResultModal";
+import { api } from "../api";
 
-type TipoCambio =
-  | 'Calificación'
-  | 'Parametrizacion'
-  | 'Fase'
-  | 'Asignacion'
-  | 'Inscripcion'
-  | 'Aprobacion';
+/* ------------ Tipos ------------ */
 
-interface HistorialItem {
-  id: number;
-  numero: number;
-  usuario: string;
-  rol: string;
-  fecha: string;
-  tipoCambio: TipoCambio;
-  accion: string; 
+export interface HistorialDto {
+  rolUsuario: string;
+  nombreUsuario: string;
+  fechayhora: string; // viene como ISO string del backend
+  tipodeCambio: string;
+  accion: string;
 }
 
-type SortKey = keyof Pick<
-  HistorialItem,
-  'numero' | 'rol' | 'usuario' | 'fecha' | 'tipoCambio' | 'accion'
->;
+const REGISTROS_PAGINA = 10;
 
-const TIPOS_CAMBIO = [
-  { value: 'TODOS', label: 'Todos los tipos' },
-  { value: 'Calificación', label: 'Calificación' },
-  { value: 'Parametrizacion', label: 'Parametrizacion' },
-  { value: 'Fase', label: 'Fase' },
-  { value: 'Asignacion', label: 'Asignación' },
-  { value: 'Inscripcion', label: 'Inscripción' },
-  { value: 'Aprobacion', label: 'Aprobación' },
-];
+/* ------------ Página Historial ------------ */
 
-const SortIcon: React.FC<{ dir: 'asc' | 'desc' | null }> = ({ dir }) => {
-  if (!dir) return <span className="opacity-30">↕</span>;
-  return <span>{dir === 'asc' ? '↑' : '↓'}</span>;
-};
+export default function HistorialPage() {
+  const [historial, setHistorial] = useState<HistorialDto[]>([]);
+  const [loadingListado, setLoadingListado] = useState(false);
 
-const HistorialDeCambios: React.FC = () => {
-  // Datos estáticos de ejemplo
-  const [rows] = useState<HistorialItem[]>([
-    {
-      id: 1,
-      numero: 1,
-      usuario: 'Unad Wilson',
-      rol: 'Evaluador',
-      fecha: '20/03/2025 - 18:00 hrs',
-      tipoCambio: 'Calificación',
-      accion: 'Lista enviada',
-    },
-    {
-      id: 2,
-      numero: 2,
-      usuario: 'María Rodríguez',
-      rol: 'Administrador',
-      fecha: '21/03/2025 - 14:30 hrs',
-      tipoCambio: 'Parametrizacion',
-      accion: 'Medallero/nota mínima actualizados',
-    },
-    {
-      id: 3,
-      numero: 3,
-      usuario: 'Juan Pérez',
-      rol: 'Administrador',
-      fecha: '22/03/2025 - 10:15 hrs',
-      tipoCambio: 'Fase',
-      accion: 'Apertura',
-    },
-    {
-      id: 4,
-      numero: 4,
-      usuario: 'Juan Pérez',
-      rol: 'Administrador',
-      fecha: '25/03/2025 - 18:30 hrs',
-      tipoCambio: 'Fase',
-      accion: 'Cierre',
-    },
-    {
-      id: 5,
-      numero: 5,
-      usuario: 'Ana Gutiérrez',
-      rol: 'Responsable de área',
-      fecha: '22/03/2025 - 11:00 hrs',
-      tipoCambio: 'Asignacion',
-      accion: 'Asignación de responsable de área',
-    },
-    {
-      id: 6,
-      numero: 6,
-      usuario: 'Carlos Mendoza',
-      rol: 'Administrador',
-      fecha: '23/03/2025 - 09:10 hrs',
-      tipoCambio: 'Inscripcion',
-      accion: 'Importación de olimpistas (CSV)',
-    },
-    {
-      id: 7,
-      numero: 7,
-      usuario: 'Unad Wilson',
-      rol: 'Administrador',
-      fecha: '23/03/2025 - 16:45 hrs',
-      tipoCambio: 'Aprobacion',
-      accion: 'Lista aprobada',
-    },
-  ]);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroRol, setFiltroRol] = useState<string>("TODOS");
+  const [filtroTipoCambio, setFiltroTipoCambio] = useState<string>("TODOS");
+  const [pagina, setPagina] = useState(1);
+  const [, setOrdenColumna] = useState<string | null>(null);
+  const [, setOrdenDireccion] = useState<"asc" | "desc">("asc");
 
-  const [paginaActual, setPaginaActual] = useState(1);
-  const [terminoBusqueda, setTerminoBusqueda] = useState('');
-  const [exportando, setExportando] = useState(false);
-  const [tipoCambioFiltro, setTipoCambioFiltro] =
-    useState<'TODOS' | TipoCambio>('TODOS');
-  const [sortBy, setSortBy] = useState<SortKey>('numero');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  // Modal de resultado (success / error)
+  const [resultModal, setResultModal] = useState<{
+    visible: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
-  const registrosPorPagina = 7;
+  const showResult = (
+    type: "success" | "error",
+    title: string,
+    message: string
+  ) => {
+    setResultModal({ visible: true, type, title, message });
+  };
 
-  // Filtro general (texto + tipo de cambio)
-  const filtrados = useMemo(() => {
-    const termino = terminoBusqueda.trim().toLowerCase();
+  const closeResult = () =>
+    setResultModal((prev) => ({ ...prev, visible: false }));
 
-    return rows.filter((item) => {
-      const coincideTipo =
-        tipoCambioFiltro === 'TODOS' || item.tipoCambio === tipoCambioFiltro;
-      if (!coincideTipo) return false;
+  /* ---- Cargar historial desde el backend ---- */
 
-      if (!termino) return true;
+  const cargarHistorial = async () => {
+    setLoadingListado(true);
+    try {
+      const res = (await api(
+        "/historial"
+      )) as unknown as { ok: boolean; historial: HistorialDto[] };
 
-      const campos = [
-        item.numero,
-        item.rol,
-        item.usuario,
-        item.fecha,
-        item.tipoCambio,
-        item.accion,
-      ];
+      const data = Array.isArray((res as any).historial)
+        ? (res as any).historial
+        : (res as any);
 
-      return campos
-        .map((campo) => String(campo).toLowerCase())
-        .some((campo) => campo.includes(termino));
-    });
-  }, [rows, terminoBusqueda, tipoCambioFiltro]);
-
-  // Ordenamiento
-  const ordenados = useMemo(() => {
-    const copia = [...filtrados];
-    copia.sort((a, b) => {
-      const va = a[sortBy];
-      const vb = b[sortBy];
-
-      const A = typeof va === 'number' ? va : String(va).toLowerCase();
-      const B = typeof vb === 'number' ? vb : String(vb).toLowerCase();
-
-      if (A < B) return sortDir === 'asc' ? -1 : 1;
-      if (A > B) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return copia;
-  }, [filtrados, sortBy, sortDir]);
-
-  // Paginación
-  const totalPaginas = Math.max(1, Math.ceil(ordenados.length / registrosPorPagina));
-  const paginaSegura = Math.min(paginaActual, totalPaginas);
-  const inicio = (paginaSegura - 1) * registrosPorPagina;
-  const pageRows = ordenados.slice(inicio, inicio + registrosPorPagina);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortBy === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortBy(key);
-      setSortDir('asc');
+      setHistorial(data as HistorialDto[]);
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "No se pudo cargar el historial.";
+      showResult("error", "Error al cargar", msg);
+    } finally {
+      setLoadingListado(false);
     }
   };
 
-  const handleExportarComoPDF = async () => {
-    setExportando(true);
-    try {
-      const datosExport: ExportData[] = ordenados.map((item) => {
-        const { id, ...rest } = item;
-        return rest as unknown as ExportData;
-      });
+  useEffect(() => {
+    void cargarHistorial();
+  }, []);
 
-      await exportarComoPDF(
-        datosExport,
-        terminoBusqueda,
-        'historial-cambios'
-      );
-    } finally {
-      setExportando(false);
+  /* ---- Opciones de filtros (rol / tipo de cambio) ---- */
+
+  const rolesDisponibles = useMemo(
+    () =>
+      Array.from(new Set(historial.map((h) => h.rolUsuario))).filter(Boolean),
+    [historial]
+  );
+
+  const tiposCambioDisponibles = useMemo(
+    () =>
+      Array.from(new Set(historial.map((h) => h.tipodeCambio))).filter(Boolean),
+    [historial]
+  );
+
+  /* ---- Filtros + búsqueda ---- */
+
+  const historialFiltrado = useMemo(() => {
+    let lista = [...historial];
+
+    if (filtroRol !== "TODOS") {
+      lista = lista.filter((h) => h.rolUsuario === filtroRol);
     }
+
+    if (filtroTipoCambio !== "TODOS") {
+      lista = lista.filter((h) => h.tipodeCambio === filtroTipoCambio);
+    }
+
+    if (busqueda.trim()) {
+      const term = busqueda.toLowerCase();
+      lista = lista.filter((h) => {
+        const usuario = h.nombreUsuario?.toLowerCase() ?? "";
+        const rol = h.rolUsuario?.toLowerCase() ?? "";
+        const tipo = h.tipodeCambio?.toLowerCase() ?? "";
+        const accion = h.accion?.toLowerCase() ?? "";
+        const fecha = h.fechayhora?.toLowerCase() ?? "";
+        return (
+          usuario.includes(term) ||
+          rol.includes(term) ||
+          tipo.includes(term) ||
+          accion.includes(term) ||
+          fecha.includes(term)
+        );
+      });
+    }
+
+    return lista;
+  }, [historial, filtroRol, filtroTipoCambio, busqueda]);
+
+  /* ---- Paginación ---- */
+
+  const historialPaginado: HistorialDto[] = useMemo(() => {
+    const inicio = (pagina - 1) * REGISTROS_PAGINA;
+    return historialFiltrado.slice(inicio, inicio + REGISTROS_PAGINA);
+  }, [historialFiltrado, pagina]);
+
+  /* ---- Ordenamiento ---- */
+
+  const handleOrdenar = (columna: string, direccion: "asc" | "desc") => {
+    setOrdenColumna(columna);
+    setOrdenDireccion(direccion);
+    setHistorial((prev) => {
+      const copia = [...prev];
+      copia.sort((a, b) => {
+        const valA = (a as any)[columna];
+        const valB = (b as any)[columna];
+
+        // fecha
+        if (columna === "fechayhora") {
+          const dA = new Date(valA).getTime();
+          const dB = new Date(valB).getTime();
+          return direccion === "asc" ? dA - dB : dB - dA;
+        }
+
+        if (typeof valA === "string" && typeof valB === "string") {
+          return direccion === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+
+        return 0;
+      });
+      return copia;
+    });
+  };
+
+  /* ---- Util: formatear fecha/hora ---- */
+
+  const formatearFecha = (iso: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString("es-BO", {
+      dateStyle: "short",
+      timeStyle: "medium",
+    });
+  };
+
+  /* ---- Definición de columnas ---- */
+
+  const columnas = [
+    {
+      clave: "fechayhora" as const,
+      titulo: "Fecha y hora",
+      alineacion: "centro" as const,
+      ordenable: true,
+      formatearCelda: (valor: string) => (
+        <span className="whitespace-nowrap text-xs sm:text-sm">
+          {formatearFecha(valor)}
+        </span>
+      ),
+    },
+    {
+      clave: "nombreUsuario" as const,
+      titulo: "Usuario",
+      alineacion: "izquierda" as const,
+      ordenable: true,
+    },
+    {
+      clave: "rolUsuario" as const,
+      titulo: "Rol",
+      alineacion: "centro" as const,
+      ordenable: true,
+      formatearCelda: (valor: string) => (
+        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          {valor}
+        </span>
+      ),
+    },
+    {
+      clave: "tipodeCambio" as const,
+      titulo: "Tipo de cambio",
+      alineacion: "centro" as const,
+      ordenable: true,
+    },
+    {
+      clave: "accion" as const,
+      titulo: "Acción",
+      alineacion: "izquierda" as const,
+      ordenable: false,
+    },
+  ];
+
+  /* ---- Exportar Excel (CSV) ---- */
+
+  const exportarCsv = () => {
+    if (!historialFiltrado.length) {
+      showResult(
+        "error",
+        "Sin datos para exportar",
+        "No hay registros para exportar con los filtros actuales."
+      );
+      return;
+    }
+
+    const encabezados = [
+      "N.º",
+      "Fecha y hora",
+      "Usuario",
+      "Rol",
+      "Tipo de cambio",
+      "Acción",
+    ];
+
+    const filas = historialFiltrado.map((h, idx) => [
+      idx + 1,
+      formatearFecha(h.fechayhora),
+      h.nombreUsuario,
+      h.rolUsuario,
+      h.tipodeCambio,
+      h.accion,
+    ]);
+
+    const csvContenido = [
+      encabezados.join(";"),
+      ...filas.map((f) =>
+        f
+          .map((valor) => {
+            const str = String(valor ?? "").replace(/"/g, '""');
+            return `"${str}"`;
+          })
+          .join(";")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContenido], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = "historial_cambios.csv";
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+  };
+
+  /* ---- Exportar PDF (blanco y negro) ---- */
+
+  const exportarPdf = () => {
+    if (!historialFiltrado.length) {
+      showResult(
+        "error",
+        "Sin datos para exportar",
+        "No hay registros para exportar con los filtros actuales."
+      );
+      return;
+    }
+
+    const encabezadoHtml = `
+      <tr>
+        <th style="border:1px solid #000;padding:4px;">N.º</th>
+        <th style="border:1px solid #000;padding:4px;">Fecha y hora</th>
+        <th style="border:1px solid #000;padding:4px;">Usuario</th>
+        <th style="border:1px solid #000;padding:4px;">Rol</th>
+        <th style="border:1px solid #000;padding:4px;">Tipo de cambio</th>
+        <th style="border:1px solid #000;padding:4px;">Acción</th>
+      </tr>
+    `;
+
+    const filasHtml = historialFiltrado
+      .map(
+        (h, idx) => `
+      <tr>
+        <td style="border:1px solid #000;padding:4px;text-align:center;">${
+          idx + 1
+        }</td>
+        <td style="border:1px solid #000;padding:4px;">${formatearFecha(
+          h.fechayhora
+        )}</td>
+        <td style="border:1px solid #000;padding:4px;">${
+          h.nombreUsuario
+        }</td>
+        <td style="border:1px solid #000;padding:4px;">${h.rolUsuario}</td>
+        <td style="border:1px solid #000;padding:4px;">${h.tipodeCambio}</td>
+        <td style="border:1px solid #000;padding:4px;">${h.accion}</td>
+      </tr>
+    `
+      )
+      .join("");
+
+    const ventana = window.open("", "_blank");
+    if (!ventana) return;
+
+    ventana.document.write(`
+      <html>
+        <head>
+          <title>Historial de cambios</title>
+          <style>
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              font-size: 12px;
+              color: #000;
+              background: #fff;
+            }
+            h1 {
+              font-size: 18px;
+              margin-bottom: 12px;
+            }
+            table {
+              border-collapse: collapse;
+              width: 100%;
+            }
+            th {
+              background: #f3f3f3;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Historial de cambios</h1>
+          <table>
+            <thead>${encabezadoHtml}</thead>
+            <tbody>${filasHtml}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    ventana.document.close();
+    ventana.focus();
+    ventana.print();
   };
 
   return (
-    <div className="p-1">
-      {/* Título */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Historial de Cambios
-        </h1>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-4 transition-colors dark:bg-gray-950 sm:p-6">
+      <div className="mx-auto w-full max-w-6xl">
+        {/* Header */}
+        <div className="mb-5 flex flex-col gap-3 sm:mb-7 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
+              Historial de cambios
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Registros de ediciones, creaciones y ajustes realizados en el
+              sistema.
+            </p>
+          </div>
+        </div>
 
-      {/* Filtros y exportación */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm mb-1">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Búsqueda */}
-          <div className="flex-1 max-w-md">
-            <BarraBusquedaAreas
-              terminoBusqueda={terminoBusqueda}
-              onBuscarChange={(t) => {
-                setTerminoBusqueda(t);
-                setPaginaActual(1);
-              }}
+        <div className="space-y-4">
+          {/* Filtros + exportación */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="w-full max-w-xs">
+                  <BarraBusquedaAreas
+                    terminoBusqueda={busqueda}
+                    onBuscarChange={(t: string) => {
+                      setBusqueda(t);
+                      setPagina(1);
+                    }}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                  {/* Filtro rol */}
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Rol
+                    </label>
+                    <select
+                      value={filtroRol}
+                      onChange={(e) => {
+                        setFiltroRol(e.target.value);
+                        setPagina(1);
+                      }}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    >
+                      <option value="TODOS">Todos los roles</option>
+                      {rolesDisponibles.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Filtro tipo de cambio */}
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Tipo de cambio
+                    </label>
+                    <select
+                      value={filtroTipoCambio}
+                      onChange={(e) => {
+                        setFiltroTipoCambio(e.target.value);
+                        setPagina(1);
+                      }}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    >
+                      <option value="TODOS">Todos</option>
+                      {tiposCambioDisponibles.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                <button
+                  type="button"
+                  onClick={exportarCsv}
+                  className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-brand-500 dark:hover:bg-brand-400 dark:focus-visible:ring-offset-gray-950"
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Descargar Excel (CSV)
+                </button>
+                <button
+                  type="button"
+                  onClick={exportarPdf}
+                  className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-950"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Descargar PDF
+                </button>
+              </div>
+            </div>
+            {loadingListado && (
+              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                Cargando historial...
+              </p>
+            )}
+          </div>
+
+          {/* Tabla */}
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <TablaBase
+              datos={historialPaginado}
+              columnas={columnas}
+              conOrdenamiento
+              onOrdenar={handleOrdenar}
+              conAcciones={false}
             />
           </div>
 
-          {/* Select tipo + exportar */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">
-                Filtrar por tipo de cambio
-              </span>
-              <select
-                value={tipoCambioFiltro}
-                onChange={(e) => {
-                  setTipoCambioFiltro(e.target.value as 'TODOS' | TipoCambio);
-                  setPaginaActual(1);
-                }}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#465FFF]"
-              >
-                {TIPOS_CAMBIO.map((op) => (
-                  <option key={op.value} value={op.value}>
-                    {op.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={handleExportarComoPDF}
-              disabled={exportando}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#465FFF] border border-[#465FFF] rounded-lg hover:bg-[#3a4fe6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#465FFF] focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50"
-            >
-              {exportando ? 'Exportando...' : 'Exportar PDF'}
-            </button>
+          {/* Paginación */}
+          <div className="flex justify-end">
+            <Paginacion
+              paginaActual={pagina}
+              totalPaginas={Math.max(
+                1,
+                Math.ceil(historialFiltrado.length / REGISTROS_PAGINA)
+              )}
+              totalRegistros={historialFiltrado.length}
+              registrosPorPagina={REGISTROS_PAGINA}
+              onPaginaChange={setPagina}
+            />
           </div>
         </div>
       </div>
 
-      {/* Tabla con ordenamiento */}
-      <div className="overflow-hidden rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 mb-1">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-700 dark:text-gray-200">
-            <tr>
-              {(
-                [
-                  ['numero', 'N°'],
-                  ['rol', 'Rol'],
-                  ['usuario', 'Nombre'],
-                  ['fecha', 'Fecha y Hora'],
-                  ['tipoCambio', 'Tipo de Cambio'],
-                  ['accion', 'Acción / Detalle'],
-                ] as [SortKey, string][]
-              ).map(([key, label]) => {
-                const dir = sortBy === key ? sortDir : null;
-                return (
-                  <th
-                    key={key}
-                    className="cursor-pointer select-none px-4 py-3"
-                    onClick={() => toggleSort(key)}
-                    title="Ordenar"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>{label}</span>
-                      <SortIcon dir={dir} />
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
-                >
-                  No hay resultados.
-                </td>
-              </tr>
-            )}
-
-            {pageRows.map((item) => (
-              <tr
-                key={item.id}
-                className="border-t last:border-b border-gray-100 dark:border-gray-700"
-              >
-                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                  {item.numero}
-                </td>
-                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                  {item.rol}
-                </td>
-                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                  {item.usuario}
-                </td>
-                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                  {item.fecha}
-                </td>
-                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                  {item.tipoCambio}
-                </td>
-                <td className="px-4 py-3 text-gray-800 dark:text-gray-100">
-                  {item.accion}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Paginación */}
-      <Paginacion
-        paginaActual={paginaSegura}
-        totalPaginas={totalPaginas}
-        totalRegistros={ordenados.length}
-        registrosPorPagina={registrosPorPagina}
-        onPaginaChange={setPaginaActual}
+      {/* Modal de resultado */}
+      <ResultModal
+        visible={resultModal.visible}
+        type={resultModal.type}
+        title={resultModal.title}
+        message={resultModal.message}
+        onClose={closeResult}
       />
     </div>
   );
-};
-
-export default HistorialDeCambios;
+}
