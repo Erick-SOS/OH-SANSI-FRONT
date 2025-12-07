@@ -38,10 +38,12 @@ import SobreElProyecto from "./pages/PublicInfo/SobreElProyecto";
 import AreasPublicas from "./pages/PublicInfo/AreasPublicas";
 import FasesEvaluacionPublica from "./pages/PublicInfo/FasesEvaluacionPublica";
 import Reglamento from "./pages/PublicInfo/Reglamento";
-import ConsultaDePremiados from "./pages/ConsultaDePremiados";
 
 import InscritosIndividual from "./pages/InscritosIndividual";
 import ListaInscritosGrupal from "./pages/ListaInscritosGrupal";
+
+import ListaDeClasificados from "./pages/ConsultaDeClasificados";        
+import ConsultaDePremiados from "./pages/ConsultaDePremiados";          
 
 import FasesEvaluacionIndividual from "./pages/FasesEvaluacionIndividual";
 import FasesEvaluacionGrupal from "./pages/FasesEvaluacionGrupal";
@@ -68,6 +70,15 @@ export default function App() {
               path="/resultados-de-calificaciones"
               element={<ResultadosDeCalificaciones />}
             />
+             <Route
+              path="/lista-clasificados"
+              element={<ListaDeClasificados />}
+            />
+            <Route
+              path="/consulta-de-premiados"
+              element={<ConsultaDePremiados />}
+            />
+
             <Route path="/sobre-el-proyecto" element={<SobreElProyecto />} />
             <Route path="/areas-publicas" element={<AreasPublicas />} />
             <Route

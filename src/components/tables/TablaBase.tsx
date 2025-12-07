@@ -10,27 +10,26 @@ import {
 
 type TipoAlineacion = 'izquierda' | 'centro' | 'derecha';
 
-interface ColumnaConfig {
+interface ColumnaConfig<T = any> {
   clave: string;
   titulo: string;
   alineacion?: TipoAlineacion;
   ancho?: string;
   ordenable?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  formatearCelda?: (valor: any, fila: any) => React.ReactNode;
+  formatearCelda?: (valor: any, fila: T) => React.ReactNode;
 }
 
-interface TablaBaseProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  datos: any[];
-  columnas: ColumnaConfig[];
+interface TablaBaseProps<T = any> {
+  datos: T[];
+  columnas: ColumnaConfig<T>[];
   conOrdenamiento?: boolean;
   onOrdenar?: (columna: string, direccion: 'asc' | 'desc') => void;
   conAcciones?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  renderAcciones?: (fila: any) => React.ReactNode; // ← NUEVA PROP
+  renderAcciones?: (fila: T) => React.ReactNode;
   className?: string;
   tituloNumero?: string;
+  // NUEVA PROP: permite colorear toda la fila según el dato
+  claseFila?: (fila: T) => string;
 }
 
 const TablaBase: React.FC<TablaBaseProps> = ({
@@ -41,7 +40,8 @@ const TablaBase: React.FC<TablaBaseProps> = ({
   conAcciones = false,
   renderAcciones,
   className = "",
-  tituloNumero = "N°"
+  tituloNumero = "N°",
+  claseFila,
 }) => {
 
   const columnasConNumero: ColumnaConfig[] = [
@@ -63,11 +63,10 @@ const TablaBase: React.FC<TablaBaseProps> = ({
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderizarContenidoCelda = (columna: ColumnaConfig, fila: any, index: number) => {
     if (columna.clave === 'numero') return index + 1;
     if (columna.formatearCelda) return columna.formatearCelda(fila[columna.clave], fila);
-    return fila[columna.clave] || '-';
+    return fila[columna.clave] ?? '-';
   };
 
   return (
@@ -84,8 +83,8 @@ const TablaBase: React.FC<TablaBaseProps> = ({
                     <span>{columna.titulo}</span>
                     {conOrdenamiento && columna.ordenable !== false && onOrdenar && (
                       <div className="flex flex-col">
-                        <button onClick={() => onOrdenar(columna.clave, 'asc')} className="hover:text-blue-600 text-xs">↑</button>
-                        <button onClick={() => onOrdenar(columna.clave, 'desc')} className="hover:text-blue-600 text-xs">↓</button>
+                        <button onClick={() => onOrdenar(columna.clave, 'asc')} className="hover:text-blue-600 text-xs">Up</button>
+                        <button onClick={() => onOrdenar(columna.clave, 'desc')} className="hover:text-blue-600 text-xs">Down</button>
                       </div>
                     )}
                   </div>
@@ -96,22 +95,29 @@ const TablaBase: React.FC<TablaBaseProps> = ({
           </TableHeader>
 
           <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-            {datos.map((fila, index) => (
-              <TableRow key={fila.id || index} className={`hover:bg-gray-50 dark:hover:bg-white/[0.02] ${fila.__className || ''}`}>
-                {columnasConNumero.map((columna) => (
-                  <TableCell key={columna.clave}
-                    className={`px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90 ${getAlineacionClase(columna.alineacion)} ${columna.ancho || ''}`}
-                  >
-                    {renderizarContenidoCelda(columna, fila, index)}
-                  </TableCell>
-                ))}
-                {conAcciones && (
-                  <TableCell className="px-5 py-4 text-center">
-                    {renderAcciones ? renderAcciones(fila) : null}
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
+            {datos.map((fila, index) => {
+              const clasePersonalizada = claseFila ? claseFila(fila) : '';
+              return (
+                <TableRow
+                  key={fila.id || index}
+                  className={`hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors ${clasePersonalizada}`}
+                >
+                  {columnasConNumero.map((columna) => (
+                    <TableCell
+                      key={columna.clave}
+                      className={`px-5 py-4 text-theme-sm text-gray-800 dark:text-white/90 ${getAlineacionClase(columna.alineacion)} ${columna.ancho || ''}`}
+                    >
+                      {renderizarContenidoCelda(columna, fila, index)}
+                    </TableCell>
+                  ))}
+                  {conAcciones && (
+                    <TableCell className="px-5 py-4 text-center">
+                      {renderAcciones ? renderAcciones(fila) : null}
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

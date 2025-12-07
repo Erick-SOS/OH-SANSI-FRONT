@@ -12,7 +12,6 @@ const Header = () => {
     { name: "Sobre el Proyecto", path: "/sobre-el-proyecto" },
     { name: "Áreas", path: "/areas-publicas" },
     { name: "Consultar Resultados", path: "/resultados-de-calificaciones" },
-    { name: "Premiados", path: "/consulta-de-premiados" },
     { name: "Fases de Evaluación", path: "/fases-evaluacion-publica" },
     { name: "Reglamento", path: "/reglamento" },
   ];
