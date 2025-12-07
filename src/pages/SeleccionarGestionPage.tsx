@@ -1,3 +1,4 @@
+// src/pages/SeleccionarGestionPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -467,16 +468,17 @@ const GestionDeFases: React.FC = () => {
   function puedeAbrir(fase: FaseResumen): boolean {
     if (fase.estado === "EN_EJECUCION" || fase.estado === "CANCELADA")
       return false;
+    // Permitir abrir cuando está PENDIENTE o FINALIZADA
     return true;
   }
 
   function puedeCerrar(fase: FaseResumen): boolean {
-    if (fase.estado !== "EN_EJECUCION") return false;
-    return true;
+    return fase.estado === "EN_EJECUCION";
   }
 
   function puedePublicar(fase: FaseResumen): boolean {
     if (fase.resultados_publicados) return true; // permite quitar publicación
+    // Publicar solo si está finalizada
     return fase.estado === "FINALIZADA";
   }
 
@@ -633,8 +635,61 @@ const GestionDeFases: React.FC = () => {
                           key={fase.id}
                           className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950/60"
                         >
-                          {/* ... resto del encabezado y fechas ... */}
+                          {/* Encabezado de la fase */}
+                          <div className="flex flex-col gap-3 border-b border-gray-200 pb-3 text-xs dark:border-gray-800">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-700 shadow-sm dark:bg-gray-900 dark:text-gray-200">
+                                {tipoLabel(fase.tipo)}
+                              </span>
+                              <span
+                                className={
+                                  "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold " +
+                                  estadoBadgeClasses(fase.estado)
+                                }
+                              >
+                                {fase.estado === "PENDIENTE" && "Pendiente"}
+                                {fase.estado === "EN_EJECUCION" && "En ejecución"}
+                                {fase.estado === "FINALIZADA" && "Finalizada"}
+                                {fase.estado === "CANCELADA" && "Cancelada"}
+                              </span>
+                              {fase.correos_enviados && (
+                                <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                  Correos enviados
+                                </span>
+                              )}
+                              {fase.resultados_publicados && (
+                                <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                                  Resultados publicados
+                                </span>
+                              )}
+                            </div>
 
+                            <div>
+                              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {fase.nombre}
+                              </h3>
+                              {fase.descripcion && (
+                                <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                  {fase.descripcion}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-600 dark:text-gray-300">
+                              <div className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 dark:bg-gray-900">
+                                <CalendarDays className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+                                <span>
+                                  Inicio: {formatFecha(fase.inicio)}
+                                </span>
+                              </div>
+                              <div className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 dark:bg-gray-900">
+                                <CalendarDays className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+                                <span>Fin: {formatFecha(fase.fin)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Botones de acción */}
                           <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
                             {/* Abrir */}
                             <button
@@ -642,13 +697,13 @@ const GestionDeFases: React.FC = () => {
                               onClick={() => abrirConfirmacion(fase, "ABRIR")}
                               disabled={!puedeAbrir(fase)}
                               className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-            focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
-            ${
-              puedeAbrir(fase)
-                ? "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 dark:border-emerald-900/60 dark:bg-gray-900 dark:text-emerald-300"
-                : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
-            }`}
+                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                                focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
+                                ${
+                                  puedeAbrir(fase)
+                                    ? "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 dark:border-emerald-900/60 dark:bg-gray-900 dark:text-emerald-300"
+                                    : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
+                                }`}
                             >
                               <PlayCircle className="h-4 w-4" />
                               Abrir fase
@@ -660,13 +715,13 @@ const GestionDeFases: React.FC = () => {
                               onClick={() => abrirConfirmacion(fase, "CERRAR")}
                               disabled={!puedeCerrar(fase)}
                               className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
-            focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
-            ${
-              puedeCerrar(fase)
-                ? "border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-900/60 dark:bg-gray-900 dark:text-blue-300"
-                : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
-            }`}
+                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
+                                focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
+                                ${
+                                  puedeCerrar(fase)
+                                    ? "border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-900/60 dark:bg-gray-900 dark:text-blue-300"
+                                    : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
+                                }`}
                             >
                               <StopCircle className="h-4 w-4" />
                               Cerrar fase
@@ -685,15 +740,15 @@ const GestionDeFases: React.FC = () => {
                               }
                               disabled={!puedePub}
                               className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2
-            focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
-            ${
-              puedePub
-                ? fase.resultados_publicados
-                  ? "border-amber-300 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-200"
-                  : "border-amber-200 bg-white text-amber-700 hover:border-amber-300 hover:bg-amber-50 dark:border-amber-900/60 dark:bg-gray-900 dark:text-amber-300"
-                : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
-            }`}
+                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2
+                                focus-visible:ring-offset-gray-50 dark:focus-visible:ring-offset-gray-950
+                                ${
+                                  puedePub
+                                    ? fase.resultados_publicados
+                                      ? "border-amber-300 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-200"
+                                      : "border-amber-200 bg-white text-amber-700 hover:border-amber-300 hover:bg-amber-50 dark:border-amber-900/60 dark:bg-gray-900 dark:text-amber-300"
+                                    : "cursor-not-allowed border-gray-200 bg-white text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500"
+                                }`}
                             >
                               <UploadCloud className="h-4 w-4" />
                               {fase.resultados_publicados
