@@ -160,7 +160,7 @@ const DesignarEvaluadores: React.FC = () => {
 
     if (!silent) setCargando(true);
     try {
-      const resp = await api(`/designar-evaluadores?gestion=${gestion}`, {
+      const resp = await api(`/designar/evaluadores?gestion=${gestion}`, {
         token: tok,
       });
 
@@ -202,7 +202,7 @@ const DesignarEvaluadores: React.FC = () => {
     setLoadingEvaluadoresDisponibles(true);
     try {
       const resp = await api(
-        `/designar-evaluadores/${idCategoria}/evaluadores-disponibles`,
+        `/designar/evaluadores/${idCategoria}/evaluadores-disponibles`,
         {
           token: tok,
         }
@@ -348,7 +348,8 @@ const DesignarEvaluadores: React.FC = () => {
   const labelEvaluadorDisponible = (e: EvaluadorDisponible) =>
     `${e.nombreCompleto} (ID ${e.idEvaluador})`;
 
-  const handleAgregarEvaluador = async () => {
+  // ahora el agregar puede recibir el label directamente (para usarlo desde el select)
+  const handleAgregarEvaluador = async (labelDesdeSelect?: string) => {
     if (!token) {
       showResult(
         "error",
@@ -367,7 +368,9 @@ const DesignarEvaluadores: React.FC = () => {
       return;
     }
 
-    if (!valorSelectEvaluador) {
+    const label = labelDesdeSelect ?? valorSelectEvaluador;
+
+    if (!label) {
       showResult(
         "error",
         "Evaluador no seleccionado",
@@ -377,7 +380,7 @@ const DesignarEvaluadores: React.FC = () => {
     }
 
     const seleccionado = evaluadoresDisponibles.find(
-      (e) => labelEvaluadorDisponible(e) === valorSelectEvaluador
+      (e) => labelEvaluadorDisponible(e) === label
     );
 
     if (!seleccionado) {
@@ -393,7 +396,7 @@ const DesignarEvaluadores: React.FC = () => {
       setLoadingAgregarEvaluador(true);
 
       await api(
-        `/designar-evaluadores/${categoriaSeleccionada.idCategoria}/evaluadores`,
+        `/designar/evaluadores/${categoriaSeleccionada.idCategoria}/evaluadores`,
         {
           method: "POST",
           token,
@@ -453,7 +456,7 @@ const DesignarEvaluadores: React.FC = () => {
       setLoadingEliminarAsignacion(true);
 
       await api(
-        `/designar-evaluadores/${asignacionAEliminar.idCategoria}/evaluadores/${asignacionAEliminar.idEvaluador}`,
+        `/designar/evaluadores/${asignacionAEliminar.idCategoria}/evaluadores/${asignacionAEliminar.idEvaluador}`,
         {
           method: "DELETE",
           token,
@@ -1002,8 +1005,17 @@ const DesignarEvaluadores: React.FC = () => {
                           ? "Cargando evaluadores..."
                           : "Buscar evaluador por nombre..."
                       }
-                      disabled={loadingEvaluadoresDisponibles}
-                      onChange={(nuevo) => setValorSelectEvaluador(nuevo)}
+                      onChange={(nuevo) => {
+                        if (
+                          loadingEvaluadoresDisponibles ||
+                          loadingAgregarEvaluador
+                        ) {
+                          return;
+                        }
+                        setValorSelectEvaluador(nuevo);
+                        // al seleccionar, se agrega directamente
+                        handleAgregarEvaluador(nuevo);
+                      }}
                     />
                     {!evaluadoresDisponibles.length &&
                       !loadingEvaluadoresDisponibles && (
@@ -1017,7 +1029,7 @@ const DesignarEvaluadores: React.FC = () => {
                   <div className="sm:w-44">
                     <button
                       type="button"
-                      onClick={handleAgregarEvaluador}
+                      onClick={() => handleAgregarEvaluador()}
                       disabled={
                         loadingAgregarEvaluador ||
                         loadingEvaluadoresDisponibles ||
