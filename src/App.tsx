@@ -56,6 +56,9 @@ import DesignarEvaluadorPage from "./pages/DesignarEvaluadorPage";
 
 import RequireAuth from "./components/auth/RequireAuth";
 import GestionarCategorias from "./pages/GestionDeCategorias.tsx";
+import EvaluacionCategorias from "./pages/EvaluacionCategorias.tsx";
+import EvaluacionNotasCategoria from "./pages/EvaluacionNotasCategoria.tsx";
+
 
 export default function App() {
   return (
@@ -159,6 +162,8 @@ export default function App() {
                 path="/aprobacion-calificaciones/:id"
                 element={<AprobacionCalificacionesDetalle />}
               />
+<Route path="/evaluaciones/categorias" element={<EvaluacionCategorias />} />
+<Route path="/evaluaciones/categoria" element={<EvaluacionNotasCategoria />} />
 
               {/* RUTAS CORREGIDAS Y FUNCIONANDO */}
               <Route

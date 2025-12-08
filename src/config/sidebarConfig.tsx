@@ -115,6 +115,10 @@ export const sidebarConfig: SidebarConfig = {
           name: "Evaluación Grupal",
           path: "/fases-de-evaluacion/grupal",
         },
+        {
+          name: "Evaluar Participantes",
+          path: "/evaluaciones/categorias",
+        },
       ],
     },
   ],
