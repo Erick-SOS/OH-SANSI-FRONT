@@ -1,22 +1,39 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
+import toast from 'react-hot-toast';
+import SelectorListasEvaluador from '../components/modals/SelectorListasEvaluador';
 
 
 interface EvaluacionItem {
   id: number;
   nombre: string;
+  ci: number;
+  codigo: number;
   areaCompetencia: string;
   nivel: string;
+  modalidad: string;
+  fase: string;
   nota: number;
   observacion: string;
   desclasificado?: boolean;
   motivo?: string;
+  tipo: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 
-const FiltrosInfoCard: React.FC<{ area: string, nivel: string, modalidad: string, fase: string }> = ({ area, nivel, modalidad, fase }) => (
+const generarIniciales = (nombre: string): string => {
+  const partes = nombre.trim().split(/\s+/);
+  if (partes.length === 0) return '??';
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+};
+
+const FiltrosInfoCard: React.FC<{ area: string; nivel: string; modalidad: string; fase: string }> = ({
+  area, nivel, modalidad, fase,
+}) => (
   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-none border border-gray-200 dark:border-gray-700 p-4 mb-6">
     <div className="flex flex-wrap justify-between items-center gap-4 text-left">
       <div className="flex items-center space-x-2">
@@ -39,18 +56,16 @@ const FiltrosInfoCard: React.FC<{ area: string, nivel: string, modalidad: string
   </div>
 );
 
-const generarInicialesEquipo = (nombreEquipo: string): string => {
-  const palabras = nombreEquipo.trim().split(/\s+/).filter(p => p.length > 0);
-  if (palabras.length === 0) return '??';
-  if (palabras.length === 1) return palabras[0].slice(0, 2).toUpperCase();
-  return palabras.slice(0, 2).map(p => p[0]).join('').toUpperCase();
-};
-
 
 const FasesEvaluacionGrupal: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Comentado para evitar error de linter
 
-  const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([]);
+  // Todos los datos crudos del backend
+  const [allEvaluaciones, setAllEvaluaciones] = useState<EvaluacionItem[]>([]);
+  // Grupos únicos detectados: "Area - Nivel - Modalidad - Fase"
+  const [availableGroups, setAvailableGroups] = useState<{ area: string; nivel: string; modalidad: string; fase: string; count: number }[]>([]);
+  const [selectedGroupIndex, setSelectedGroupIndex] = useState<number>(0);
+  const [showListSelectionModal, setShowListSelectionModal] = useState(false);
 
   const [, setLoading] = useState(true);
 
@@ -78,17 +93,48 @@ const FasesEvaluacionGrupal: React.FC = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data: any[] = result.data;
 
-        // Filtrar solo grupales
+        // Filtrar solo GRUPAL y normalizar
         const grupales = data.filter(d => d.tipo === 'GRUPAL').map(d => ({
           ...d,
-          // Asegurar tipos
           nota: Number(d.nota),
-          observacion: d.observacion || ''
+          observacion: d.observacion || '',
+          ci: d.ci || 0, // En grupal puede ser 0 o undefined
+          codigo: d.codigo,
+          areaCompetencia: d.areaCompetencia || 'Desconocida',
+          nivel: d.nivel || 'Desconocido',
+          modalidad: d.modalidad || 'GRUPAL',
+          fase: d.fase || 'Clasificación',
         }));
-        setEvaluaciones(grupales);
+
+        setAllEvaluaciones(grupales);
+
+        // Extraer grupos únicos considerando 4 factores
+        const groupsMap = new Map<string, { area: string; nivel: string; modalidad: string; fase: string; count: number }>();
+
+        grupales.forEach((item: EvaluacionItem) => {
+          const key = `${item.areaCompetencia}|${item.nivel}|${item.modalidad}|${item.fase}`;
+          if (!groupsMap.has(key)) {
+            groupsMap.set(key, {
+              area: item.areaCompetencia,
+              nivel: item.nivel,
+              modalidad: item.modalidad,
+              fase: item.fase,
+              count: 0
+            });
+          }
+          const group = groupsMap.get(key);
+          if (group) group.count++;
+        });
+
+        const groups = Array.from(groupsMap.values());
+        setAvailableGroups(groups);
+        if (groups.length > 0) {
+          setSelectedGroupIndex(0);
+        }
+
       } catch (error) {
         console.error("Error fetching data", error);
-        alert("Error al cargar los datos");
+        toast.error("Error al cargar los datos");
       } finally {
         setLoading(false);
       }
@@ -101,18 +147,31 @@ const FasesEvaluacionGrupal: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [intentosFallidos, setIntentosFallidos] = useState(false);
-
-
   const [showDesclasificar, setShowDesclasificar] = useState(false);
   const [itemSeleccionado, setItemSeleccionado] = useState<EvaluacionItem | null>(null);
   const [motivo, setMotivo] = useState('');
 
   const itemsPerPage = 7;
 
-  const infoArea = "Todas";
-  const infoNivel = "Mixto";
-  const infoModalidad = "Grupal";
-  const infoFase = "Clasificación";
+  // Derivar datos según el grupo seleccionado
+  const currentGroup = availableGroups[selectedGroupIndex];
+
+  // Filtrar evaluaciones que pertenecen al grupo activo
+  const evaluacionesDelGrupo = useMemo(() => {
+    if (!currentGroup) return [];
+    return allEvaluaciones.filter(e =>
+      e.areaCompetencia === currentGroup.area &&
+      e.nivel === currentGroup.nivel &&
+      e.modalidad === currentGroup.modalidad &&
+      e.fase === currentGroup.fase
+    );
+  }, [allEvaluaciones, currentGroup]);
+
+  // Valores dinámicos para el header
+  const infoArea = currentGroup?.area || "Cargando...";
+  const infoNivel = currentGroup?.nivel || "Cargando...";
+  const infoModalidad = currentGroup?.modalidad || "Cargando...";
+  const infoFase = currentGroup?.fase || "Cargando...";
 
   const getEstado = (item: EvaluacionItem): string => {
     if (item.desclasificado) return 'DESCLASIFICADO';
@@ -128,48 +187,63 @@ const FasesEvaluacionGrupal: React.FC = () => {
 
   const confirmarDesclasificar = () => {
     if (!motivo.trim()) {
-      alert('El motivo es obligatorio');
+      toast.error('El motivo es obligatorio');
       return;
     }
-    setEvaluaciones(prev =>
+    // Actualizamos allEvaluaciones, ya que es la fuente de verdad
+    setAllEvaluaciones(prev =>
       prev.map(i =>
         i.id === itemSeleccionado?.id
           ? { ...i, desclasificado: true, motivo: motivo.trim() }
           : i
       )
     );
+    toast.success('Equipo desclasificado');
     setShowDesclasificar(false);
     setMotivo('');
     setItemSeleccionado(null);
   };
 
   const validarListaCompleta = (): boolean => {
-    return evaluaciones.every(item => {
-
+    // Validamos solo las del grupo actual
+    return evaluacionesDelGrupo.every(item => {
       if (item.desclasificado) return true;
-
       const notaActual = (edits[item.id]?.nota ?? item.nota) as number;
-      const obsActual = (edits[item.id]?.observacion ?? item.observacion) as string || '';
-      return notaActual >= 1 && notaActual <= 100 && obsActual.trim().length > 0 && obsActual.length <= 100;
+      const obsActual = (edits[item.id]?.observacion ?? item.observacion) || '';
+      return notaActual >= 1 && notaActual <= 100 && obsActual.trim().length > 0;
     });
   };
 
   const handleEnviarLista = () => {
     if (!validarListaCompleta()) {
       setIntentosFallidos(true);
-      alert('Complete nota (1-100) y observación para todos los equipos no desclasificados');
+      toast.error('Complete nota y observación para todos los equipos de esta lista');
       return;
     }
     setShowConfirmModal(true);
   };
 
   const confirmarEnvio = () => {
-    const finalData = evaluaciones.map(item => ({ ...item, ...edits[item.id] }));
-    setEvaluaciones(finalData);
-    setEdits({});
+    const finalData = allEvaluaciones.map(item => {
+      if (edits[item.id]) {
+        return { ...item, ...edits[item.id] }
+      }
+      return item;
+    });
+
+    setAllEvaluaciones(finalData);
+
+    // Limpiamos edits de los items procesados
+    const newEdits = { ...edits };
+    evaluacionesDelGrupo.forEach(item => {
+      delete newEdits[item.id];
+    });
+    setEdits(newEdits);
+
     setIntentosFallidos(false);
+    toast.success('Calificaciones guardadas localmente (simulado)');
     setShowConfirmModal(false);
-    setTimeout(() => navigate('/evaluador/dashboard'), 1500);
+    // setTimeout(() => navigate('/evaluador/dashboard'), 1500); 
   };
 
   const handleValueChange = (id: number, field: keyof EvaluacionItem, value: string | number) => {
@@ -177,32 +251,23 @@ const FasesEvaluacionGrupal: React.FC = () => {
   };
 
   const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    const sorted = [...evaluaciones].sort((a, b) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const aVal = (a as any)[column];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bVal = (b as any)[column];
-      if (typeof aVal === 'string' && typeof bVal === 'string')
-        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      if (typeof aVal === 'number' && typeof bVal === 'number')
-        return direction === 'asc' ? aVal - bVal : bVal - aVal;
-      return 0;
-    });
-    setEvaluaciones(sorted);
+    setSortConfig({ column, direction });
   };
+
+  const [sortConfig, setSortConfig] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
 
   const columns = [
     {
-      clave: 'equipo',
-      titulo: 'Nombre del Equipo',
+      clave: 'nombre',
+      titulo: 'Equipo',
       alineacion: 'izquierda' as const,
       ordenable: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       formatearCelda: (_: any, fila: EvaluacionItem & { numero: number }) => {
-        const iniciales = generarInicialesEquipo(fila.nombre);
+        const iniciales = generarIniciales(fila.nombre);
         return (
           <div className="flex items-center gap-3 py-3 min-w-0">
-            <div className="relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full overflow-hidden shadow-md">
+            <div className="relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full overflow-hidden shadow-md">
               <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
                 {iniciales}
               </span>
@@ -212,7 +277,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
                 {fila.nombre}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {fila.areaCompetencia} • {fila.nivel}
+                Código: {fila.codigo}
               </div>
             </div>
           </div>
@@ -221,10 +286,14 @@ const FasesEvaluacionGrupal: React.FC = () => {
     },
     {
       clave: 'codigo',
-      titulo: 'Código',
+      titulo: 'ID',
       alineacion: 'centro' as const,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatearCelda: (_: any, fila: EvaluacionItem) => `EQ${fila.id.toString().padStart(3, '0')}`,
+      formatearCelda: (_: any, fila: EvaluacionItem) => (
+        <span className="text-gray-700 dark:text-gray-300 font-medium">
+          {fila.codigo}
+        </span>
+      ),
     },
     {
       clave: 'nota',
@@ -236,7 +305,6 @@ const FasesEvaluacionGrupal: React.FC = () => {
         const valorActual = (edits[fila.id]?.nota ?? fila.nota) as number;
         const tieneError = intentosFallidos && !fila.desclasificado && (valorActual < 1 || valorActual > 100);
 
-
         if (fila.desclasificado) {
           return <span className="text-xl font-bold text-gray-400">—</span>;
         }
@@ -245,11 +313,11 @@ const FasesEvaluacionGrupal: React.FC = () => {
           <input
             type="text"
             inputMode="numeric"
-            value={valorActual === 0 ? '' : valorActual}
+            value={valorActual === 100 ? '' : valorActual}
             onChange={(e) => {
               const val = e.target.value;
               if (val === '' || /^\d+$/.test(val)) {
-                const num = val === '' ? 0 : parseInt(val);
+                const num = val === '' ? 100 : parseInt(val, 10);
                 if (num <= 100) handleValueChange(fila.id, 'nota', num);
               }
             }}
@@ -288,7 +356,6 @@ const FasesEvaluacionGrupal: React.FC = () => {
         );
       },
     },
-
     {
       clave: 'estado',
       titulo: 'Estado',
@@ -299,11 +366,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
 
         if (fila.desclasificado) {
           return (
-            <div
-              onDoubleClick={() => abrirDesclasificar(fila)}
-              className="cursor-pointer"
-              title="Doble clic para ver/editar motivo"
-            >
+            <div onDoubleClick={() => abrirDesclasificar(fila)} className="cursor-pointer" title="Doble clic para ver/editar motivo">
               <span className="inline-block px-5 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-300">
                 DESCLASIFICADO
               </span>
@@ -312,11 +375,7 @@ const FasesEvaluacionGrupal: React.FC = () => {
         }
 
         return (
-          <div
-            onDoubleClick={() => abrirDesclasificar(fila)}
-            className="cursor-pointer"
-            title="Doble clic para desclasificar"
-          >
+          <div onDoubleClick={() => abrirDesclasificar(fila)} className="cursor-pointer" title="Doble clic para desclasificar">
             <span className={`inline-block px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${estado === 'CLASIFICADO'
               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
               : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
@@ -330,14 +389,33 @@ const FasesEvaluacionGrupal: React.FC = () => {
   ];
 
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return evaluaciones;
-    const term = searchTerm.toLowerCase();
-    return evaluaciones.filter(item =>
-      item.nombre.toLowerCase().includes(term) ||
-      item.areaCompetencia.toLowerCase().includes(term) ||
-      item.nivel.toLowerCase().includes(term)
-    );
-  }, [evaluaciones, searchTerm]);
+    let data = [...evaluacionesDelGrupo];
+
+    // 1. Filtro de búsqueda
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      data = data.filter(item =>
+        item.nombre.toLowerCase().includes(term) ||
+        item.codigo.toString().includes(term)
+      );
+    }
+
+    // 2. Ordenamiento
+    if (sortConfig) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data.sort((a: any, b: any) => {
+        const aVal = a[sortConfig.column];
+        const bVal = b[sortConfig.column];
+        if (typeof aVal === 'string' && typeof bVal === 'string')
+          return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        if (typeof aVal === 'number' && typeof bVal === 'number')
+          return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        return 0;
+      });
+    }
+
+    return data;
+  }, [evaluacionesDelGrupo, searchTerm, sortConfig]);
 
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -352,9 +430,22 @@ const FasesEvaluacionGrupal: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Calificación de Participantes Grupales
             </h1>
-            <nav className="text-sm text-gray-600 dark:text-gray-400 mt-2 sm:mt-0">
-              Inicio › Fases de Evaluación › Grupal
-            </nav>
+            <div className="flex items-center gap-4 mt-2 sm:mt-0">
+              {availableGroups.length > 1 && (
+                <button
+                  onClick={() => setShowListSelectionModal(true)}
+                  className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition"
+                >
+                  <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                  Cambiar de lista
+                </button>
+              )}
+              <nav className="text-sm text-gray-600 dark:text-gray-400">
+                Inicio › Fases de Evaluación › Grupal
+              </nav>
+            </div>
           </div>
 
           <FiltrosInfoCard area={infoArea} nivel={infoNivel} modalidad={infoModalidad} fase={infoFase} />
@@ -372,51 +463,84 @@ const FasesEvaluacionGrupal: React.FC = () => {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                Enviar calificaciones
+                Enviar calificaciones ({filteredData.length})
               </button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="min-w-[800px] overflow-x-auto">
-              <TablaBase
-                datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
-                columnas={columns}
-                conOrdenamiento={true}
-                onOrdenar={handleSort}
-                conAcciones={false}
-              />
+          {availableGroups.length === 0 && !allEvaluaciones.length ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-full mb-4">
+                <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                Aún no tienes listas asignadas
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm text-center">
+                Ponte en contacto con el administrador si crees que esto es un error.
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="min-w-[900px] overflow-x-auto">
+                  <TablaBase
+                    datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
+                    columnas={columns}
+                    conOrdenamiento={true}
+                    onOrdenar={handleSort}
+                    conAcciones={false}
+                  />
+                </div>
+              </div>
 
-          <div className="mt-6">
-            <Paginacion
-              paginaActual={currentPage}
-              totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
-              totalRegistros={filteredData.length}
-              registrosPorPagina={itemsPerPage}
-              onPaginaChange={setCurrentPage}
-            />
-          </div>
+              <div className="mt-6">
+                <Paginacion
+                  paginaActual={currentPage}
+                  totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
+                  totalRegistros={filteredData.length}
+                  registrosPorPagina={itemsPerPage}
+                  onPaginaChange={setCurrentPage}
+                />
+              </div>
+            </>
+          )}
+
         </div>
       </div>
+
+      <SelectorListasEvaluador
+        isOpen={showListSelectionModal}
+        onClose={() => setShowListSelectionModal(false)}
+        groups={availableGroups}
+        selectedGroupIndex={selectedGroupIndex}
+        onSelect={(idx) => {
+          setSelectedGroupIndex(idx);
+          setCurrentPage(1);
+          setSearchTerm('');
+        }}
+      />
 
       { }
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-700">
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
-              Confirmar envío de calificaciones grupales
+              Confirmar envío de calificaciones
             </h3>
             <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
+              Está a punto de enviar las calificaciones para el grupo <strong>{infoArea} - {infoNivel}</strong>.
+              <br />
               Una vez enviada la lista, <strong>no podrá modificarla nuevamente</strong>.
               <br /><br />¿Está seguro?
             </p>
             <div className="flex justify-end gap-4">
-              <button onClick={() => setShowConfirmModal(false)} className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium">
+              <button onClick={() => setShowConfirmModal(false)} className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium">
                 Cancelar
               </button>
-              <button onClick={confirmarEnvio} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition shadow-md">
+              <button onClick={confirmarEnvio} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">
                 Sí, enviar lista
               </button>
             </div>
@@ -435,21 +559,15 @@ const FasesEvaluacionGrupal: React.FC = () => {
             <textarea
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Motivo obligatorio (copia, indisciplina, etc.)"
+              placeholder="Motivo obligatorio (copia, celular, indisciplina...)"
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none"
               rows={4}
             />
             <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => { setShowDesclasificar(false); setMotivo(''); setItemSeleccionado(null); }}
-                className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100"
-              >
+              <button onClick={() => { setShowDesclasificar(false); setMotivo(''); setItemSeleccionado(null); }} className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100">
                 Cancelar
               </button>
-              <button
-                onClick={confirmarDesclasificar}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
-              >
+              <button onClick={confirmarDesclasificar} className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium">
                 Desclasificar
               </button>
             </div>

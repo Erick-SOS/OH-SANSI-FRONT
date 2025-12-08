@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import TablaBase from '../components/tables/TablaBase';
 import Paginacion from '../components/ui/Paginacion';
 import BarraBusquedaAreas from '../components/tables/BarraBusqueda';
 import toast from 'react-hot-toast';
+import SelectorListasEvaluador from '../components/modals/SelectorListasEvaluador';
 
 
 interface EvaluacionItem {
@@ -13,10 +13,14 @@ interface EvaluacionItem {
   codigo: number;
   areaCompetencia: string;
   nivel: string;
+  modalidad: string;
+  fase: string;
   nota: number;
   observacion: string;
   desclasificado?: boolean;
   motivo?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 
 const formatearCI = (ci: number): string => {
@@ -60,9 +64,14 @@ const FiltrosInfoCard: React.FC<{ area: string; nivel: string; modalidad: string
 
 
 const FasesEvaluacionIndividual: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Comentado para evitar error de linter
 
-  const [evaluaciones, setEvaluaciones] = useState<EvaluacionItem[]>([]);
+  // Todos los datos crudos del backend
+  const [allEvaluaciones, setAllEvaluaciones] = useState<EvaluacionItem[]>([]);
+  // Grupos únicos detectados: "Area - Nivel - Modalidad - Fase"
+  const [availableGroups, setAvailableGroups] = useState<{ area: string; nivel: string; modalidad: string; fase: string; count: number }[]>([]);
+  const [selectedGroupIndex, setSelectedGroupIndex] = useState<number>(0);
+  const [showListSelectionModal, setShowListSelectionModal] = useState(false);
 
   const [, setLoading] = useState(true);
 
@@ -90,17 +99,48 @@ const FasesEvaluacionIndividual: React.FC = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data: any[] = result.data;
 
-        // Filtrar solo individuales
+        // Filtrar solo individuales y normalizar
         const individuales = data.filter(d => d.tipo === 'INDIVIDUAL').map(d => ({
           ...d,
-          // Asegurar tipos
           nota: Number(d.nota),
           observacion: d.observacion || '',
-          // ci y codigo vienen del back
           ci: d.ci || 0,
-          codigo: d.codigo
+          codigo: d.codigo,
+          areaCompetencia: d.areaCompetencia || 'Desconocida',
+          nivel: d.nivel || 'Desconocido',
+          modalidad: d.modalidad || 'INDIVIDUAL',
+          // Si el back no trae fase, asumimos 'Clasificación' por defecto o lo que corresponda según la lógica de negocio.
+          // Si quisiéramos ser robustos, si no viene, ponemos "Clasificación" como string.
+          fase: d.fase || 'Clasificación',
         }));
-        setEvaluaciones(individuales);
+
+        setAllEvaluaciones(individuales);
+
+        // Extraer grupos únicos considerando 4 factores
+        const groupsMap = new Map<string, { area: string; nivel: string; modalidad: string; fase: string; count: number }>();
+
+        individuales.forEach((item: EvaluacionItem) => {
+          const key = `${item.areaCompetencia}|${item.nivel}|${item.modalidad}|${item.fase}`;
+          if (!groupsMap.has(key)) {
+            groupsMap.set(key, {
+              area: item.areaCompetencia,
+              nivel: item.nivel,
+              modalidad: item.modalidad,
+              fase: item.fase,
+              count: 0
+            });
+          }
+          const group = groupsMap.get(key);
+          if (group) group.count++;
+        });
+
+        const groups = Array.from(groupsMap.values());
+        setAvailableGroups(groups);
+        if (groups.length > 0) {
+          // Por defecto seleccionamos el primero si no hay selección previa
+          setSelectedGroupIndex(0);
+        }
+
       } catch (error) {
         console.error("Error fetching data", error);
         toast.error("Error al cargar los datos");
@@ -122,10 +162,25 @@ const FasesEvaluacionIndividual: React.FC = () => {
 
   const itemsPerPage = 7;
 
-  const infoArea = "Matemáticas";
-  const infoNivel = "Primaria";
-  const infoModalidad = "Individual";
-  const infoFase = "Clasificación";
+  // Derivar datos según el grupo seleccionado
+  const currentGroup = availableGroups[selectedGroupIndex];
+
+  // Filtrar evaluaciones que pertenecen al grupo activo
+  const evaluacionesDelGrupo = useMemo(() => {
+    if (!currentGroup) return [];
+    return allEvaluaciones.filter(e =>
+      e.areaCompetencia === currentGroup.area &&
+      e.nivel === currentGroup.nivel &&
+      e.modalidad === currentGroup.modalidad &&
+      e.fase === currentGroup.fase
+    );
+  }, [allEvaluaciones, currentGroup]);
+
+  // Valores dinámicos para el header
+  const infoArea = currentGroup?.area || "Cargando...";
+  const infoNivel = currentGroup?.nivel || "Cargando...";
+  const infoModalidad = currentGroup?.modalidad || "Cargando...";
+  const infoFase = currentGroup?.fase || "Cargando...";
 
   const getEstado = (item: EvaluacionItem): string => {
     if (item.desclasificado) return 'DESCLASIFICADO';
@@ -144,7 +199,8 @@ const FasesEvaluacionIndividual: React.FC = () => {
       toast.error('El motivo es obligatorio');
       return;
     }
-    setEvaluaciones(prev =>
+    // Actualizamos allEvaluaciones, ya que es la fuente de verdad
+    setAllEvaluaciones(prev =>
       prev.map(i =>
         i.id === itemSeleccionado?.id
           ? { ...i, desclasificado: true, motivo: motivo.trim() }
@@ -158,7 +214,8 @@ const FasesEvaluacionIndividual: React.FC = () => {
   };
 
   const validarListaCompleta = (): boolean => {
-    return evaluaciones.every(item => {
+    // Validamos solo las del grupo actual
+    return evaluacionesDelGrupo.every(item => {
       if (item.desclasificado) return true;
       const notaActual = (edits[item.id]?.nota ?? item.nota) as number;
       const obsActual = (edits[item.id]?.observacion ?? item.observacion) || '';
@@ -169,20 +226,39 @@ const FasesEvaluacionIndividual: React.FC = () => {
   const handleEnviarLista = () => {
     if (!validarListaCompleta()) {
       setIntentosFallidos(true);
-      toast.error('Complete nota y observación para todos los participantes');
+      toast.error('Complete nota y observación para todos los participantes de esta lista');
       return;
     }
     setShowConfirmModal(true);
   };
 
   const confirmarEnvio = () => {
-    const finalData = evaluaciones.map(item => ({ ...item, ...edits[item.id] }));
-    setEvaluaciones(finalData);
-    setEdits({});
+    // Aplicamos los edits a allEvaluaciones
+    const finalData = allEvaluaciones.map(item => {
+      if (edits[item.id]) {
+        return { ...item, ...edits[item.id] }
+      }
+      return item;
+    });
+
+    // Aquí idealmente filtraríamos o enviaríamos SOLO las del grupo actual al backend si la API lo requiere por separado.
+    // O si la API recibe todo el lote, enviamos todo.
+    // Asumiremos que actualizamos el estado local por ahora, simulando el "envío" exitoso de este lote.
+    // Si la API espera un envío parcial, habría que ajustar la lógica de fetch/post.
+
+    setAllEvaluaciones(finalData);
+
+    // Limpiamos edits de los items procesados
+    const newEdits = { ...edits };
+    evaluacionesDelGrupo.forEach(item => {
+      delete newEdits[item.id];
+    });
+    setEdits(newEdits);
+
     setIntentosFallidos(false);
-    toast.success('Calificaciones enviadas correctamente');
+    toast.success('Calificaciones guardadas localmente (simulado)');
     setShowConfirmModal(false);
-    setTimeout(() => navigate('/evaluador/dashboard'), 1500);
+    // setTimeout(() => navigate('/evaluador/dashboard'), 1500); // Comentado para no salir y poder editar otra lista
   };
 
   const handleValueChange = (id: number, field: keyof EvaluacionItem, value: string | number) => {
@@ -190,19 +266,11 @@ const FasesEvaluacionIndividual: React.FC = () => {
   };
 
   const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sorted = [...evaluaciones].sort((a: any, b: any) => {
-      const aVal = a[column];
-      const bVal = b[column];
-      if (typeof aVal === 'string' && typeof bVal === 'string')
-        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      if (typeof aVal === 'number' && typeof bVal === 'number')
-        return direction === 'asc' ? aVal - bVal : bVal - aVal;
-      return 0;
-    });
-    setEvaluaciones(sorted);
+    // Reemplazaremos la lógica de handleSort para que actualice un estado de 'sortConfig' y usaremos eso en 'filteredData'.
+    setSortConfig({ column, direction });
   };
 
+  const [sortConfig, setSortConfig] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
 
   const columns = [
     {
@@ -337,14 +405,34 @@ const FasesEvaluacionIndividual: React.FC = () => {
   ];
 
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return evaluaciones;
-    const term = searchTerm.toLowerCase();
-    return evaluaciones.filter(item =>
-      item.nombre.toLowerCase().includes(term) ||
-      item.ci.toString().includes(term) ||
-      item.codigo.toString().includes(term)
-    );
-  }, [evaluaciones, searchTerm]);
+    let data = [...evaluacionesDelGrupo];
+
+    // 1. Filtro de búsqueda
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      data = data.filter(item =>
+        item.nombre.toLowerCase().includes(term) ||
+        item.ci.toString().includes(term) ||
+        item.codigo.toString().includes(term)
+      );
+    }
+
+    // 2. Ordenamiento
+    if (sortConfig) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data.sort((a: any, b: any) => {
+        const aVal = a[sortConfig.column];
+        const bVal = b[sortConfig.column];
+        if (typeof aVal === 'string' && typeof bVal === 'string')
+          return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        if (typeof aVal === 'number' && typeof bVal === 'number')
+          return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        return 0;
+      });
+    }
+
+    return data;
+  }, [evaluacionesDelGrupo, searchTerm, sortConfig]);
 
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -359,9 +447,22 @@ const FasesEvaluacionIndividual: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Calificación de Participantes Individuales
             </h1>
-            <nav className="text-sm text-gray-600 dark:text-gray-400 mt-2 sm:mt-0">
-              Inicio › Fases de Evaluación › Individual
-            </nav>
+            <div className="flex items-center gap-4 mt-2 sm:mt-0">
+              {availableGroups.length > 1 && (
+                <button
+                  onClick={() => setShowListSelectionModal(true)}
+                  className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition"
+                >
+                  <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                  Cambiar de lista
+                </button>
+              )}
+              <nav className="text-sm text-gray-600 dark:text-gray-400">
+                Inicio › Fases de Evaluación › Individual
+              </nav>
+            </div>
           </div>
 
           <FiltrosInfoCard area={infoArea} nivel={infoNivel} modalidad={infoModalidad} fase={infoFase} />
@@ -379,34 +480,65 @@ const FasesEvaluacionIndividual: React.FC = () => {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                Enviar calificaciones
+                Enviar calificaciones ({filteredData.length})
               </button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="min-w-[900px] overflow-x-auto">
-              <TablaBase
-                datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
-                columnas={columns}
-                conOrdenamiento={true}
-                onOrdenar={handleSort}
-                conAcciones={false}
-              />
+          {availableGroups.length === 0 && !allEvaluaciones.length ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-full mb-4">
+                <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                Aún no tienes listas asignadas
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm text-center">
+                Ponte en contacto con el administrador si crees que esto es un error.
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="min-w-[900px] overflow-x-auto">
+                  <TablaBase
+                    datos={paginatedData.map((item, i) => ({ ...item, numero: (currentPage - 1) * itemsPerPage + i + 1 }))}
+                    columnas={columns}
+                    conOrdenamiento={true}
+                    onOrdenar={handleSort}
+                    conAcciones={false}
+                  />
+                </div>
+              </div>
 
-          <div className="mt-6">
-            <Paginacion
-              paginaActual={currentPage}
-              totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
-              totalRegistros={filteredData.length}
-              registrosPorPagina={itemsPerPage}
-              onPaginaChange={setCurrentPage}
-            />
-          </div>
+              <div className="mt-6">
+                <Paginacion
+                  paginaActual={currentPage}
+                  totalPaginas={Math.ceil(filteredData.length / itemsPerPage)}
+                  totalRegistros={filteredData.length}
+                  registrosPorPagina={itemsPerPage}
+                  onPaginaChange={setCurrentPage}
+                />
+              </div>
+            </>
+          )}
+
         </div>
       </div>
+
+      <SelectorListasEvaluador
+        isOpen={showListSelectionModal}
+        onClose={() => setShowListSelectionModal(false)}
+        groups={availableGroups}
+        selectedGroupIndex={selectedGroupIndex}
+        onSelect={(idx) => {
+          setSelectedGroupIndex(idx);
+          setCurrentPage(1);
+          setSearchTerm('');
+        }}
+      />
 
       { }
       {showConfirmModal && (
@@ -416,6 +548,8 @@ const FasesEvaluacionIndividual: React.FC = () => {
               Confirmar envío de calificaciones
             </h3>
             <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
+              Está a punto de enviar las calificaciones para el grupo <strong>{infoArea} - {infoNivel}</strong>.
+              <br />
               Una vez enviada la lista, <strong>no podrá modificarla nuevamente</strong>.
               <br /><br />¿Está seguro?
             </p>
