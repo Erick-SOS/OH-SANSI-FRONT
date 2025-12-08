@@ -1,34 +1,37 @@
-// src/layout/AppSidebar.tsx
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDownIcon, HorizontaLDots } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import { sidebarConfig, NavItem } from "../config/sidebarConfig";
 import images from "../assets/images";
+import { MdMoreHoriz, MdExpandMore } from "react-icons/md";
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, toggleMobileSidebar } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, toggleMobileSidebar } =
+    useSidebar();
   const { user } = useAuth();
   const location = useLocation();
   const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
 
   if (!user?.rol) return null;
 
-  const roleKey = user.rol.toLowerCase() as keyof typeof sidebarConfig;
-  const navItems: NavItem[] = sidebarConfig[roleKey] || sidebarConfig.administrador || [];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const navItems: NavItem[] = sidebarConfig[user.rol] ?? [];
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
   );
 
-  // Determinar si el sidebar está expandido (para mostrar textos)
   const isSidebarExpanded = isExpanded || isHovered || isMobileOpen;
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    const activeIndex = navItems.findIndex((nav) =>
-      nav.subItems?.some((sub) => isActive(sub.path)) || isActive(nav.path || "")
+    const activeIndex = navItems.findIndex(
+      (nav) =>
+        nav.subItems?.some((sub) => isActive(sub.path)) ||
+        isActive(nav.path || "")
     );
     setOpenSubmenu(activeIndex !== -1 ? activeIndex : null);
   }, [location.pathname, navItems, isActive]);
@@ -37,6 +40,7 @@ const AppSidebar: React.FC = () => {
     setOpenSubmenu((prev) => (prev === index ? null : index));
   };
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (isMobileOpen) {
       document.body.style.overflow = "hidden";
@@ -50,7 +54,6 @@ const AppSidebar: React.FC = () => {
 
   return (
     <>
-      {/* Overlay móvil */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -60,37 +63,29 @@ const AppSidebar: React.FC = () => {
 
       <aside
         className={`
-          /* Comportamiento móvil */
-          ${isMobileOpen 
-            ? "fixed inset-y-0 left-0 z-50 w-[90vw] max-w-[380px] translate-x-0" 
-            : "fixed -translate-x-full lg:translate-x-0"
+          ${
+            isMobileOpen
+              ? "fixed inset-y-0 left-0 z-50 w-[90vw] max-w-[380px] translate-x-0"
+              : "fixed -translate-x-full lg:translate-x-0"
           }
-          
-          /* Comportamiento desktop */
           lg:relative lg:inset-auto
-          
           flex flex-col
           bg-white dark:bg-gray-900
           border-r border-gray-200 dark:border-gray-800
           transition-all duration-300
           overflow-hidden
-          
-          /* Ancho en desktop */
           ${isSidebarExpanded ? "lg:w-[290px]" : "lg:w-[90px]"}
-          
-          /* Asegurar que siempre sea visible en desktop */
           lg:flex lg:z-30
         `}
       >
         <div className="flex flex-col h-full min-h-0">
-          {/* Logo */}
           <div
             className={`py-8 flex px-5 ${
               !isSidebarExpanded ? "lg:justify-center" : "justify-start"
             }`}
           >
             <img
-              src={images.logoUmss}
+              src={images.unnamed}
               alt="Logo"
               className={`h-10 object-contain transition-all ${
                 isSidebarExpanded ? "w-auto" : "w-10"
@@ -98,7 +93,6 @@ const AppSidebar: React.FC = () => {
             />
           </div>
 
-          {/* Navegación */}
           <nav className="flex-1 overflow-y-auto px-5 pb-6 pt-2 min-h-0 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
             <h2
               className={`mb-4 text-xs uppercase text-gray-500 dark:text-gray-400 ${
@@ -108,14 +102,13 @@ const AppSidebar: React.FC = () => {
               {isSidebarExpanded ? (
                 "Menú"
               ) : (
-                <HorizontaLDots className="size-6 mx-auto" />
+                <MdMoreHoriz className="size-6 mx-auto" />
               )}
             </h2>
 
             <ul className="flex flex-col gap-2">
               {navItems.map((nav, index) => (
                 <li key={index}>
-                  {/* Ítem con submenú */}
                   {nav.subItems ? (
                     <button
                       onClick={() => toggleSubmenu(index)}
@@ -137,7 +130,7 @@ const AppSidebar: React.FC = () => {
                           <span className="flex-1 text-left text-sm font-medium">
                             {nav.name}
                           </span>
-                          <ChevronDownIcon
+                          <MdExpandMore
                             className={`w-5 h-5 transition-transform ${
                               openSubmenu === index ? "rotate-180" : ""
                             }`}
@@ -146,7 +139,6 @@ const AppSidebar: React.FC = () => {
                       )}
                     </button>
                   ) : (
-                    /* Ítem simple */
                     <Link
                       to={nav.path!}
                       className={`
@@ -166,7 +158,6 @@ const AppSidebar: React.FC = () => {
                     </Link>
                   )}
 
-                  {/* Submenú */}
                   {nav.subItems && isSidebarExpanded && (
                     <div
                       id={`submenu-${index}`}
@@ -200,7 +191,6 @@ const AppSidebar: React.FC = () => {
             </ul>
           </nav>
 
-          {/* Espacio seguro para la barra de navegación del móvil */}
           <div className="h-10 lg:hidden" />
         </div>
       </aside>

@@ -1,6 +1,9 @@
-import logoUmss from '../assets/LogoUmss/unnamed.png';
+import unnamed from "./LogoUmss/unnamed.png";
+import unnamed2 from "./LogoUmss/unnamed2.png";
+
 const images = {
-  logoUmss,
+  unnamed,
+  unnamed2,
 };
 
 export default images;
