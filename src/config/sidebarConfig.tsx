@@ -108,14 +108,6 @@ export const sidebarConfig: SidebarConfig = {
       name: "Evaluar Participantes",
       subItems: [
         {
-          name: "Evaluación Individual",
-          path: "/fases-de-evaluacion/individual",
-        },
-        {
-          name: "Evaluación Grupal",
-          path: "/fases-de-evaluacion/grupal",
-        },
-        {
           name: "Evaluar Participantes",
           path: "/evaluaciones/categorias",
         },
