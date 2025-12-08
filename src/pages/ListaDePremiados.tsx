@@ -3,10 +3,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { getToken, getUser, AuthUser } from "../components/auth/authStorage";
 
-import BarraBusquedaOlimpias from "../components/tables/BarraBusquedaOlimpias";
 import TablaBase from "../components/tables/TablaBase";
 import Paginacion from "../components/ui/Paginacion";
-
+import BarraBusquedaAreas from "../components/tables/BarraBusqueda";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import ResultModal from "../components/modals/ResultModal";
 
@@ -197,7 +196,7 @@ const GanadoresCertificados: React.FC = () => {
   );
   const [loadingGanadores, setLoadingGanadores] = useState(false);
 
-  const [busqueda, setBusqueda] = useState("");
+  const [terminoBusqueda, setTerminoBusqueda] = useState("");
   const [tablaActiva, setTablaActiva] = useState<TipoTabla>("INDIVIDUAL");
 
   const [paginaIndividual, setPaginaIndividual] = useState(1);
@@ -211,10 +210,33 @@ const GanadoresCertificados: React.FC = () => {
   const [confirmEnvioVisible, setConfirmEnvioVisible] = useState(false);
   const [confirmEnvioLoading, setConfirmEnvioLoading] = useState(false);
 
-  const [resultVisible, setResultVisible] = useState(false);
-  const [resultType, setResultType] = useState<"success" | "error">("success");
-  const [resultTitle, setResultTitle] = useState("");
-  const [resultMessage, setResultMessage] = useState("");
+  const [resultModal, setResultModal] = useState<{
+    visible: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const showResult = (
+    type: "success" | "error",
+    title: string,
+    message: string
+  ) => {
+    setResultModal({
+      visible: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const closeResultModal = () =>
+    setResultModal((prev) => ({ ...prev, visible: false }));
 
   useEffect(() => {
     (async () => {
@@ -238,21 +260,17 @@ const GanadoresCertificados: React.FC = () => {
     }
   }, [areaSeleccionada, nivelSeleccionado]);
 
-  useEffect(() => {
-    setPaginaIndividual(1);
-    setPaginaGrupal(1);
-  }, [busqueda, areaSeleccionada, nivelSeleccionado]);
-
   async function cargarFiltros() {
     setLoadingFiltros(true);
     try {
       const resp = await api("/filtros/categorias");
       setFiltros(resp.data || []);
     } catch (err: any) {
-      setResultType("error");
-      setResultTitle("No se pudieron cargar los filtros");
-      setResultMessage(err.message || "Error al cargar áreas y niveles.");
-      setResultVisible(true);
+      showResult(
+        "error",
+        "No se pudieron cargar los filtros",
+        err?.message || "Error al cargar áreas y niveles."
+      );
     } finally {
       setLoadingFiltros(false);
     }
@@ -267,14 +285,15 @@ const GanadoresCertificados: React.FC = () => {
         data: GanadoresResponse;
       };
       setGanadoresData(resp.data);
+      setPaginaIndividual(1);
+      setPaginaGrupal(1);
     } catch (err: any) {
       setGanadoresData(null);
-      setResultType("error");
-      setResultTitle("No se pudo obtener la información");
-      setResultMessage(
-        err.message || "Ocurrió un error al consultar los ganadores."
+      showResult(
+        "error",
+        "No se pudo obtener la información",
+        err?.message || "Ocurrió un error al consultar los ganadores."
       );
-      setResultVisible(true);
     } finally {
       setLoadingGanadores(false);
     }
@@ -305,8 +324,8 @@ const GanadoresCertificados: React.FC = () => {
   function aplicarFiltros(lista: GanadorApi[]): GanadorApi[] {
     let resultado = [...lista];
 
-    if (busqueda.trim()) {
-      const q = normalizarTexto(busqueda.trim());
+    if (terminoBusqueda.trim()) {
+      const q = normalizarTexto(terminoBusqueda.trim());
       resultado = resultado.filter((g) => {
         return (
           normalizarTexto(g.nombre_completo).includes(q) ||
@@ -321,12 +340,12 @@ const GanadoresCertificados: React.FC = () => {
 
   const datosTablaIndividual = useMemo(
     () => aplicarFiltros(ganadoresIndividuales),
-    [ganadoresIndividuales, busqueda]
+    [ganadoresIndividuales, terminoBusqueda]
   );
 
   const datosTablaGrupal = useMemo(
     () => aplicarFiltros(ganadoresGrupales),
-    [ganadoresGrupales, busqueda]
+    [ganadoresGrupales, terminoBusqueda]
   );
 
   const totalPaginasIndividual = Math.max(
@@ -468,7 +487,14 @@ const GanadoresCertificados: React.FC = () => {
   }
 
   function exportarExcelCsv() {
-    if (!ganadoresData) return;
+    if (!ganadoresData) {
+      showResult(
+        "error",
+        "Sin datos para exportar",
+        "No hay ganadores para exportar con los filtros actuales."
+      );
+      return;
+    }
 
     const encabezados = [
       "Modalidad",
@@ -516,12 +542,11 @@ const GanadoresCertificados: React.FC = () => {
   function solicitarEnvioCorreos() {
     if (!ganadoresData) return;
     if (!token || !user) {
-      setResultType("error");
-      setResultTitle("Sesión no válida");
-      setResultMessage(
+      showResult(
+        "error",
+        "Sesión no válida",
         "Debe iniciar sesión como usuario autorizado para enviar correos."
       );
-      setResultVisible(true);
       return;
     }
     setConfirmEnvioVisible(true);
@@ -544,25 +569,23 @@ const GanadoresCertificados: React.FC = () => {
         message?: string;
       };
 
-      setResultType("success");
-      setResultTitle("Correos procesados");
-      setResultMessage(
+      showResult(
+        "success",
+        "Correos procesados",
         resp.message ||
           `Se procesaron los correos. Enviados: ${resp.data.enviados}, fallidos: ${resp.data.fallidos}.`
       );
-      setResultVisible(true);
 
       await cargarGanadores(
         ganadoresData.categoria.area,
         ganadoresData.categoria.nivel
       );
     } catch (err: any) {
-      setResultType("error");
-      setResultTitle("No se pudieron enviar los correos");
-      setResultMessage(
-        err.message || "Ocurrió un error al procesar el envío de correos."
+      showResult(
+        "error",
+        "No se pudieron enviar los correos",
+        err?.message || "Ocurrió un error al procesar el envío de correos."
       );
-      setResultVisible(true);
     } finally {
       setConfirmEnvioLoading(false);
       setConfirmEnvioVisible(false);
@@ -575,7 +598,7 @@ const GanadoresCertificados: React.FC = () => {
   const hayDatosGrupales = datosTablaGrupal.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 p-4 transition-colors dark:bg-gray-950 sm:p-6">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
         {/* HEADER */}
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -670,10 +693,13 @@ const GanadoresCertificados: React.FC = () => {
 
             <div className="flex flex-col gap-3 md:items-end">
               <div className="w-full md:w-72">
-                <BarraBusquedaOlimpias
-                  valorBusqueda={busqueda}
-                  onCambioBusqueda={setBusqueda}
-                  placeholder="Buscar por nombre, CI, unidad educativa o equipo"
+                <BarraBusquedaAreas
+                  terminoBusqueda={terminoBusqueda}
+                  onBuscarChange={(t: string) => {
+                    setTerminoBusqueda(t);
+                    setPaginaIndividual(1);
+                    setPaginaGrupal(1);
+                  }}
                 />
               </div>
             </div>
@@ -925,7 +951,9 @@ const GanadoresCertificados: React.FC = () => {
             setConfirmEnvioVisible(false);
           }}
           onConfirm={confirmarEnvioCorreos}
-          confirmText={yaSeEnviaronCorreos ? "Reenviar correos" : "Enviar correos"}
+          confirmText={
+            yaSeEnviaronCorreos ? "Reenviar correos" : "Enviar correos"
+          }
           cancelText="Cancelar"
           danger={false}
           loading={confirmEnvioLoading}
@@ -933,12 +961,11 @@ const GanadoresCertificados: React.FC = () => {
 
         {/* MODAL RESULTADO */}
         <ResultModal
-          visible={resultVisible}
-          type={resultType}
-          title={resultTitle}
-          message={resultMessage}
-          onClose={() => setResultVisible(false)}
-          buttonText="Aceptar"
+          visible={resultModal.visible}
+          type={resultModal.type}
+          title={resultModal.title}
+          message={resultModal.message}
+          onClose={closeResultModal}
         />
 
         {/* MODAL INTEGRANTES EQUIPO */}
