@@ -18,7 +18,7 @@ import {
 
 type TipoFase = "CLASIFICATORIA" | "FINAL";
 type ModalidadCategoria = "INDIVIDUAL" | "GRUPAL";
-type EstadoFase = "PENDIENTE" | "EN_EJECUCION" | "FINALIZADO" | "CANCELADO";
+type EstadoFase = "PENDIENTE" | "EN_EJECUCION" | "FINALIZADA" | "CANCELADO";
 
 interface CategoriaAsignadaCardDTO {
   idCategoria: number;
@@ -39,6 +39,20 @@ const ITEMS_POR_PAGINA = 8;
 function normalizarTexto(s?: string | null): string {
   if (!s) return "";
   return s.toString().toLowerCase();
+}
+
+function chipEstadoFase(estado: EstadoFase) {
+  switch (estado) {
+    case "EN_EJECUCION":
+      return "bg-green-50 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-200 dark:border-green-700";
+    case "FINALIZADO": 
+      return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-700";
+    case "PENDIENTE":
+      return "bg-yellow-50 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-200 dark:border-yellow-700";
+    case "CANCELADO":
+    default:
+      return "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-200 dark:border-red-700";
+  }
 }
 
 function chipFase(fase: TipoFase) {
@@ -249,7 +263,7 @@ const EvaluacionCategorias: React.FC = () => {
         return;
       }
 
-      if (clasif.estadoFase !== "FINALIZADO") {
+      if (clasif.estadoFase !== "FINALIZADA") {
         showResult(
           "error",
           "Fase final no habilitada",
@@ -406,6 +420,14 @@ const EvaluacionCategorias: React.FC = () => {
                               ? "Aprobado por responsable"
                               : "Pendiente de revisión"}
                           </span>
+                          <span
+    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 font-medium ${chipEstadoFase(
+      card.estadoFase
+    )}`}
+  >
+    Estado:{" "}
+    {card.estadoFase.toLowerCase().replace("_", " ")}
+  </span>
                         </div>
                       </div>
 

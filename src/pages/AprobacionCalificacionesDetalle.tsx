@@ -32,6 +32,7 @@ interface FilaAprobacionDTO {
   idEvaluacion: number | null;
   nombreParticipante: string;
   nota: number | null;
+  comentario: string | null;
   validado: boolean | null;
 }
 
@@ -203,12 +204,9 @@ const AprobacionCalificacionesTabla: React.FC = () => {
         tipoFase: tipoFaseParam,
       }).toString();
 
-      const resp = (await api(
-        `/aprobacion-calificaciones/tabla?${query}`,
-        {
-          token: token ?? undefined,
-        }
-      )) as ApiResponse<TablaAprobacionDTO>;
+      const resp = (await api(`/aprobacion-calificaciones/tabla?${query}`, {
+        token: token ?? undefined,
+      })) as ApiResponse<TablaAprobacionDTO>;
 
       if (!resp.ok) {
         showResult(
@@ -241,8 +239,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
       showResult(
         "error",
         "No se pudo cargar la tabla",
-        err?.message ||
-          "Ocurrió un error al consultar la tabla de aprobación."
+        err?.message || "Ocurrió un error al consultar la tabla de aprobación."
       );
       setTabla(null);
       setFilas([]);
@@ -277,10 +274,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
     [filas]
   );
 
-  function abrirAccion(
-    tipo: "aprobar" | "rechazar",
-    fila: FilaUI
-  ) {
+  function abrirAccion(tipo: "aprobar" | "rechazar", fila: FilaUI) {
     if (!fila.idEvaluacion) return; // por si acaso
 
     setAccionPendiente({
@@ -310,9 +304,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
     // Marcar fila como actualizando
     setFilas((prev) =>
       prev.map((f) =>
-        f.idEvaluacion === idEvaluacion
-          ? { ...f, actualizando: true }
-          : f
+        f.idEvaluacion === idEvaluacion ? { ...f, actualizando: true } : f
       )
     );
 
@@ -332,8 +324,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
 
       if (!resp.ok || !resp.data) {
         throw new Error(
-          resp.message ||
-            "La operación no se pudo completar correctamente."
+          resp.message || "La operación no se pudo completar correctamente."
         );
       }
 
@@ -351,9 +342,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
       setTabla((prev) => {
         if (!prev) return prev;
         const filasNew = prev.filas.map((f) =>
-          f.idEvaluacion === idActualizado
-            ? { ...f, validado }
-            : f
+          f.idEvaluacion === idActualizado ? { ...f, validado } : f
         );
         const totalConEval = filasNew.filter(
           (f) => f.idEvaluacion !== null
@@ -377,9 +366,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
 
       showResult(
         "success",
-        tipo === "aprobar"
-          ? "Evaluación aprobada"
-          : "Evaluación rechazada",
+        tipo === "aprobar" ? "Evaluación aprobada" : "Evaluación rechazada",
         resp.message ||
           (tipo === "aprobar"
             ? "La evaluación fue aprobada correctamente."
@@ -389,8 +376,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
       showResult(
         "error",
         "No se pudo actualizar la evaluación",
-        err?.message ||
-          "Ocurrió un error al aprobar/rechazar la evaluación."
+        err?.message || "Ocurrió un error al aprobar/rechazar la evaluación."
       );
       setFilas((prev) =>
         prev.map((f) =>
@@ -480,15 +466,11 @@ const AprobacionCalificacionesTabla: React.FC = () => {
 
           if (!resp.ok || !resp.data) {
             throw new Error(
-              resp.message ||
-                "La operación no se pudo completar correctamente."
+              resp.message || "La operación no se pudo completar correctamente."
             );
           }
 
-          const {
-            idEvaluacion: idActualizado,
-            validado,
-          } = resp.data;
+          const { idEvaluacion: idActualizado, validado } = resp.data;
 
           // Actualizar fila y totales en memoria
           setFilas((prev) =>
@@ -502,9 +484,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
           setTabla((prev) => {
             if (!prev) return prev;
             const filasNew = prev.filas.map((f) =>
-              f.idEvaluacion === idActualizado
-                ? { ...f, validado }
-                : f
+              f.idEvaluacion === idActualizado ? { ...f, validado } : f
             );
             const totalConEval = filasNew.filter(
               (f) => f.idEvaluacion !== null
@@ -529,9 +509,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
           errores.push(nombre);
           setFilas((prev) =>
             prev.map((f) =>
-              f.idEvaluacion === idEval
-                ? { ...f, actualizando: false }
-                : f
+              f.idEvaluacion === idEval ? { ...f, actualizando: false } : f
             )
           );
         }
@@ -572,45 +550,29 @@ const AprobacionCalificacionesTabla: React.FC = () => {
     }
 
     if (!filas.length) {
-      showResult(
-        "error",
-        "Sin datos",
-        "No hay filas para exportar a Excel."
-      );
+      showResult("error", "Sin datos", "No hay filas para exportar a Excel.");
       return;
     }
 
     try {
       setExportando(true);
 
-      const header = [
-        "Participante / Equipo",
-        "Nota",
-        "Estado evaluación",
-      ];
+      const header = ["Participante / Equipo", "Nota", "Estado evaluación"];
 
       const filasCSV = filas.map((f) => {
-        const nombre = (f.nombreParticipante || "").replace(
-          /"/g,
-          '""'
-        );
+        const nombre = (f.nombreParticipante || "").replace(/"/g, '""');
         const nota =
           f.nota !== null && f.nota !== undefined
             ? Number(f.nota).toFixed(2).replace(".", ",")
             : "";
-        const estado = textoEstadoValidacion(
-          f.idEvaluacion,
-          f.validado
-        );
+        const estado = textoEstadoValidacion(f.idEvaluacion, f.validado);
 
         return [nombre, nota, estado];
       });
 
       const lineas = [
         header.join(";"),
-        ...filasCSV.map((cols) =>
-          cols.map((c) => `"${c}"`).join(";")
-        ),
+        ...filasCSV.map((cols) => cols.map((c) => `"${c}"`).join(";")),
       ];
 
       const blob = new Blob([lineas.join("\n")], {
@@ -624,9 +586,10 @@ const AprobacionCalificacionesTabla: React.FC = () => {
       const evalInfo = tabla.evaluador;
       const fase = tabla.tipoFase;
 
-      const fileName = `aprobacion_${cat.gestion}_${cat.area}_${cat.nivel}_eval_${evalInfo.idEvaluador}_fase_${fase}.csv`
-        .replace(/\s+/g, "_")
-        .toLowerCase();
+      const fileName =
+        `aprobacion_${cat.gestion}_${cat.area}_${cat.nivel}_eval_${evalInfo.idEvaluador}_fase_${fase}.csv`
+          .replace(/\s+/g, "_")
+          .toLowerCase();
 
       link.href = url;
       link.download = fileName;
@@ -644,8 +607,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
       showResult(
         "error",
         "Error al exportar",
-        err?.message ||
-          "Ocurrió un error al generar el archivo de Excel."
+        err?.message || "Ocurrió un error al generar el archivo de Excel."
       );
     } finally {
       setExportando(false);
@@ -673,8 +635,29 @@ const AprobacionCalificacionesTabla: React.FC = () => {
             );
           }
           return (
-            <span className="font-semibold">
-              {Number(valor).toFixed(2)}
+            <span className="font-semibold">{Number(valor).toFixed(2)}</span>
+          );
+        },
+      },
+      {
+        clave: "comentario",
+        titulo: "Comentario",
+        alineacion: "izquierda",
+        ordenable: false,
+        formatearCelda: (valor: any, fila: FilaUI) => {
+          if (fila.idEvaluacion === null || !valor) {
+            return (
+              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                Sin comentario
+              </span>
+            );
+          }
+          return (
+            <span
+              className="block max-w-xs truncate text-[11px] text-gray-800 dark:text-gray-100"
+              title={String(valor)}
+            >
+              {valor}
             </span>
           );
         },
@@ -685,14 +668,9 @@ const AprobacionCalificacionesTabla: React.FC = () => {
         alineacion: "centro",
         ordenable: false,
         formatearCelda: (_valor: any, fila: FilaUI) => {
-          const clase = claseChipValidacion(
-            fila.idEvaluacion,
-            fila.validado
-          );
+          const clase = claseChipValidacion(fila.idEvaluacion, fila.validado);
 
-          let icon: React.ReactNode = (
-            <FiMinusCircle className="h-3 w-3" />
-          );
+          let icon: React.ReactNode = <FiMinusCircle className="h-3 w-3" />;
           let texto = "Sin evaluación";
 
           if (fila.idEvaluacion !== null) {
@@ -793,10 +771,8 @@ const AprobacionCalificacionesTabla: React.FC = () => {
                 {categoria && (
                   <>
                     Gestión{" "}
-                    <span className="font-semibold">
-                      {categoria.gestion}
-                    </span>{" "}
-                    · Modalidad:{" "}
+                    <span className="font-semibold">{categoria.gestion}</span> ·
+                    Modalidad:{" "}
                     <span className="font-semibold">
                       {categoria.modalidad === "INDIVIDUAL"
                         ? "Individual"
@@ -876,9 +852,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
                 className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1 text-[11px] font-semibold text-gray-700 shadow-sm hover:border-gray-400 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FiDownload className="h-3.5 w-3.5" />
-                {exportando
-                  ? "Generando Excel..."
-                  : "Descargar en Excel"}
+                {exportando ? "Generando Excel..." : "Descargar en Excel"}
               </button>
 
               <button
@@ -893,9 +867,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() =>
-                  abrirAccionMasiva("rechazar_todos")
-                }
+                onClick={() => abrirAccionMasiva("rechazar_todos")}
                 disabled={procesandoMasivo || !totalConEvaluacion}
                 className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700 shadow-sm hover:border-red-500 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 dark:hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -914,8 +886,8 @@ const AprobacionCalificacionesTabla: React.FC = () => {
 
           {!loading && !hayDatos && (
             <div className="mt-4 rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-xs text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
-              No hay participantes asignados (o no cumplen las condiciones
-              para esta fase) para el evaluador seleccionado.
+              No hay participantes asignados (o no cumplen las condiciones para
+              esta fase) para el evaluador seleccionado.
             </div>
           )}
 
@@ -961,9 +933,7 @@ const AprobacionCalificacionesTabla: React.FC = () => {
           onCancel={cerrarAccion}
           onConfirm={confirmarAccion}
           confirmText={
-            accionPendiente.tipo === "aprobar"
-              ? "Aprobar"
-              : "Rechazar"
+            accionPendiente.tipo === "aprobar" ? "Aprobar" : "Rechazar"
           }
           cancelText="Cancelar"
           danger={accionPendiente.tipo === "rechazar"}

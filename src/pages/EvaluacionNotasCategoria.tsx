@@ -32,6 +32,7 @@ interface ParticipanteAsignadoDTO {
   estadoNota: EstadoNota;
   validadoPorResponsable: boolean | null;
   medalla: TipoMedalla | null;
+  comentario: string | null;
 }
 
 type TipoAlineacion = "izquierda" | "centro" | "derecha";
@@ -203,7 +204,7 @@ const EvaluacionNotasCategoria: React.FC = () => {
       const filasConEstado: FilaNota[] = data.map((p) => ({
         ...p,
         notaLocal: p.nota !== null ? String(p.nota) : "",
-        comentarioLocal: "",
+        comentarioLocal: p.comentario ?? "",
         modificada: false,
         guardando: false,
       }));
