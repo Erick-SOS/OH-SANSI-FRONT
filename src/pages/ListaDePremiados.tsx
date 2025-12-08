@@ -27,37 +27,33 @@ interface FiltroCategoria {
   niveles: string[];
 }
 
-interface IntegranteApi {
+// ✅ Ganador plano (INDIVIDUAL o GRUPAL) – campos opcionales según modalidad
+interface GanadorIntegranteApi {
   ci: string;
   nombre_completo: string;
+  unidad_educativa: string;
 }
 
 interface GanadorApi {
-  modalidad: ModalidadCategoria;
-  medalla: TipoMedalla;
+  tipo_medalla: TipoMedalla;
   nota: number;
-  ci: string | null;
-  nombre_completo: string | null;
-  unidad_educativa: string | null;
-  nombre_equipo: string | null;
-  integrantes: IntegranteApi[];
+  // Individual
+  ci?: string;
+  nombre_completo?: string;
+  unidad_educativa?: string;
+  // Grupal
+  nombre_equipo?: string;
+  integrantes?: GanadorIntegranteApi[];
 }
 
-interface GanadoresResponse {
-  categoria: {
-    gestion: number;
-    area: string;
-    nivel: string;
-    modalidad: ModalidadCategoria;
-  };
-  responsable: {
-    nombre_completo: string;
-  } | null;
-  fase_final: {
-    estado: EstadoFase;
-    correos_enviados: boolean;
-  };
-  total_ganadores: number;
+// ✅ Respuesta plano del backend (GanadoresCertificadoPlanoResponseDTO)
+interface GanadoresPlanoResponse {
+  total: number;
+  gestion: number;
+  modalidad: ModalidadCategoria;
+  responsable_nombre_completo: string | null;
+  correos_enviados: boolean;
+  resultados_publicados: boolean;
   totales_por_medalla: {
     oro: number;
     plata: number;
@@ -67,14 +63,19 @@ interface GanadoresResponse {
   ganadores: GanadorApi[];
 }
 
+// ✅ ResultadoEnvioCorreosDTO (solo para mensaje)
 interface ResultadoEnvioCorreos {
   categoria: {
+    id: number;
     gestion: number;
-    area: string;
-    nivel: string;
     modalidad: ModalidadCategoria;
+    area_id: number;
+    nivel_id: number;
+    nombre_area: string;
+    nombre_nivel: string;
   };
   fase_final: {
+    id: number;
     estado: EstadoFase;
     correos_enviados: boolean;
     resultados_publicados: boolean;
@@ -83,8 +84,6 @@ interface ResultadoEnvioCorreos {
   enviados: number;
   fallidos: number;
 }
-
-type TipoTabla = "INDIVIDUAL" | "GRUPAL";
 
 type TipoAlineacion = "izquierda" | "centro" | "derecha";
 
@@ -123,34 +122,27 @@ function claseBadgeMedalla(m: TipoMedalla): string {
   }
 }
 
-function claseBadgeEstadoFase(estado: EstadoFase): string {
-  switch (estado) {
-    case "PENDIENTE":
-      return "bg-gray-100 text-gray-700 dark:bg-gray-800/70 dark:text-gray-200";
-    case "EN_EJECUCION":
-      return "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200";
-    case "FINALIZADA":
-      return "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200";
-    case "CANCELADA":
-      return "bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-200";
-    default:
-      return "";
-  }
+function claseBadgeBoolean(valor: boolean): string {
+  return valor
+    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+    : "bg-gray-100 text-gray-700 dark:bg-gray-800/70 dark:text-gray-200";
 }
 
-// 👉 aquí solo se construyen las personas para el certificado;
-// el diseño está en el archivo aparte
-function construirPersonasCertDesdeGanador(g: GanadorApi): PersonaCert[] {
-  if (g.modalidad === "INDIVIDUAL") {
+// 👉 Construir personas para certificado según modalidad global
+function construirPersonasCertDesdeGanador(
+  g: GanadorApi,
+  modalidad: ModalidadCategoria
+): PersonaCert[] {
+  if (modalidad === "INDIVIDUAL") {
     if (!g.ci || !g.nombre_completo) return [];
     return [
       {
         ci: g.ci,
         nombre: g.nombre_completo,
         unidadEducativa: g.unidad_educativa || "",
-        medalla: g.medalla,
+        medalla: g.tipo_medalla,
         nota: g.nota,
-        modalidad: g.modalidad,
+        modalidad,
       },
     ];
   }
@@ -161,22 +153,22 @@ function construirPersonasCertDesdeGanador(g: GanadorApi): PersonaCert[] {
       ci: i.ci,
       nombre: i.nombre_completo,
       unidadEducativa: g.unidad_educativa || "",
-      medalla: g.medalla,
+      medalla: g.tipo_medalla,
       nota: g.nota,
-      modalidad: g.modalidad,
+      modalidad,
     }));
   }
 
-  // fallback por si no vinieron integrantes pero sí líder
+  // Fallback: sin integrantes pero con líder
   if (!g.ci || !g.nombre_completo) return [];
   return [
     {
       ci: g.ci,
       nombre: g.nombre_completo,
       unidadEducativa: g.unidad_educativa || "",
-      medalla: g.medalla,
+      medalla: g.tipo_medalla,
       nota: g.nota,
-      modalidad: g.modalidad,
+      modalidad,
     },
   ];
 }
@@ -191,16 +183,12 @@ const GanadoresCertificados: React.FC = () => {
   const [areaSeleccionada, setAreaSeleccionada] = useState("");
   const [nivelSeleccionado, setNivelSeleccionado] = useState("");
 
-  const [ganadoresData, setGanadoresData] = useState<GanadoresResponse | null>(
-    null
-  );
+  const [ganadoresData, setGanadoresData] =
+    useState<GanadoresPlanoResponse | null>(null);
   const [loadingGanadores, setLoadingGanadores] = useState(false);
 
   const [terminoBusqueda, setTerminoBusqueda] = useState("");
-  const [tablaActiva, setTablaActiva] = useState<TipoTabla>("INDIVIDUAL");
-
-  const [paginaIndividual, setPaginaIndividual] = useState(1);
-  const [paginaGrupal, setPaginaGrupal] = useState(1);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   const [grupoSeleccionado, setGrupoSeleccionado] =
     useState<GanadorApi | null>(null);
@@ -238,6 +226,7 @@ const GanadoresCertificados: React.FC = () => {
   const closeResultModal = () =>
     setResultModal((prev) => ({ ...prev, visible: false }));
 
+  // Cargar token/usuario
   useEffect(() => {
     (async () => {
       const t = await getToken();
@@ -247,11 +236,13 @@ const GanadoresCertificados: React.FC = () => {
     })();
   }, []);
 
+  // Cargar filtros y preseleccionar primer área/nivel
   useEffect(() => {
     cargarFiltros();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cuando hay área y nivel, consultar ganadores
   useEffect(() => {
     if (areaSeleccionada && nivelSeleccionado) {
       cargarGanadores(areaSeleccionada, nivelSeleccionado);
@@ -264,7 +255,16 @@ const GanadoresCertificados: React.FC = () => {
     setLoadingFiltros(true);
     try {
       const resp = await api("/filtros/categorias");
-      setFiltros(resp.data || []);
+      const lista: FiltroCategoria[] = resp.data || [];
+      setFiltros(lista);
+
+      // ✅ Preseleccionar primer área/nivel automáticamente
+      if (lista.length > 0) {
+        const primeraArea = lista[0].area;
+        const primerNivel = lista[0].niveles[0] || "";
+        setAreaSeleccionada(primeraArea);
+        setNivelSeleccionado(primerNivel);
+      }
     } catch (err: any) {
       showResult(
         "error",
@@ -282,11 +282,10 @@ const GanadoresCertificados: React.FC = () => {
       const query = new URLSearchParams({ area, nivel }).toString();
       const resp = (await api(`/ganadores-certificados?${query}`)) as {
         success: boolean;
-        data: GanadoresResponse;
+        data: GanadoresPlanoResponse;
       };
       setGanadoresData(resp.data);
-      setPaginaIndividual(1);
-      setPaginaGrupal(1);
+      setPaginaActual(1);
     } catch (err: any) {
       setGanadoresData(null);
       showResult(
@@ -305,22 +304,6 @@ const GanadoresCertificados: React.FC = () => {
     return f?.niveles ?? [];
   }, [filtros, areaSeleccionada]);
 
-  const ganadoresIndividuales = useMemo(
-    () =>
-      ganadoresData?.ganadores.filter(
-        (g) => g.modalidad === "INDIVIDUAL"
-      ) || [],
-    [ganadoresData]
-  );
-
-  const ganadoresGrupales = useMemo(
-    () =>
-      ganadoresData?.ganadores.filter(
-        (g) => g.modalidad === "GRUPAL"
-      ) || [],
-    [ganadoresData]
-  );
-
   function aplicarFiltros(lista: GanadorApi[]): GanadorApi[] {
     let resultado = [...lista];
 
@@ -338,103 +321,90 @@ const GanadoresCertificados: React.FC = () => {
     return resultado;
   }
 
-  const datosTablaIndividual = useMemo(
-    () => aplicarFiltros(ganadoresIndividuales),
-    [ganadoresIndividuales, terminoBusqueda]
-  );
+  const ganadoresFiltrados = useMemo(() => {
+    if (!ganadoresData) return [];
+    return aplicarFiltros(ganadoresData.ganadores);
+  }, [ganadoresData, terminoBusqueda]);
 
-  const datosTablaGrupal = useMemo(
-    () => aplicarFiltros(ganadoresGrupales),
-    [ganadoresGrupales, terminoBusqueda]
-  );
-
-  const totalPaginasIndividual = Math.max(
+  const totalPaginas = Math.max(
     1,
-    Math.ceil(datosTablaIndividual.length / ITEMS_POR_PAGINA)
-  );
-  const totalPaginasGrupal = Math.max(
-    1,
-    Math.ceil(datosTablaGrupal.length / ITEMS_POR_PAGINA)
+    Math.ceil(ganadoresFiltrados.length / ITEMS_POR_PAGINA)
   );
 
-  const datosIndividualPaginados = useMemo(() => {
-    const inicio = (paginaIndividual - 1) * ITEMS_POR_PAGINA;
-    return datosTablaIndividual.slice(inicio, inicio + ITEMS_POR_PAGINA);
-  }, [datosTablaIndividual, paginaIndividual]);
+  const datosPaginados = useMemo(() => {
+    const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+    return ganadoresFiltrados.slice(inicio, inicio + ITEMS_POR_PAGINA);
+  }, [ganadoresFiltrados, paginaActual]);
 
-  const datosGrupalPaginados = useMemo(() => {
-    const inicio = (paginaGrupal - 1) * ITEMS_POR_PAGINA;
-    return datosTablaGrupal.slice(inicio, inicio + ITEMS_POR_PAGINA);
-  }, [datosTablaGrupal, paginaGrupal]);
+  const hayDatos = ganadoresFiltrados.length > 0;
 
-  const columnasIndividual: ColumnaConfig<GanadorApi>[] = [
-    {
-      clave: "medalla",
-      titulo: "Tipo de medalla",
-      alineacion: "centro",
-      formatearCelda: (_valor: any, fila: GanadorApi) => (
-        <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${claseBadgeMedalla(
-            fila.medalla
-          )}`}
-        >
-          {etiquetaMedalla(fila.medalla)}
-        </span>
-      ),
-    },
-    {
-      clave: "nota",
-      titulo: "Calificación final",
-      alineacion: "centro",
-      formatearCelda: (_valor: any, fila: GanadorApi) =>
-        fila.nota.toFixed(2),
-    },
-    {
-      clave: "ci",
-      titulo: "Documento de identidad",
-      alineacion: "centro",
-    },
-    {
-      clave: "nombre_completo",
-      titulo: "Nombre completo del participante",
-    },
-    {
-      clave: "unidad_educativa",
-      titulo: "Unidad educativa",
-    },
-  ];
+  // ✅ Columnas dinámicas según modalidad
+  const columnasTabla: ColumnaConfig<GanadorApi>[] = useMemo(() => {
+    if (!ganadoresData) return [];
 
-  const columnasGrupal: ColumnaConfig<GanadorApi>[] = [
-    {
-      clave: "medalla",
-      titulo: "Tipo de medalla",
-      alineacion: "centro",
-      formatearCelda: (_valor: any, fila: GanadorApi) => (
-        <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${claseBadgeMedalla(
-            fila.medalla
-          )}`}
-        >
-          {etiquetaMedalla(fila.medalla)}
-        </span>
-      ),
-    },
-    {
-      clave: "nota",
-      titulo: "Calificación final",
-      alineacion: "centro",
-      formatearCelda: (_valor: any, fila: GanadorApi) =>
-        fila.nota.toFixed(2),
-    },
-    {
-      clave: "nombre_equipo",
-      titulo: "Nombre del equipo",
-    },
-    {
-      clave: "unidad_educativa",
-      titulo: "Unidad educativa de referencia",
-    },
-  ];
+    const colsBase: ColumnaConfig<GanadorApi>[] = [
+      {
+        clave: "tipo_medalla",
+        titulo: "Tipo de medalla",
+        alineacion: "centro",
+        ordenable: true,
+        formatearCelda: (_valor: any, fila: GanadorApi) => (
+          <span
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${claseBadgeMedalla(
+              fila.tipo_medalla
+            )}`}
+          >
+            {etiquetaMedalla(fila.tipo_medalla)}
+          </span>
+        ),
+      },
+      {
+        clave: "nota",
+        titulo: "Calificación final",
+        alineacion: "centro",
+        ordenable: true,
+        formatearCelda: (_valor: any, fila: GanadorApi) =>
+          fila.nota.toFixed(2),
+      },
+    ];
+
+    if (ganadoresData.modalidad === "INDIVIDUAL") {
+      return [
+        ...colsBase,
+        {
+          clave: "ci",
+          titulo: "Documento de identidad",
+          alineacion: "centro",
+          ordenable: true,
+        },
+        {
+          clave: "nombre_completo",
+          titulo: "Nombre completo del participante",
+          ordenable: true,
+        },
+        {
+          clave: "unidad_educativa",
+          titulo: "Unidad educativa",
+          ordenable: true,
+        },
+      ];
+    }
+
+    // GRUPAL
+    return [
+      ...colsBase,
+      {
+        clave: "nombre_equipo",
+        titulo: "Nombre del equipo",
+        ordenable: true,
+      },
+      {
+        clave: "unidad_educativa",
+        titulo: "Unidad educativa de referencia",
+        ordenable: true,
+      },
+    ];
+  }, [ganadoresData]);
 
   function abrirModalIntegrantes(fila: GanadorApi) {
     setGrupoSeleccionado(fila);
@@ -443,14 +413,17 @@ const GanadoresCertificados: React.FC = () => {
 
   function abrirVentanaCertificadosParaGanador(g: GanadorApi) {
     if (!ganadoresData) return;
-    const personas = construirPersonasCertDesdeGanador(g);
+    const personas = construirPersonasCertDesdeGanador(
+      g,
+      ganadoresData.modalidad
+    );
     if (personas.length === 0) return;
 
     const html = generarHtmlCertificados(personas, {
-      area: ganadoresData.categoria.area,
-      nivel: ganadoresData.categoria.nivel,
-      gestion: ganadoresData.categoria.gestion,
-      responsable: ganadoresData.responsable?.nombre_completo ?? null,
+      area: areaSeleccionada || "",
+      nivel: nivelSeleccionado || "",
+      gestion: ganadoresData.gestion,
+      responsable: ganadoresData.responsable_nombre_completo,
     });
 
     const w = window.open("", "_blank");
@@ -465,17 +438,19 @@ const GanadoresCertificados: React.FC = () => {
     if (!ganadoresData) return;
 
     const personas: PersonaCert[] = [];
-    ganadoresData.ganadores.forEach((g) => {
-      personas.push(...construirPersonasCertDesdeGanador(g));
+    ganadoresFiltrados.forEach((g) => {
+      personas.push(
+        ...construirPersonasCertDesdeGanador(g, ganadoresData.modalidad)
+      );
     });
 
     if (personas.length === 0) return;
 
     const html = generarHtmlCertificados(personas, {
-      area: ganadoresData.categoria.area,
-      nivel: ganadoresData.categoria.nivel,
-      gestion: ganadoresData.categoria.gestion,
-      responsable: ganadoresData.responsable?.nombre_completo ?? null,
+      area: areaSeleccionada || "",
+      nivel: nivelSeleccionado || "",
+      gestion: ganadoresData.gestion,
+      responsable: ganadoresData.responsable_nombre_completo,
     });
 
     const w = window.open("", "_blank");
@@ -487,7 +462,7 @@ const GanadoresCertificados: React.FC = () => {
   }
 
   function exportarExcelCsv() {
-    if (!ganadoresData) {
+    if (!ganadoresData || ganadoresFiltrados.length === 0) {
       showResult(
         "error",
         "Sin datos para exportar",
@@ -496,25 +471,45 @@ const GanadoresCertificados: React.FC = () => {
       return;
     }
 
-    const encabezados = [
-      "Modalidad",
-      "Tipo de medalla",
-      "Nota final",
-      "Documento de identidad",
-      "Nombre completo",
-      "Unidad educativa",
-      "Nombre de equipo",
-    ];
+    const esIndividual = ganadoresData.modalidad === "INDIVIDUAL";
 
-    const filas = ganadoresData.ganadores.map((g) => [
-      g.modalidad,
-      etiquetaMedalla(g.medalla),
-      g.nota.toFixed(2),
-      g.ci ?? "",
-      g.nombre_completo ?? "",
-      g.unidad_educativa ?? "",
-      g.nombre_equipo ?? "",
-    ]);
+    const encabezados = esIndividual
+      ? [
+          "Modalidad",
+          "Tipo de medalla",
+          "Nota final",
+          "Documento de identidad",
+          "Nombre completo",
+          "Unidad educativa",
+        ]
+      : [
+          "Modalidad",
+          "Tipo de medalla",
+          "Nota final",
+          "Nombre del equipo",
+          "Unidad educativa",
+        ];
+
+    const filas = ganadoresFiltrados.map((g) => {
+      if (esIndividual) {
+        return [
+          ganadoresData.modalidad,
+          etiquetaMedalla(g.tipo_medalla),
+          g.nota.toFixed(2),
+          g.ci ?? "",
+          g.nombre_completo ?? "",
+          g.unidad_educativa ?? "",
+        ];
+      }
+      // GRUPAL
+      return [
+        ganadoresData.modalidad,
+        etiquetaMedalla(g.tipo_medalla),
+        g.nota.toFixed(2),
+        g.nombre_equipo ?? "",
+        g.unidad_educativa ?? "",
+      ];
+    });
 
     const csv = [encabezados, ...filas]
       .map((fila) =>
@@ -530,7 +525,7 @@ const GanadoresCertificados: React.FC = () => {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const nombreArchivo = `ganadores_${ganadoresData.categoria.area}_${ganadoresData.categoria.nivel}_gestion_${ganadoresData.categoria.gestion}.csv`;
+    const nombreArchivo = `ganadores_${areaSeleccionada}_${nivelSeleccionado}_gestion_${ganadoresData.gestion}.csv`;
     link.href = url;
     link.setAttribute("download", nombreArchivo);
     document.body.appendChild(link);
@@ -560,8 +555,8 @@ const GanadoresCertificados: React.FC = () => {
         method: "POST",
         token,
         body: {
-          area: ganadoresData.categoria.area,
-          nivel: ganadoresData.categoria.nivel,
+          area: areaSeleccionada,
+          nivel: nivelSeleccionado,
         },
       })) as {
         success: boolean;
@@ -576,10 +571,7 @@ const GanadoresCertificados: React.FC = () => {
           `Se procesaron los correos. Enviados: ${resp.data.enviados}, fallidos: ${resp.data.fallidos}.`
       );
 
-      await cargarGanadores(
-        ganadoresData.categoria.area,
-        ganadoresData.categoria.nivel
-      );
+      await cargarGanadores(areaSeleccionada, nivelSeleccionado);
     } catch (err: any) {
       showResult(
         "error",
@@ -592,10 +584,8 @@ const GanadoresCertificados: React.FC = () => {
     }
   }
 
-  const estadoFaseFinal = ganadoresData?.fase_final.estado;
-  const yaSeEnviaronCorreos = ganadoresData?.fase_final.correos_enviados;
-  const hayDatosIndividuales = datosTablaIndividual.length > 0;
-  const hayDatosGrupales = datosTablaGrupal.length > 0;
+  const yaSeEnviaronCorreos = !!ganadoresData?.correos_enviados;
+  const resultadosPublicados = !!ganadoresData?.resultados_publicados;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 transition-colors dark:bg-gray-950 sm:p-6">
@@ -621,25 +611,39 @@ const GanadoresCertificados: React.FC = () => {
             <div className="flex flex-col items-start gap-2 rounded-2xl bg-white px-4 py-3 text-xs shadow-sm dark:bg-gray-900 md:items-end">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-100">
-                  Gestión {ganadoresData.categoria.gestion}
+                  Gestión {ganadoresData.gestion}
                 </span>
-                <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
-                  {ganadoresData.categoria.area} –{" "}
-                  {ganadoresData.categoria.nivel}
+                {areaSeleccionada && nivelSeleccionado && (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                    {areaSeleccionada} – {nivelSeleccionado}
+                  </span>
+                )}
+                <span className="rounded-full bg-purple-50 px-3 py-1 font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200">
+                  Modalidad: {ganadoresData.modalidad}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${claseBadgeEstadoFase(
-                    estadoFaseFinal || "PENDIENTE"
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${claseBadgeBoolean(
+                    resultadosPublicados
                   )}`}
                 >
-                  Fase final: {estadoFaseFinal || "PENDIENTE"}
+                  Resultados publicados:{" "}
+                  {resultadosPublicados ? "Sí" : "No"}
                 </span>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${claseBadgeBoolean(
+                    yaSeEnviaronCorreos
+                  )}`}
+                >
                   Correos a ganadores:{" "}
                   {yaSeEnviaronCorreos ? "Enviados" : "No enviados"}
                 </span>
+                {ganadoresData.responsable_nombre_completo && (
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                    Responsable: {ganadoresData.responsable_nombre_completo}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -697,8 +701,7 @@ const GanadoresCertificados: React.FC = () => {
                   terminoBusqueda={terminoBusqueda}
                   onBuscarChange={(t: string) => {
                     setTerminoBusqueda(t);
-                    setPaginaIndividual(1);
-                    setPaginaGrupal(1);
+                    setPaginaActual(1);
                   }}
                 />
               </div>
@@ -709,7 +712,7 @@ const GanadoresCertificados: React.FC = () => {
             <button
               type="button"
               onClick={abrirVentanaCertificadosTodos}
-              disabled={!ganadoresData || !ganadoresData.ganadores.length}
+              disabled={!ganadoresData || !ganadoresFiltrados.length}
               className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-red-500 dark:hover:bg-red-400 dark:focus-visible:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FaFilePdf className="h-4 w-4" />
@@ -719,7 +722,7 @@ const GanadoresCertificados: React.FC = () => {
             <button
               type="button"
               onClick={exportarExcelCsv}
-              disabled={!ganadoresData || !ganadoresData.ganadores.length}
+              disabled={!ganadoresData || !ganadoresFiltrados.length}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:focus-visible:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FaFileExcel className="h-4 w-4" />
@@ -729,12 +732,7 @@ const GanadoresCertificados: React.FC = () => {
             <button
               type="button"
               onClick={solicitarEnvioCorreos}
-              disabled={
-                !ganadoresData ||
-                !ganadoresData.ganadores.length ||
-                !estadoFaseFinal ||
-                estadoFaseFinal !== "FINALIZADA"
-              }
+              disabled={!ganadoresData || !ganadoresFiltrados.length}
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus-visible:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FiMail className="h-4 w-4" />
@@ -768,9 +766,9 @@ const GanadoresCertificados: React.FC = () => {
           </div>
         )}
 
-        {/* TABLAS PRINCIPALES */}
+        {/* TABLA PRINCIPAL – UNA SOLA TABLA */}
         {!loadingGanadores && ganadoresData && (
-          <section className="space-y-6 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <section className="space-y-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -779,7 +777,7 @@ const GanadoresCertificados: React.FC = () => {
                 <p className="text-xs text-gray-600 dark:text-gray-300">
                   Total de ganadores:{" "}
                   <span className="font-semibold">
-                    {ganadoresData.total_ganadores}
+                    {ganadoresData.total}
                   </span>
                   {" · "}
                   Oro: {ganadoresData.totales_por_medalla.oro} · Plata:{" "}
@@ -788,143 +786,63 @@ const GanadoresCertificados: React.FC = () => {
                   {ganadoresData.totales_por_medalla.mencion}
                 </p>
               </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Vista actual:{" "}
+                <span className="font-semibold">
+                  {ganadoresData.modalidad === "INDIVIDUAL"
+                    ? "Ganadores individuales"
+                    : "Ganadores por equipo"}
+                </span>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-gray-100 p-1 text-xs font-medium text-gray-700 dark:bg-gray-900 dark:text-gray-200">
-              <button
-                type="button"
-                onClick={() => setTablaActiva("INDIVIDUAL")}
-                className={`flex-1 rounded-xl px-3 py-2 text-center ${
-                  tablaActiva === "INDIVIDUAL"
-                    ? "bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white"
-                    : "text-gray-600 dark:text-gray-300"
-                }`}
-              >
-                Ganadores individuales
-              </button>
-              <button
-                type="button"
-                onClick={() => setTablaActiva("GRUPAL")}
-                className={`flex-1 rounded-xl px-3 py-2 text-center ${
-                  tablaActiva === "GRUPAL"
-                    ? "bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white"
-                    : "text-gray-600 dark:text-gray-300"
-                }`}
-              >
-                Ganadores por equipo
-              </button>
-            </div>
-
-            {tablaActiva === "INDIVIDUAL" && (
-              <section className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Ganadores en modalidad individual
-                  </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-300">
-                    Total: {datosTablaIndividual.length}
-                  </p>
-                </div>
-                {hayDatosIndividuales ? (
-                  <>
-                    <TablaBase
-                      datos={datosIndividualPaginados}
-                      columnas={columnasIndividual}
-                      conAcciones
-                      renderAcciones={(fila: GanadorApi) => (
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              abrirVentanaCertificadosParaGanador(fila)
-                            }
-                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-1.5 text-gray-600 hover:border-brand-500 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-brand-400"
-                            title="Descargar certificado de este participante"
-                          >
-                            <FiDownload className="h-4 w-4" />
-                          </button>
-                        </div>
+            {hayDatos ? (
+              <>
+                <TablaBase
+                  datos={datosPaginados}
+                  columnas={columnasTabla}
+                  conAcciones
+                  renderAcciones={(fila: GanadorApi) => (
+                    <div className="flex items-center justify-center gap-2">
+                      {ganadoresData.modalidad === "GRUPAL" && (
+                        <button
+                          type="button"
+                          onClick={() => abrirModalIntegrantes(fila)}
+                          className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-1.5 text-gray-600 hover:border-blue-500 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-blue-400"
+                          title="Ver integrantes del equipo"
+                        >
+                          <FiEye className="h-4 w-4" />
+                        </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          abrirVentanaCertificadosParaGanador(fila)
+                        }
+                        className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-1.5 text-gray-600 hover:border-brand-500 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-brand-400"
+                        title="Descargar certificado(s)"
+                      >
+                        <FiDownload className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                />
+                {totalPaginas > 1 && (
+                  <div className="mt-3 flex justify-end">
+                    <Paginacion
+                      paginaActual={paginaActual}
+                      totalPaginas={totalPaginas}
+                      totalRegistros={ganadoresFiltrados.length}
+                      registrosPorPagina={ITEMS_POR_PAGINA}
+                      onPaginaChange={setPaginaActual}
                     />
-                    {totalPaginasIndividual > 1 && (
-                      <div className="mt-3 flex justify-end">
-                        <Paginacion
-                          paginaActual={paginaIndividual}
-                          totalPaginas={totalPaginasIndividual}
-                          totalRegistros={datosTablaIndividual.length}
-                          registrosPorPagina={ITEMS_POR_PAGINA}
-                          onPaginaChange={setPaginaIndividual}
-                        />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-xs text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                    No hay ganadores registrados en modalidad individual para
-                    los filtros actuales.
                   </div>
                 )}
-              </section>
-            )}
-
-            {tablaActiva === "GRUPAL" && (
-              <section className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Ganadores en modalidad grupal
-                  </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-300">
-                    Total de equipos: {datosTablaGrupal.length}
-                  </p>
-                </div>
-                {hayDatosGrupales ? (
-                  <>
-                    <TablaBase
-                      datos={datosGrupalPaginados}
-                      columnas={columnasGrupal}
-                      conAcciones
-                      renderAcciones={(fila: GanadorApi) => (
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => abrirModalIntegrantes(fila)}
-                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-1.5 text-gray-600 hover:border-blue-500 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-blue-400"
-                            title="Ver integrantes del equipo"
-                          >
-                            <FiEye className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              abrirVentanaCertificadosParaGanador(fila)
-                            }
-                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-1.5 text-gray-600 hover:border-brand-500 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-brand-400"
-                            title="Descargar certificados de este equipo"
-                          >
-                            <FiDownload className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )}
-                    />
-                    {totalPaginasGrupal > 1 && (
-                      <div className="mt-3 flex justify-end">
-                        <Paginacion
-                          paginaActual={paginaGrupal}
-                          totalPaginas={totalPaginasGrupal}
-                          totalRegistros={datosTablaGrupal.length}
-                          registrosPorPagina={ITEMS_POR_PAGINA}
-                          onPaginaChange={setPaginaGrupal}
-                        />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-xs text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                    No hay ganadores registrados en modalidad grupal para los
-                    filtros actuales.
-                  </div>
-                )}
-              </section>
+              </>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-xs text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                No hay ganadores registrados para los filtros actuales.
+              </div>
             )}
           </section>
         )}
@@ -941,9 +859,7 @@ const GanadoresCertificados: React.FC = () => {
             ganadoresData
               ? `Se ${
                   yaSeEnviaronCorreos ? "reenviarán" : "enviarán"
-                } correos a los ganadores del área ${
-                  ganadoresData.categoria.area
-                } y nivel ${ganadoresData.categoria.nivel}.`
+                } correos a los ganadores del área "${areaSeleccionada}" y nivel "${nivelSeleccionado}".`
               : ""
           }
           onCancel={() => {
