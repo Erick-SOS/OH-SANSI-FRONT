@@ -45,7 +45,7 @@ function chipEstadoFase(estado: EstadoFase) {
   switch (estado) {
     case "EN_EJECUCION":
       return "bg-green-50 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-200 dark:border-green-700";
-    case "FINALIZADO": 
+    case "FINALIZADA": 
       return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-700";
     case "PENDIENTE":
       return "bg-yellow-50 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-200 dark:border-yellow-700";

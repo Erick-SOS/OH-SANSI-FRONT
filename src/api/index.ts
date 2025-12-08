@@ -11,7 +11,7 @@ type Options = {
 
 //http://localhost:3000
 //https://back-oh-sansi.vercel.app
-export const API_ROOT = "http://localhost:3000";
+export const API_ROOT = "https://back-oh-sansi.vercel.app";
 const BASE = `${API_ROOT.replace(/\/$/, "")}/api`;
 
 export async function api(path: string, opts: Options = {}) {
